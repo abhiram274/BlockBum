@@ -1,0 +1,15 @@
+services:
+  node:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: blockbum_devnet_node
+    restart: unless-stopped
+    ports:
+      - "8545:8545" # RPC / REST API
+      - "9000:9000" # P2P Transport
+    volumes:
+      - blockbum_data:/home/blockbum/.blockbum
+
+volumes:
+  blockbum_data:

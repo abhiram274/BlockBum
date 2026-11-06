@@ -1,0 +1,68 @@
+name: BlockBum CI
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  build-and-test:
+    name: Build & Test (${{ matrix.os }} - ${{ matrix.compiler }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            compiler: gcc-14
+            c_compiler: gcc-14
+            cxx_compiler: g++-14
+          - os: ubuntu-24.04
+            compiler: clang-18
+            c_compiler: clang-18
+            cxx_compiler: clang++-18
+          - os: windows-latest
+            compiler: msvc
+            c_compiler: cl
+            cxx_compiler: cl
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build libsodium-dev librocksdb-dev
+          if [ "${{ matrix.compiler }}" = "gcc-14" ]; then
+            sudo apt-get install -y gcc-14 g++-14
+          fi
+
+      - name: Configure CMake
+        run: >
+          cmake -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DBLOCKBUM_BUILD_TESTS=ON
+          -DBLOCKBUM_BUILD_NODE=ON
+          -DBLOCKBUM_WARNINGS_AS_ERRORS=ON
+        env:
+          CC: ${{ matrix.c_compiler }}
+          CXX: ${{ matrix.cxx_compiler }}
+
+      - name: Build Project
+        run: cmake --build build --config Release --parallel
+
+      - name: Run Test Suite
+        working-directory: build
+        run: ctest --output-on-failure -C Release
+
+      - name: Test BlockBum Node Executable
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            ./build/src/node/Release/blockbum_node.exe
+          else
+            ./build/src/node/blockbum_node
+          fi
+        shell: bash
