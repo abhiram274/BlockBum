@@ -49,7 +49,7 @@ private:
 TEST(CoreTypesTest, HexConversionRoundTrip) {
     std::vector<uint8_t> original = {0x00, 0x12, 0xAB, 0xCD, 0xEF, 0xFF};
     std::string hex = blockbum::core::to_hex(original);
-    EXPECT_EQ(hex, "0012abcdef");
+    EXPECT_EQ(hex, "0012abcdefff");
 
     std::vector<uint8_t> parsed = blockbum::core::from_hex(hex);
     EXPECT_EQ(parsed, original);
