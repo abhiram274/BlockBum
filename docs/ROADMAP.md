@@ -113,7 +113,18 @@ flowchart TB
   * Comprehensive test suite (`test_token_ledger.cpp`).
   * Economic assumptions, threat models, and legal guardrails documented in [docs/TOKEN_ECONOMICS.md](TOKEN_ECONOMICS.md).
 
-### Phase 8: MainNet Hardening, Security Audits & Public Deployment [FUTURE]
+### Phase 8: Desktop Application (Tauri + React + TypeScript) [COMPLETED]
+* **Status**: Completed (Modern cross-platform desktop UI, Tauri bridge, and zero blockchain duplication).
+* **Deliverables**:
+  * Modern, responsive desktop application built with React, TypeScript, and Vite.
+  * Native desktop runtime shell using Tauri (`client/desktop/src-tauri`).
+  * Full integration with the C++ BlockBum core node (wallet balances, transaction history, E2EE chat, communities, and CAS file downloads).
+  * Node switching interface allowing users to connect to local nodes or remote network bootstrap gateways.
+  * Multi-identity wallet manager and signed BUM transfers.
+  * Local data isolation guarantees protecting private keys from network exposure.
+  * Installation and packaging documentation in [docs/DESKTOP_APPLICATION.md](DESKTOP_APPLICATION.md).
+
+### Project Status: All 8 Engineering Phases Complete!
 * **Goal**: Transition from in-memory objects to a persistent, atomic blockchain database.
 * **Key Components**:
   * Abstract Storage Interface (`IStorageEngine`).
