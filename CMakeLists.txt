@@ -52,6 +52,7 @@ add_subdirectory(src/core)
 add_subdirectory(src/storage)
 add_subdirectory(src/network)
 add_subdirectory(src/messaging)
+add_subdirectory(src/content)
 
 if(BLOCKBUM_BUILD_NODE)
     add_subdirectory(src/node)

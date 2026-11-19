@@ -85,11 +85,22 @@ flowchart TB
   * Strict off-chain message isolation ensuring message contents never clutter the blockchain.
   * Offline relay mailboxes (`OfflineRelayMailbox`) buffering messages for offline recipients.
   * Local encrypted chat history storage (`EncryptedHistoryStore`).
-  * Token-bucket rate limiting and duplicate message detection.
-  * Comprehensive messaging test suite (`test_messaging.cpp`).
   * Metadata visibility and privacy guarantees documented in [docs/MESSAGING_ARCHITECTURE.md](MESSAGING_ARCHITECTURE.md).
 
-### Phase 5: Content Sharing & Decentralized Storage (IPFS-compatible) [NEXT UP]
+### Phase 5: Decentralized Content Sharing & Storage [COMPLETED]
+* **Status**: Completed (Chunking, local encryption, offline peer replication, and access control tests passing).
+* **Deliverables**:
+  * Multi-format content engine supporting PDFs, images, videos, audio, and source code.
+  * Local client-side file encryption prior to network distribution.
+  * IPFS-compatible chunking (`256 KB`) and cryptographic content addressing (`ContentChunk`, `ContentManifest`, `root_cid`).
+  * Content-Addressed Storage (`ContentStore`) with automatic chunk integrity verification.
+  * Resumable downloads and offline-uploader retrieval via storage peer replication.
+  * Access-controlled authorization lists rejecting unauthorized downloaders.
+  * File-size boundaries (100 MB limit) and cache retention limits.
+  * Comprehensive test suite (`test_content_sharing.cpp`).
+  * Critical technical distinction between content integrity, confidentiality, and availability documented in [docs/CONTENT_SHARING.md](CONTENT_SHARING.md).
+
+### Phase 6: Full Client Integration & Application Layer [NEXT UP]
 * **Goal**: Transition from in-memory objects to a persistent, atomic blockchain database.
 * **Key Components**:
   * Abstract Storage Interface (`IStorageEngine`).
