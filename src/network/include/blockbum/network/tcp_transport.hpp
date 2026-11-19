@@ -99,19 +99,22 @@ public:
             }
         }
 
-        if (accept_thread_.joinable()) {
-            accept_thread_.join();
+        // Close peer connections first so workers unblock from recv()
+        {
+            std::lock_guard<std::mutex> lock(peers_mutex_);
+            for (auto& [id, peer] : peers_) {
+                close_socket(peer.sock);
+                peer.sock = INVALID_SOCKET_VAL;
+                if (peer.worker.joinable()) {
+                    peer.worker.detach();
+                }
+            }
+            peers_.clear();
         }
 
-        // Close peer connections
-        std::lock_guard<std::mutex> lock(peers_mutex_);
-        for (auto& [id, peer] : peers_) {
-            close_socket(peer.sock);
-            if (peer.worker.joinable()) {
-                peer.worker.join();
-            }
+        if (accept_thread_.joinable()) {
+            accept_thread_.detach();
         }
-        peers_.clear();
     }
 
     bool connect(const std::string& address) override {
@@ -237,8 +240,8 @@ private:
 
         while (running_) {
             int bytes = recv(sock, reinterpret_cast<char*>(temp), sizeof(temp), 0);
-            if (bytes <= 0) {
-                break; // Disconnected or error
+            if (bytes <= 0 || !running_) {
+                break; // Disconnected or shutting down
             }
 
             rx_buffer.insert(rx_buffer.end(), temp, temp + bytes);
@@ -249,16 +252,15 @@ private:
                 MessageHeader header = MessageHeader::deserialize(header_d);
 
                 if (header.magic != PROTOCOL_MAGIC || header.payload_size > MAX_MESSAGE_SIZE) {
-                    // Protocol violation: disconnect peer
                     goto cleanup;
                 }
 
-                size_t total_msg_size = 13 + header.payload_size; // 4 + 4 + 1 + 4 = 13 bytes header
+                size_t total_msg_size = 13 + header.payload_size;
                 if (rx_buffer.size() < total_msg_size) {
-                    break; // Wait for remainder of payload
+                    break;
                 }
 
-                if (handler_) {
+                if (handler_ && running_) {
                     std::span<const uint8_t> full_msg(rx_buffer.data(), total_msg_size);
                     handler_(peer_id, full_msg);
                 }
@@ -269,16 +271,18 @@ private:
 
     cleanup:
         close_socket(sock);
-        std::thread([this, peer_id]() {
-            std::lock_guard<std::mutex> lock(peers_mutex_);
-            auto it = peers_.find(peer_id);
-            if (it != peers_.end()) {
-                if (it->second.worker.joinable()) {
-                    it->second.worker.detach();
+        if (running_) {
+            std::thread([this, peer_id]() {
+                std::lock_guard<std::mutex> lock(peers_mutex_);
+                auto it = peers_.find(peer_id);
+                if (it != peers_.end()) {
+                    if (it->second.worker.joinable()) {
+                        it->second.worker.detach();
+                    }
+                    peers_.erase(it);
                 }
-                peers_.erase(it);
-            }
-        }).detach();
+            }).detach();
+        }
     }
 
     socket_t listen_fd_{INVALID_SOCKET_VAL};
