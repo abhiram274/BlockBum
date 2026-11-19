@@ -79,8 +79,8 @@ public:
             chunk.encrypted_data.assign(encrypted_payload.begin() + start, encrypted_payload.begin() + start + len);
             chunk.chunk_hash = crypto::CryptoUtils::sha256(chunk.encrypted_data);
 
-            // IPFS-compatible multihash CID string format
-            chunk.cid = "cid:sha256:" + core::to_hex(chunk.chunk_hash);
+            // IPFS-compatible multihash CID string format (use underscores to ensure cross-platform filename validity)
+            chunk.cid = "cid_sha256_" + core::to_hex(chunk.chunk_hash);
 
             manifest.chunk_cids.push_back(chunk.cid);
             manifest.chunk_hashes.push_back(chunk.chunk_hash);
@@ -93,7 +93,7 @@ public:
 
         // Root CID is deterministic hash of all chunk CIDs
         auto root_hash = crypto::CryptoUtils::sha256(root_digest_input);
-        manifest.root_cid = "bbum:cas:" + core::to_hex(root_hash);
+        manifest.root_cid = "bbum_cas_" + core::to_hex(root_hash);
 
         store_->put_manifest(manifest);
 
