@@ -28,6 +28,7 @@ protected:
         test_dir_ = std::filesystem::temp_directory_path() / "blockbum_security_test";
         std::filesystem::remove_all(test_dir_);
         std::filesystem::create_directories(test_dir_);
+        crypto_engine_ = std::make_shared<crypto::StandardCryptoEngine>();
     }
 
     void TearDown() override {
@@ -35,6 +36,7 @@ protected:
     }
 
     std::filesystem::path test_dir_;
+    std::shared_ptr<crypto::StandardCryptoEngine> crypto_engine_;
 };
 
 // =========================================================================
@@ -42,7 +44,6 @@ protected:
 // =========================================================================
 
 TEST_F(SecurityAndReliabilityTest, FuzzTransactionDeserialization) {
-    // Generate pseudo-random garbage bytes and corrupted buffers
     std::mt19937_64 rng(1337);
     std::uniform_int_distribution<uint32_t> byte_dist(0, 255);
     std::uniform_int_distribution<size_t> len_dist(0, 1024);
@@ -54,11 +55,9 @@ TEST_F(SecurityAndReliabilityTest, FuzzTransactionDeserialization) {
             b = static_cast<uint8_t>(byte_dist(rng));
         }
 
-        // Must fail safely without memory leaks, heap corruption, or crash
         core::BinaryDeserializer d(fuzz_data);
         try {
             auto tx = core::Transaction::deserialize(d);
-            // If it miraculously passed parsing, verify id calculation is safe
             (void)tx.serialize_for_id();
         } catch (const std::exception&) {
             // Expected safe rejection
@@ -115,7 +114,7 @@ TEST_F(SecurityAndReliabilityTest, FuzzNetworkWireProtocolHeaders) {
 TEST_F(SecurityAndReliabilityTest, DoubleSpendingAndReplayProtection) {
     ledger::AccountLedger ledger;
     crypto::StandardCryptoEngine crypto;
-    crypto::Wallet wallet(std::make_shared<crypto::StandardCryptoEngine>());
+    crypto::Wallet wallet(test_dir_ / "wallet_ds", crypto_engine_);
     auto alice = wallet.create_identity("Alice");
     auto bob = wallet.create_identity("Bob");
 
@@ -208,8 +207,6 @@ TEST_F(SecurityAndReliabilityTest, MaliciousPeerInvalidBlockRejection) {
     timewarp_b2.header.timestamp = 0; // Pre-dates genesis
     auto timewarp_hdr = timewarp_b2.header.serialize();
     timewarp_b2.block_hash = crypto::CryptoUtils::sha256(timewarp_hdr);
-    // Even if header matches, consensus rejects or invalidates
-    // Check that chain validates safely
     EXPECT_EQ(chain.height(), 1);
 
     storage->close();
@@ -221,7 +218,7 @@ TEST_F(SecurityAndReliabilityTest, MaliciousPeerInvalidBlockRejection) {
 
 TEST_F(SecurityAndReliabilityTest, CryptographicKeyIsolationAndTamperProof) {
     crypto::StandardCryptoEngine crypto;
-    crypto::Wallet wallet(std::make_shared<crypto::StandardCryptoEngine>());
+    crypto::Wallet wallet(test_dir_ / "wallet_crypto", crypto_engine_);
 
     auto alice = wallet.create_identity("Alice");
     auto bob = wallet.create_identity("Bob");
@@ -268,7 +265,7 @@ TEST_F(SecurityAndReliabilityTest, ContentStoreIntegrityAndUnauthorizedAccess) {
     auto store = std::make_shared<content::ContentStore>((test_dir_ / "cas_store").string());
     content::ContentManager mgr(store);
 
-    crypto::Wallet wallet(std::make_shared<crypto::StandardCryptoEngine>());
+    crypto::Wallet wallet(test_dir_ / "wallet_cas", crypto_engine_);
     auto author = wallet.create_identity("Author");
     auto authorized_reader = wallet.create_identity("Reader");
     auto attacker = wallet.create_identity("Attacker");
@@ -279,7 +276,7 @@ TEST_F(SecurityAndReliabilityTest, ContentStoreIntegrityAndUnauthorizedAccess) {
     // Prepare private file restricted only to authorized_reader
     auto result = mgr.prepare_and_store_file(
         "secret_spec.pdf",
-        content::FileContentType::Document,
+        content::FileContentType::DocumentPDF,
         doc_bytes,
         author,
         false, // Private
@@ -298,8 +295,9 @@ TEST_F(SecurityAndReliabilityTest, ContentStoreIntegrityAndUnauthorizedAccess) {
     // 3. Chunk Corruption / Integrity failure
     ASSERT_FALSE(result.chunks.empty());
     auto corrupted_chunk = result.chunks[0];
+    ASSERT_FALSE(corrupted_chunk.encrypted_data.empty());
     corrupted_chunk.encrypted_data[corrupted_chunk.encrypted_data.size() / 2] ^= 0xAA;
-    // Overwrite in store with invalid hash
+    // Overwrite in store with corrupted payload (hash in chunk won't match manifest or data)
     store->put_chunk(corrupted_chunk);
 
     auto corrupted_retrieval = mgr.retrieve_and_reassemble(result.manifest.root_cid, authorized_reader.address(), result.file_encryption_key);
@@ -312,7 +310,7 @@ TEST_F(SecurityAndReliabilityTest, ContentStoreIntegrityAndUnauthorizedAccess) {
 
 TEST_F(SecurityAndReliabilityTest, PerformanceBenchmarks) {
     crypto::StandardCryptoEngine crypto;
-    crypto::Wallet wallet(std::make_shared<crypto::StandardCryptoEngine>());
+    crypto::Wallet wallet(test_dir_ / "wallet_bench", crypto_engine_);
     auto sender = wallet.create_identity("BenchmarkSender");
     auto recipient = wallet.create_identity("BenchmarkRecipient");
 
@@ -375,7 +373,7 @@ TEST_F(SecurityAndReliabilityTest, PerformanceBenchmarks) {
 
     std::vector<uint8_t> payload_5mb(5 * 1024 * 1024, 0x55); // 5 MB payload
     auto cas_start = std::chrono::high_resolution_clock::now();
-    auto cas_res = mgr.prepare_and_store_file("bench.bin", content::FileContentType::Binary, payload_5mb, sender, true);
+    auto cas_res = mgr.prepare_and_store_file("bench.bin", content::FileContentType::GenericBinary, payload_5mb, sender, true);
     auto cas_end = std::chrono::high_resolution_clock::now();
     double cas_elapsed_ms = std::chrono::duration<double, std::milli>(cas_end - cas_start).count();
 
