@@ -55,15 +55,23 @@ flowchart TB
 * **Status**: Completed (12 automated unit tests passing in CI, multi-platform verified).
 * **Deliverables**:
   * Deterministic binary serialization engine (`BinarySerializer`, `BinaryDeserializer`).
-  * Core domain types: `Transaction` (with payload & deterministic ID), `BlockHeader`, `Block`.
+  * Core domain types: `Transaction`, `BlockHeader`, `Block`.
   * Pairwise SHA-256 `MerkleTree` algorithm.
-  * Deterministic genesis block generator.
-  * Local persistent storage backend (`FileStorageEngine`) with state recovery.
-  * Strict consensus validation (`validate_block`, `validate_entire_chain`) covering Merkle roots, header hashes, sequential heights, and previous-hash linkages.
-  * Interactive CLI daemon (`blockbum_node`) supporting `init`, `create-block`, `status`, `list`, and `validate`.
-  * Detailed specification documented in [docs/PHASE1_SPECIFICATION.md](PHASE1_SPECIFICATION.md).
+  * Deterministic genesis block generator and persistent local storage.
 
-### Phase 2: State Engine & RocksDB Storage [NEXT UP]
+### Phase 2: P2P Network, Node Synchronization & Consensus [COMPLETED]
+* **Status**: Completed (Multi-node integration test passing across Windows and Linux CI).
+* **Deliverables**:
+  * Modular P2P networking interface (`INetworkTransport`).
+  * Cross-platform TCP transport (`TcpNetworkTransport`) with connection management and framing.
+  * Wire protocol (`wire_protocol.hpp`) with magic bytes `BBUM` and command set.
+  * Node synchronization manager (`NodeSyncManager`) for initial block download and transaction/block propagation.
+  * Deduplication mechanisms preventing gossip storms and infinite broadcast loops.
+  * DevNet consensus model (`DevNetConsensus`) with round-robin validation and longest-chain rule.
+  * Multi-node integration test (`test_p2p_network.cpp`) testing 3 nodes with node disconnect resilience.
+  * Consensus and attack surface analysis documented in [docs/CONSENSUS_AND_NETWORKING.md](CONSENSUS_AND_NETWORKING.md).
+
+### Phase 3: Mempool, Consensus & Block Production [NEXT UP]
 * **Goal**: Transition from in-memory objects to a persistent, atomic blockchain database.
 * **Key Components**:
   * Abstract Storage Interface (`IStorageEngine`).

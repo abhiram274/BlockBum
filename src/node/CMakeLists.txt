@@ -9,6 +9,10 @@ target_link_libraries(blockbum_node PRIVATE
     blockbum_network
 )
 
+if(WIN32)
+    target_link_libraries(blockbum_node PRIVATE ws2_32)
+endif()
+
 blockbum_set_compiler_warnings(blockbum_node)
 
 install(TARGETS blockbum_node DESTINATION bin)

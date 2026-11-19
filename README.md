@@ -77,5 +77,6 @@ docker compose -f docker/docker-compose.yml up --build
 * [Development Setup Guide](docs/SETUP.md)
 * [System Architecture](docs/ARCHITECTURE.md)
 * [Phase 1 Specification & Protocol](docs/PHASE1_SPECIFICATION.md)
+* [Phase 2 Consensus & P2P Networking](docs/CONSENSUS_AND_NETWORKING.md)
 * [Phase Roadmap](docs/ROADMAP.md)
 * [Contributing Guidelines](docs/CONTRIBUTING.md)

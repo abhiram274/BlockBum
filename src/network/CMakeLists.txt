@@ -6,4 +6,10 @@ target_include_directories(blockbum_network
         $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(blockbum_network INTERFACE blockbum_core)
+target_link_libraries(blockbum_network INTERFACE
+    blockbum_core
+)
+
+if(WIN32)
+    target_link_libraries(blockbum_network INTERFACE ws2_32)
+endif()

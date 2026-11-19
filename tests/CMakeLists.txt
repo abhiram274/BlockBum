@@ -16,6 +16,7 @@ add_executable(blockbum_tests
     unit/test_version.cpp
     unit/test_interfaces.cpp
     unit/test_blockchain.cpp
+    unit/test_p2p_network.cpp
 )
 
 target_link_libraries(blockbum_tests PRIVATE
@@ -25,6 +26,10 @@ target_link_libraries(blockbum_tests PRIVATE
     blockbum_network
     GTest::gtest_main
 )
+
+if(WIN32)
+    target_link_libraries(blockbum_tests PRIVATE ws2_32)
+endif()
 
 blockbum_set_compiler_warnings(blockbum_tests)
 
