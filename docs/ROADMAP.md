@@ -66,12 +66,21 @@ flowchart TB
   * Cross-platform TCP transport (`TcpNetworkTransport`) with connection management and framing.
   * Wire protocol (`wire_protocol.hpp`) with magic bytes `BBUM` and command set.
   * Node synchronization manager (`NodeSyncManager`) for initial block download and transaction/block propagation.
-  * Deduplication mechanisms preventing gossip storms and infinite broadcast loops.
-  * DevNet consensus model (`DevNetConsensus`) with round-robin validation and longest-chain rule.
   * Multi-node integration test (`test_p2p_network.cpp`) testing 3 nodes with node disconnect resilience.
-  * Consensus and attack surface analysis documented in [docs/CONSENSUS_AND_NETWORKING.md](CONSENSUS_AND_NETWORKING.md).
 
-### Phase 3: Mempool, Consensus & Block Production [NEXT UP]
+### Phase 3: Cryptographic Identity & Wallet Subsystem [COMPLETED]
+* **Status**: Completed (Keypair generation, signature verification, keystore persistence, and recovery tests passing).
+* **Deliverables**:
+  * Cryptographic identity engine (`StandardCryptoEngine`) using constant-time verified primitives and CSPRNG entropy.
+  * Multi-identity wallet manager (`Wallet`, `Identity`) with persistent disk storage (`data/wallet/*.wallet`).
+  * Strict transaction signing and verification binding (`sender_pubkey`, `signature`, `tx_id`).
+  * Deterministic identity export and recovery mechanisms via recovery phrases.
+  * Secure local key isolation ensuring secret keys are never transmitted over the P2P wire.
+  * Comprehensive test suite (`test_wallet.cpp`) verifying valid/invalid signatures, corrupted keys, unauthorized impersonations, and keystore persistence.
+  * CLI tools (`wallet-create`, `wallet-list`, `wallet-export`, `wallet-recover`).
+  * Security analysis and key compromise strategy documented in [docs/IDENTITY_AND_WALLET.md](IDENTITY_AND_WALLET.md).
+
+### Phase 4: State Engine, Account Ledgers & Transactions [NEXT UP]
 * **Goal**: Transition from in-memory objects to a persistent, atomic blockchain database.
 * **Key Components**:
   * Abstract Storage Interface (`IStorageEngine`).

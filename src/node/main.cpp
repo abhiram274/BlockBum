@@ -4,6 +4,7 @@
 #include "blockbum/storage/file_storage.hpp"
 #include "blockbum/network/tcp_transport.hpp"
 #include "blockbum/network/sync_manager.hpp"
+#include "blockbum/crypto/wallet.hpp"
 #include <iostream>
 #include <memory>
 #include <string>
@@ -12,13 +13,18 @@
 
 void print_usage() {
     std::cout << "Usage: blockbum_node <command> [options]\n\n"
-              << "Commands:\n"
+              << "Blockchain Commands:\n"
               << "  init                              Initialize genesis block in local storage\n"
               << "  status                            Display current blockchain height and tip hash\n"
               << "  create-block <msg>                Create and append a new block with a payload\n"
               << "  list                              List all blocks in the local chain\n"
               << "  validate                          Validate the entire chain structure and hashes\n"
-              << "  run-node --port <p> [--peer <h>]  Start P2P node daemon on port, connect to peer\n"
+              << "  run-node --port <p> [--peer <h>]  Start P2P node daemon on port, connect to peer\n\n"
+              << "Wallet & Identity Commands:\n"
+              << "  wallet-create <alias>             Generate a new pseudonymous identity keypair\n"
+              << "  wallet-list                       List all identities in the local wallet\n"
+              << "  wallet-export <alias>             Export secure recovery phrase for backup\n"
+              << "  wallet-recover <alias> <phrase>   Recover an identity from recovery phrase\n"
               << "  --version, -v                     Print BlockBum version\n";
 }
 
@@ -38,6 +44,69 @@ int main(int argc, char* argv[]) {
     if (command == "--version" || command == "-v") {
         std::cout << "BlockBum v" << blockbum::get_version_string() << "\n";
         return 0;
+    }
+
+    // Wallet commands
+    if (command == "wallet-create") {
+        if (argc < 3) {
+            std::cerr << "Error: alias required. Usage: blockbum_node wallet-create <alias>\n";
+            return 1;
+        }
+        std::string alias = argv[2];
+        blockbum::crypto::Wallet wallet("data/wallet");
+        try {
+            auto id = wallet.create_identity(alias);
+            std::cout << "[SUCCESS] Created identity '" << id.alias() << "'\n";
+            std::cout << "  Address:    " << id.address() << "\n";
+            std::cout << "  Public Key: 0x" << blockbum::core::to_hex(id.public_key()) << "\n";
+            std::cout << "  Recovery:   " << id.export_recovery_phrase() << "\n";
+            std::cout << "  Note: Keep your recovery phrase safe. Private keys never leave this device.\n";
+            return 0;
+        } catch (const std::exception& e) {
+            std::cerr << "Error: " << e.what() << "\n";
+            return 1;
+        }
+    } else if (command == "wallet-list") {
+        blockbum::crypto::Wallet wallet("data/wallet");
+        auto list = wallet.list_identities();
+        std::cout << "BlockBum Local Wallet (" << list.size() << " identities):\n";
+        for (const auto& id : list) {
+            std::cout << "  [" << id.alias << "] Address: " << id.address
+                      << " | PubKey: " << blockbum::core::to_hex(id.public_key).substr(0, 16) << "...\n";
+        }
+        return 0;
+    } else if (command == "wallet-export") {
+        if (argc < 3) {
+            std::cerr << "Error: alias required. Usage: blockbum_node wallet-export <alias>\n";
+            return 1;
+        }
+        std::string alias = argv[2];
+        blockbum::crypto::Wallet wallet("data/wallet");
+        auto id = wallet.get_identity(alias);
+        if (!id) {
+            std::cerr << "Error: Identity not found: " << alias << "\n";
+            return 1;
+        }
+        std::cout << "Recovery phrase for '" << alias << "':\n";
+        std::cout << id->export_recovery_phrase() << "\n";
+        return 0;
+    } else if (command == "wallet-recover") {
+        if (argc < 4) {
+            std::cerr << "Error: Usage: blockbum_node wallet-recover <alias> <phrase>\n";
+            return 1;
+        }
+        std::string alias = argv[2];
+        std::string phrase = argv[3];
+        blockbum::crypto::Wallet wallet("data/wallet");
+        try {
+            auto id = wallet.recover_identity(alias, phrase);
+            std::cout << "[SUCCESS] Recovered identity '" << id.alias() << "'\n";
+            std::cout << "  Address: " << id.address() << "\n";
+            return 0;
+        } catch (const std::exception& e) {
+            std::cerr << "Error: " << e.what() << "\n";
+            return 1;
+        }
     }
 
     auto storage = std::make_shared<blockbum::storage::FileStorageEngine>();

@@ -5,18 +5,24 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <array>
 
 namespace blockbum::core {
 
+using Signature = std::array<uint8_t, 64>;
+using PublicKey = std::array<uint8_t, 32>;
+
 struct Transaction {
     uint32_t version{1};
-    std::string sender;
-    std::string recipient;
+    std::string sender;      // Hex representation of PublicKey or pseudonymous address
+    std::string recipient;   // Recipient address or channel identifier
     Balance amount{0};
     Balance fee{0};
     Nonce nonce{0};
     std::vector<uint8_t> payload;
     TimestampMs timestamp{0};
+    PublicKey sender_pubkey{};
+    Signature signature{};
     Hash256 tx_id{};
 
     [[nodiscard]] std::vector<uint8_t> serialize_for_id() const {
@@ -29,6 +35,7 @@ struct Transaction {
         s.write_u64(nonce);
         s.write_bytes(payload);
         s.write_u64(timestamp);
+        s.write_bytes(sender_pubkey);
         return s.take_data();
     }
 
@@ -42,6 +49,8 @@ struct Transaction {
         s.write_u64(nonce);
         s.write_bytes(payload);
         s.write_u64(timestamp);
+        s.write_bytes(sender_pubkey);
+        s.write_bytes(signature);
         s.write_hash(tx_id);
         return s.take_data();
     }
@@ -56,6 +65,17 @@ struct Transaction {
         tx.nonce = d.read_u64();
         tx.payload = d.read_bytes();
         tx.timestamp = d.read_u64();
+
+        auto pub_bytes = d.read_bytes();
+        if (pub_bytes.size() == 32) {
+            std::copy(pub_bytes.begin(), pub_bytes.end(), tx.sender_pubkey.begin());
+        }
+
+        auto sig_bytes = d.read_bytes();
+        if (sig_bytes.size() == 64) {
+            std::copy(sig_bytes.begin(), sig_bytes.end(), tx.signature.begin());
+        }
+
         tx.tx_id = d.read_hash();
         return tx;
     }

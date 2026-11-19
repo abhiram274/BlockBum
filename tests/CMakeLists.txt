@@ -17,6 +17,7 @@ add_executable(blockbum_tests
     unit/test_interfaces.cpp
     unit/test_blockchain.cpp
     unit/test_p2p_network.cpp
+    unit/test_wallet.cpp
 )
 
 target_link_libraries(blockbum_tests PRIVATE
