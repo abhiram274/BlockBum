@@ -79,5 +79,6 @@ docker compose -f docker/docker-compose.yml up --build
 * [Phase 1 Specification & Protocol](docs/PHASE1_SPECIFICATION.md)
 * [Phase 2 Consensus & P2P Networking](docs/CONSENSUS_AND_NETWORKING.md)
 * [Phase 3 Identity & Wallet Subsystem](docs/IDENTITY_AND_WALLET.md)
+* [Phase 4 Decentralized Messaging](docs/MESSAGING_ARCHITECTURE.md)
 * [Phase Roadmap](docs/ROADMAP.md)
 * [Contributing Guidelines](docs/CONTRIBUTING.md)

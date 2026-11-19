@@ -18,6 +18,7 @@ add_executable(blockbum_tests
     unit/test_blockchain.cpp
     unit/test_p2p_network.cpp
     unit/test_wallet.cpp
+    unit/test_messaging.cpp
 )
 
 target_link_libraries(blockbum_tests PRIVATE
@@ -25,6 +26,7 @@ target_link_libraries(blockbum_tests PRIVATE
     blockbum_crypto
     blockbum_storage
     blockbum_network
+    blockbum_messaging
     GTest::gtest_main
 )
 

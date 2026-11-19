@@ -7,6 +7,7 @@ target_link_libraries(blockbum_node PRIVATE
     blockbum_crypto
     blockbum_storage
     blockbum_network
+    blockbum_messaging
 )
 
 if(WIN32)

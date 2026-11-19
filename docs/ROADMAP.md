@@ -75,12 +75,21 @@ flowchart TB
   * Multi-identity wallet manager (`Wallet`, `Identity`) with persistent disk storage (`data/wallet/*.wallet`).
   * Strict transaction signing and verification binding (`sender_pubkey`, `signature`, `tx_id`).
   * Deterministic identity export and recovery mechanisms via recovery phrases.
-  * Secure local key isolation ensuring secret keys are never transmitted over the P2P wire.
-  * Comprehensive test suite (`test_wallet.cpp`) verifying valid/invalid signatures, corrupted keys, unauthorized impersonations, and keystore persistence.
-  * CLI tools (`wallet-create`, `wallet-list`, `wallet-export`, `wallet-recover`).
   * Security analysis and key compromise strategy documented in [docs/IDENTITY_AND_WALLET.md](IDENTITY_AND_WALLET.md).
 
-### Phase 4: State Engine, Account Ledgers & Transactions [NEXT UP]
+### Phase 4: Decentralized Messaging Subsystem [COMPLETED]
+* **Status**: Completed (Unit tests passing across Windows and Linux CI).
+* **Deliverables**:
+  * End-to-end encrypted direct 1-to-1 messaging (`E2EEncryptionEngine`).
+  * Group messaging with forward-secrecy key rotation on member changes (`GroupManager`).
+  * Strict off-chain message isolation ensuring message contents never clutter the blockchain.
+  * Offline relay mailboxes (`OfflineRelayMailbox`) buffering messages for offline recipients.
+  * Local encrypted chat history storage (`EncryptedHistoryStore`).
+  * Token-bucket rate limiting and duplicate message detection.
+  * Comprehensive messaging test suite (`test_messaging.cpp`).
+  * Metadata visibility and privacy guarantees documented in [docs/MESSAGING_ARCHITECTURE.md](MESSAGING_ARCHITECTURE.md).
+
+### Phase 5: Content Sharing & Decentralized Storage (IPFS-compatible) [NEXT UP]
 * **Goal**: Transition from in-memory objects to a persistent, atomic blockchain database.
 * **Key Components**:
   * Abstract Storage Interface (`IStorageEngine`).
