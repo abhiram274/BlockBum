@@ -6,4 +6,8 @@ target_include_directories(blockbum_crypto
         $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(blockbum_crypto INTERFACE blockbum_core)
+target_link_libraries(blockbum_crypto
+    INTERFACE
+        pico_sha2
+        blockbum_core
+)

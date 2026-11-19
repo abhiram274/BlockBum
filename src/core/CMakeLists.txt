@@ -9,4 +9,9 @@ target_include_directories(blockbum_core
         $<INSTALL_INTERFACE:include>
 )
 
+target_link_libraries(blockbum_core
+    PUBLIC
+        pico_sha2
+)
+
 blockbum_set_compiler_warnings(blockbum_core)
