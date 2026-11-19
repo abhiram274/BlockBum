@@ -20,6 +20,7 @@ add_executable(blockbum_tests
     unit/test_wallet.cpp
     unit/test_messaging.cpp
     unit/test_content_sharing.cpp
+    unit/test_community.cpp
 )
 
 target_link_libraries(blockbum_tests PRIVATE
@@ -29,6 +30,7 @@ target_link_libraries(blockbum_tests PRIVATE
     blockbum_network
     blockbum_messaging
     blockbum_content
+    blockbum_community
     GTest::gtest_main
 )
 

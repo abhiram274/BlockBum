@@ -92,15 +92,20 @@ flowchart TB
 * **Deliverables**:
   * Multi-format content engine supporting PDFs, images, videos, audio, and source code.
   * Local client-side file encryption prior to network distribution.
-  * IPFS-compatible chunking (`256 KB`) and cryptographic content addressing (`ContentChunk`, `ContentManifest`, `root_cid`).
-  * Content-Addressed Storage (`ContentStore`) with automatic chunk integrity verification.
-  * Resumable downloads and offline-uploader retrieval via storage peer replication.
-  * Access-controlled authorization lists rejecting unauthorized downloaders.
-  * File-size boundaries (100 MB limit) and cache retention limits.
-  * Comprehensive test suite (`test_content_sharing.cpp`).
-  * Critical technical distinction between content integrity, confidentiality, and availability documented in [docs/CONTENT_SHARING.md](CONTENT_SHARING.md).
+  * IPFS-compatible chunking (`256 KB`) and cryptographic content addressing.
 
-### Phase 6: Full Client Integration & Application Layer [NEXT UP]
+### Phase 6: Decentralized Community Platform [COMPLETED]
+* **Status**: Completed (33 automated unit and integration tests passing in CI).
+* **Deliverables**:
+  * Community management service (`CommunityService`) with public/private discovery and invitation access control.
+  * Verifiable on-chain governance anchoring (`GovernanceRecord`) for community creation, membership, and roles.
+  * Discussion channels, collaborative coding challenges, and community calendar events.
+  * Educational file sharing anchored with Content-Addressed Storage CIDs.
+  * Responsive client UI engineered in React + TypeScript (`client/desktop/src/App.tsx`).
+  * Comprehensive integration test suite (`test_community.cpp`).
+  * Architecture specifications documented in [docs/COMMUNITY_PLATFORM.md](COMMUNITY_PLATFORM.md).
+
+### Phase 7: Native Token Economics & Smart Contracts [NEXT UP]
 * **Goal**: Transition from in-memory objects to a persistent, atomic blockchain database.
 * **Key Components**:
   * Abstract Storage Interface (`IStorageEngine`).

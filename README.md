@@ -81,5 +81,6 @@ docker compose -f docker/docker-compose.yml up --build
 * [Phase 3 Identity & Wallet Subsystem](docs/IDENTITY_AND_WALLET.md)
 * [Phase 4 Decentralized Messaging](docs/MESSAGING_ARCHITECTURE.md)
 * [Phase 5 Content Sharing & Storage](docs/CONTENT_SHARING.md)
+* [Phase 6 Community Platform](docs/COMMUNITY_PLATFORM.md)
 * [Phase Roadmap](docs/ROADMAP.md)
 * [Contributing Guidelines](docs/CONTRIBUTING.md)
