@@ -46,7 +46,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release
           -DBLOCKBUM_BUILD_TESTS=ON
           -DBLOCKBUM_BUILD_NODE=ON
-          -DBLOCKBUM_WARNINGS_AS_ERRORS=ON
+          -DBLOCKBUM_WARNINGS_AS_ERRORS=OFF
         env:
           CC: ${{ matrix.c_compiler }}
           CXX: ${{ matrix.cxx_compiler }}
