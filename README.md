@@ -74,7 +74,8 @@ docker compose -f docker/docker-compose.yml up --build
 
 ## Documentation
 
-* [Development Setup](docs/SETUP.md)
+* [Development Setup Guide](docs/SETUP.md)
 * [System Architecture](docs/ARCHITECTURE.md)
-* [Contributing Guidelines](docs/CONTRIBUTING.md)
+* [Phase 1 Specification & Protocol](docs/PHASE1_SPECIFICATION.md)
 * [Phase Roadmap](docs/ROADMAP.md)
+* [Contributing Guidelines](docs/CONTRIBUTING.md)

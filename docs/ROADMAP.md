@@ -47,16 +47,23 @@ flowchart TB
 
 ## 2. Phased Roadmap
 
-### Phase 1: Cryptographic Foundations & Data Model (Core Foundation)
-* **Goal**: Establish the fundamental primitives, hashing, public-key signing, blocks, transactions, and verifiable chain state.
-* **Key Components**:
-  * Crypto layer: Ed25519 keypairs, signatures, BLAKE2b/BLAKE3 hashing (libsodium wrapper).
-  * Data structures: `Transaction`, `BlockHeader`, `Block`, `MerkleTree`.
-  * Binary & JSON serialization / deserialization.
-  * Chain validation rules (previous hash linkage, merkle root integrity, signature verification).
-* **Deliverable & Testing**: Unit test suite verifying key creation, transaction signing, block assembly, and tamper detection.
+### Phase 0: BlockBum Engineering Foundation [COMPLETED]
+* **Status**: Completed (CI passing on Ubuntu GCC-14, Ubuntu Clang-18, Windows MSVC).
+* **Deliverables**: C++20 modular monorepo, CMake configuration, GoogleTest integration, GitHub Actions CI workflow, base interface abstractions (`ICryptoEngine`, `IStorageEngine`, `INetworkTransport`).
 
-### Phase 2: State Engine & RocksDB Storage
+### Phase 1: Blockchain Core & Local Chain Execution [COMPLETED]
+* **Status**: Completed (12 automated unit tests passing in CI, multi-platform verified).
+* **Deliverables**:
+  * Deterministic binary serialization engine (`BinarySerializer`, `BinaryDeserializer`).
+  * Core domain types: `Transaction` (with payload & deterministic ID), `BlockHeader`, `Block`.
+  * Pairwise SHA-256 `MerkleTree` algorithm.
+  * Deterministic genesis block generator.
+  * Local persistent storage backend (`FileStorageEngine`) with state recovery.
+  * Strict consensus validation (`validate_block`, `validate_entire_chain`) covering Merkle roots, header hashes, sequential heights, and previous-hash linkages.
+  * Interactive CLI daemon (`blockbum_node`) supporting `init`, `create-block`, `status`, `list`, and `validate`.
+  * Detailed specification documented in [docs/PHASE1_SPECIFICATION.md](PHASE1_SPECIFICATION.md).
+
+### Phase 2: State Engine & RocksDB Storage [NEXT UP]
 * **Goal**: Transition from in-memory objects to a persistent, atomic blockchain database.
 * **Key Components**:
   * Abstract Storage Interface (`IStorageEngine`).
