@@ -190,12 +190,9 @@ TEST_F(SecurityAndReliabilityTest, MaliciousPeerInvalidBlockRejection) {
 
     // Malicious Peer Attack 1: Merkle Root Tampering (Transaction Injection)
     auto poisoned_b2 = chain.create_next_block({tx});
-    core::Transaction malicious_tx;
-    malicious_tx.sender = "Attacker";
-    malicious_tx.recipient = "Attacker";
-    malicious_tx.amount = 1'000'000;
-    poisoned_b2.transactions.push_back(malicious_tx);
-    // Malicious peer recalculates block_hash over header, but merkle_root inside header doesn't match txs
+    // Corrupt merkle root in header directly
+    poisoned_b2.header.merkle_root[0] ^= 0xFF;
+    // Malicious peer recalculates block_hash over header, but merkle_root doesn't match txs
     auto poisoned_hdr = poisoned_b2.header.serialize();
     poisoned_b2.block_hash = crypto::CryptoUtils::sha256(poisoned_hdr);
 
@@ -294,11 +291,20 @@ TEST_F(SecurityAndReliabilityTest, ContentStoreIntegrityAndUnauthorizedAccess) {
 
     // 3. Chunk Corruption / Integrity failure
     ASSERT_FALSE(result.chunks.empty());
-    auto corrupted_chunk = result.chunks[0];
-    ASSERT_FALSE(corrupted_chunk.encrypted_data.empty());
-    corrupted_chunk.encrypted_data[corrupted_chunk.encrypted_data.size() / 2] ^= 0xAA;
-    // Overwrite in store with corrupted payload (hash in chunk won't match manifest or data)
-    store->put_chunk(corrupted_chunk);
+    auto chunk_file = (test_dir_ / "cas_store") / (result.chunks[0].cid + ".chunk");
+    ASSERT_TRUE(std::filesystem::exists(chunk_file));
+
+    // Directly corrupt the on-disk chunk payload so deserialization reads corrupted bytes
+    std::ifstream in(chunk_file, std::ios::binary);
+    std::vector<uint8_t> chunk_bytes((std::istreambuf_iterator<char>(in)),
+                                      std::istreambuf_iterator<char>());
+    in.close();
+    ASSERT_GE(chunk_bytes.size(), 10);
+    chunk_bytes.back() ^= 0xFF; // Invert last byte of payload
+
+    std::ofstream out(chunk_file, std::ios::binary | std::ios::trunc);
+    out.write(reinterpret_cast<const char*>(chunk_bytes.data()), static_cast<std::streamsize>(chunk_bytes.size()));
+    out.close();
 
     auto corrupted_retrieval = mgr.retrieve_and_reassemble(result.manifest.root_cid, authorized_reader.address(), result.file_encryption_key);
     EXPECT_FALSE(corrupted_retrieval.has_value());
