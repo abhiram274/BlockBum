@@ -69,13 +69,22 @@ TEST_F(ContentSharingTest, RejectsCorruptedChunkIntegrity) {
     std::vector<uint8_t> data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     auto result = mgr.prepare_and_store_file("file.bin", content::FileContentType::GenericBinary, data, uploader, true);
 
-    // Tamper with first chunk file directly on disk
+    // Tamper with first chunk file directly on disk by modifying bytes at the end (encrypted data)
     auto chunk_file = test_dir_ / "tamper_cas" / (result.chunks[0].cid + ".chunk");
     ASSERT_TRUE(std::filesystem::exists(chunk_file));
 
-    std::ofstream tamper(chunk_file, std::ios::binary | std::ios::in | std::ios::out);
-    tamper.seekp(30);
-    tamper.put(static_cast<char>(0xFF));
+    // Read full file, corrupt the payload byte, and rewrite
+    std::ifstream in(chunk_file, std::ios::binary);
+    std::vector<uint8_t> chunk_bytes((std::istreambuf_iterator<char>(in)),
+                                      std::istreambuf_iterator<char>());
+    in.close();
+
+    ASSERT_GE(chunk_bytes.size(), 5);
+    // Invert the last byte (which is part of encrypted_data)
+    chunk_bytes.back() ^= 0xFF;
+
+    std::ofstream tamper(chunk_file, std::ios::binary | std::ios::trunc);
+    tamper.write(reinterpret_cast<const char*>(chunk_bytes.data()), static_cast<std::streamsize>(chunk_bytes.size()));
     tamper.close();
 
     // Reassembly must detect chunk corruption and fail
