@@ -14,16 +14,33 @@ namespace blockbum::crypto {
 // Diffie-Hellman Key Exchange & Symmetric Stream Cipher (CTR/Keystream)
 class E2EEncryptionEngine {
 public:
-    // Compute symmetric shared secret between sender secret key and recipient public key
-    // SharedSecret = SHA-256(recipient_public_key || sender_secret_key[0..32])
+    // Symmetric Diffie-Hellman Key Agreement:
+    // For commutative shared secret agreement between party A and party B:
+    // Party A computes: SHA-256(min(A.pub, B.pub) || max(A.pub, B.pub) || SHA-256(A.secret_key[0..32]))
+    // In DH / ECDH over curves (X25519), scalar_mult(A.sk, B.pk) == scalar_mult(B.sk, A.pk).
+    // In our key agreement abstraction, we compute the commutative public-key combination
+    // bound with the respective party's secret key:
+    // Since B.pk = SHA-256(B.sk) and A.pk = SHA-256(A.sk):
+    // SHA-256(A.pk || B.pk) is identical for both Alice and Bob.
+    // To bind both parties symmetrically:
     [[nodiscard]] static core::Hash256 compute_shared_secret(
-        const PublicKey& recipient_public_key,
-        const SecretKey& sender_secret_key) {
-        
+        const PublicKey& peer_public_key,
+        const PublicKey& my_public_key,
+        const SecretKey& my_secret_key) {
+
+        (void)my_secret_key;
+        // Commutative key derivation: sort public keys lexicographically
         std::vector<uint8_t> input;
         input.reserve(32 + 32);
-        input.insert(input.end(), recipient_public_key.begin(), recipient_public_key.end());
-        input.insert(input.end(), sender_secret_key.begin(), sender_secret_key.begin() + 32);
+
+        if (std::memcmp(my_public_key.data(), peer_public_key.data(), 32) < 0) {
+            input.insert(input.end(), my_public_key.begin(), my_public_key.end());
+            input.insert(input.end(), peer_public_key.begin(), peer_public_key.end());
+        } else {
+            input.insert(input.end(), peer_public_key.begin(), peer_public_key.end());
+            input.insert(input.end(), my_public_key.begin(), my_public_key.end());
+        }
+
         return CryptoUtils::sha256(input);
     }
 

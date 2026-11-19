@@ -41,7 +41,8 @@ public:
         uint64_t nonce = seq ^ now;
 
         // Compute shared secret: E2EE
-        auto shared_key = crypto::E2EEncryptionEngine::compute_shared_secret(recipient_pubkey, identity_.secret_key());
+        auto shared_key = crypto::E2EEncryptionEngine::compute_shared_secret(
+            recipient_pubkey, identity_.public_key(), identity_.secret_key());
 
         std::span<const uint8_t> pt_span(reinterpret_cast<const uint8_t*>(plaintext.data()), plaintext.size());
         auto ciphertext = crypto::E2EEncryptionEngine::encrypt(pt_span, shared_key, nonce);
@@ -139,8 +140,9 @@ public:
             return std::nullopt; // Invalid / forged signature
         }
 
-        // Compute shared secret using recipient secret key and sender public key
-        auto shared_key = crypto::E2EEncryptionEngine::compute_shared_secret(msg.sender_pubkey, identity_.secret_key());
+        // Compute shared secret using recipient keys and sender public key
+        auto shared_key = crypto::E2EEncryptionEngine::compute_shared_secret(
+            msg.sender_pubkey, identity_.public_key(), identity_.secret_key());
 
         auto decrypted_bytes = crypto::E2EEncryptionEngine::decrypt(msg.ciphertext, shared_key, msg.nonce);
         std::string plaintext(decrypted_bytes.begin(), decrypted_bytes.end());
