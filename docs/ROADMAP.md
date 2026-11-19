@@ -100,12 +100,20 @@ flowchart TB
   * Community management service (`CommunityService`) with public/private discovery and invitation access control.
   * Verifiable on-chain governance anchoring (`GovernanceRecord`) for community creation, membership, and roles.
   * Discussion channels, collaborative coding challenges, and community calendar events.
-  * Educational file sharing anchored with Content-Addressed Storage CIDs.
   * Responsive client UI engineered in React + TypeScript (`client/desktop/src/App.tsx`).
-  * Comprehensive integration test suite (`test_community.cpp`).
-  * Architecture specifications documented in [docs/COMMUNITY_PLATFORM.md](COMMUNITY_PLATFORM.md).
 
-### Phase 7: Native Token Economics & Smart Contracts [NEXT UP]
+### Phase 7: Native Cryptocurrency BUM & Token Economics [COMPLETED]
+* **Status**: Completed (34 unit and integration tests passing across Windows and Linux CI).
+* **Deliverables**:
+  * Account-based ledger state machine (`AccountLedger`) with atomic balance transfers and sequential nonce execution.
+  * Strict double-spending and replay protection via monotonic nonce validation.
+  * Tokenomics rules: 100 Million BUM maximum supply cap, 6 decimal precision, and 210,000-block halving schedule.
+  * Network incentive engine: Block rewards (`INITIAL_BLOCK_REWARD = 50 BUM`) and transaction fee distribution.
+  * Solvency and signature verification enforcing balance $\ge$ amount + fee.
+  * Comprehensive test suite (`test_token_ledger.cpp`).
+  * Economic assumptions, threat models, and legal guardrails documented in [docs/TOKEN_ECONOMICS.md](TOKEN_ECONOMICS.md).
+
+### Phase 8: MainNet Hardening, Security Audits & Public Deployment [FUTURE]
 * **Goal**: Transition from in-memory objects to a persistent, atomic blockchain database.
 * **Key Components**:
   * Abstract Storage Interface (`IStorageEngine`).

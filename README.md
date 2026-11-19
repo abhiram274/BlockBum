@@ -82,5 +82,6 @@ docker compose -f docker/docker-compose.yml up --build
 * [Phase 4 Decentralized Messaging](docs/MESSAGING_ARCHITECTURE.md)
 * [Phase 5 Content Sharing & Storage](docs/CONTENT_SHARING.md)
 * [Phase 6 Community Platform](docs/COMMUNITY_PLATFORM.md)
+* [Phase 7 Native Cryptocurrency & Economics](docs/TOKEN_ECONOMICS.md)
 * [Phase Roadmap](docs/ROADMAP.md)
 * [Contributing Guidelines](docs/CONTRIBUTING.md)
