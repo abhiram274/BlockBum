@@ -124,7 +124,18 @@ flowchart TB
   * Local data isolation guarantees protecting private keys from network exposure.
   * Installation and packaging documentation in [docs/DESKTOP_APPLICATION.md](DESKTOP_APPLICATION.md).
 
-### Project Status: All 8 Engineering Phases Complete!
+### Phase 9: Security, Threat Model & Reliability Assessment [COMPLETED]
+* **Status**: Completed (End-to-end security audit, automated fuzz testing, ASan/UBSan CI integration, and threat documentation).
+* **Deliverables**:
+  * Blockchain consensus, transaction validation, and double-spending regression testing.
+  * Comprehensive fuzz testing for transaction parsing, block deserialization, and P2P wire framing.
+  * Cryptographic key isolation and ciphertext tamper-resistance verification.
+  * Content-Addressed Storage (CAS) file chunk integrity, ACL authorization, and offline availability testing.
+  * Clang 18 AddressSanitizer and UndefinedBehaviorSanitizer added to the CI matrix.
+  * Throughput and latency benchmarks for transaction processing, Merkle tree construction, and file transfer.
+  * Detailed security and risk report in [docs/SECURITY_REPORT.md](SECURITY_REPORT.md).
+
+### Project Status: All 9 Engineering & Security Phases Complete!
 * **Goal**: Transition from in-memory objects to a persistent, atomic blockchain database.
 * **Key Components**:
   * Abstract Storage Interface (`IStorageEngine`).

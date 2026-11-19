@@ -18,14 +18,22 @@ jobs:
             compiler: gcc-14
             c_compiler: gcc-14
             cxx_compiler: g++-14
+            sanitizers: ""
           - os: ubuntu-24.04
             compiler: clang-18
             c_compiler: clang-18
             cxx_compiler: clang++-18
+            sanitizers: ""
+          - os: ubuntu-24.04
+            compiler: clang-18-asan-ubsan
+            c_compiler: clang-18
+            cxx_compiler: clang++-18
+            sanitizers: "-fsanitize=address,undefined -fno-omit-frame-pointer"
           - os: windows-latest
             compiler: msvc
             c_compiler: cl
             cxx_compiler: cl
+            sanitizers: ""
 
     steps:
       - name: Checkout code
@@ -47,6 +55,8 @@ jobs:
           -DBLOCKBUM_BUILD_TESTS=ON
           -DBLOCKBUM_BUILD_NODE=ON
           -DBLOCKBUM_WARNINGS_AS_ERRORS=OFF
+          -DCMAKE_CXX_FLAGS="${{ matrix.sanitizers }}"
+          -DCMAKE_C_FLAGS="${{ matrix.sanitizers }}"
         env:
           CC: ${{ matrix.c_compiler }}
           CXX: ${{ matrix.cxx_compiler }}
