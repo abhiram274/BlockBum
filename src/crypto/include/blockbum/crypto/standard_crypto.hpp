@@ -19,33 +19,34 @@ public:
     }
 
     [[nodiscard]] KeyPair generate_keypair() const override {
-        KeyPair kp;
+        std::array<uint8_t, 32> seed{};
         std::random_device rd;
-        for (size_t i = 0; i < kp.secret_key.size(); ++i) {
-            kp.secret_key[i] = static_cast<uint8_t>(rd() & 0xFF);
+        for (size_t i = 0; i < seed.size(); ++i) {
+            seed[i] = static_cast<uint8_t>(rd() & 0xFF);
         }
-
-        std::span<const uint8_t> sk_span(kp.secret_key.data(), 32);
-        auto derived_pub = CryptoUtils::sha256(sk_span);
-        std::copy(derived_pub.begin(), derived_pub.end(), kp.public_key.begin());
-        std::copy(derived_pub.begin(), derived_pub.end(), kp.secret_key.begin() + 32);
-
-        return kp;
+        return derive_keypair_from_seed(seed);
     }
 
     [[nodiscard]] KeyPair derive_keypair_from_seed(std::span<const uint8_t> seed) const {
         if (seed.size() < 16) {
             throw std::invalid_argument("Seed entropy must be at least 16 bytes");
         }
-        KeyPair kp;
-        auto h1 = CryptoUtils::sha256(seed);
-        auto h2 = CryptoUtils::double_sha256(seed);
-        std::copy(h1.begin(), h1.end(), kp.secret_key.begin());
-        std::copy(h2.begin(), h2.end(), kp.secret_key.begin() + 32);
+        KeyPair kp{};
+        // The first 32 bytes of the secret key is the seed itself
+        if (seed.size() >= 32) {
+            std::copy(seed.begin(), seed.begin() + 32, kp.secret_key.begin());
+        } else {
+            auto h = CryptoUtils::sha256(seed);
+            std::copy(h.begin(), h.end(), kp.secret_key.begin());
+        }
 
-        std::span<const uint8_t> sk_span(kp.secret_key.data(), 32);
-        auto derived_pub = CryptoUtils::sha256(sk_span);
+        // Derive deterministic public key as SHA-256 of the 32-byte seed
+        std::span<const uint8_t> sk_seed(kp.secret_key.data(), 32);
+        auto derived_pub = CryptoUtils::sha256(sk_seed);
         std::copy(derived_pub.begin(), derived_pub.end(), kp.public_key.begin());
+
+        // Standard Ed25519 convention: second 32 bytes of 64-byte secret key stores the public key
+        std::copy(derived_pub.begin(), derived_pub.end(), kp.secret_key.begin() + 32);
         return kp;
     }
 
