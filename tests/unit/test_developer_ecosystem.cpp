@@ -289,4 +289,11 @@ TEST_F(DeveloperEcosystemTest, ProtocolTestVectorsInvariants) {
     EXPECT_EQ(economics::MAX_BUM_SUPPLY, 21'000'000ULL * ledger::BUM_DECIMALS);
     EXPECT_EQ(economics::EXACT_RIGHT_SHIFT_EMISSION, 20'999'997'480'000ULL);
     EXPECT_LE(economics::EXACT_RIGHT_SHIFT_EMISSION, economics::MAX_BUM_SUPPLY);
+
+    uint64_t total_subsidy_minted = 0;
+    for (uint64_t era = 0; era < 64; ++era) {
+        uint64_t era_reward = ledger::AccountLedger::calculate_block_reward(era * ledger::HALVING_INTERVAL);
+        total_subsidy_minted += era_reward * ledger::HALVING_INTERVAL;
+    }
+    EXPECT_EQ(total_subsidy_minted, economics::EXACT_RIGHT_SHIFT_EMISSION);
 }

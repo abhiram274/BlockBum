@@ -27,6 +27,9 @@ inline constexpr uint64_t BUM_DECIMALS = 1'000'000;
 /// Mathematically verified across 64 halving eras (26 active eras before binary shift reaches 0)
 inline constexpr uint64_t MAX_BUM_SUPPLY = 21'000'000ULL * BUM_DECIMALS;
 
+/// Exact right-shift integer emission sum across all 64 halving eras: 20,999,997.48 BUM (20,999,997,480,000 atomic units)
+inline constexpr uint64_t EXACT_RIGHT_SHIFT_EMISSION = 20'999'997'480'000ULL;
+
 /// Initial block subsidy at Genesis: 50.0 BUM (50,000,000 atomic units)
 inline constexpr uint64_t INITIAL_BLOCK_REWARD = 50ULL * BUM_DECIMALS;
 
