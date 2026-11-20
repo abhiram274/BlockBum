@@ -30,6 +30,7 @@ add_executable(blockbum_tests
     unit/test_messaging_storage_infrastructure.cpp
     unit/test_economic_infrastructure.cpp
     unit/test_governance.cpp
+    unit/test_developer_ecosystem.cpp
 )
 
 target_link_libraries(blockbum_tests PRIVATE

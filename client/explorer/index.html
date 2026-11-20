@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BlockBum Explorer | Public Decentralized Ledger</title>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      padding: 24px;
+      line-height: 1.5;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .logo { font-size: 24px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+    .badge { background: #0369a1; color: #e0f2fe; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .stat-label { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-value { font-size: 20px; font-weight: 700; color: var(--text-main); font-family: monospace; }
+    
+    .search-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .search-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-size: 16px;
+      outline: none;
+    }
+    .btn {
+      background: var(--primary);
+      color: #0f172a;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: var(--primary-hover); }
+    .btn-secondary { background: var(--border); color: var(--text-main); }
+
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    .tab-btn.active { background: var(--card-bg); color: var(--primary); }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { padding: 12px; border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 13px; text-transform: uppercase; }
+    td { padding: 14px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; font-family: monospace; }
+    tr:hover { background: rgba(255,255,255,0.02); }
+    .hash { color: var(--primary); text-decoration: none; cursor: pointer; }
+    .hash:hover { text-decoration: underline; }
+
+    .privacy-notice {
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #bae6fd;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="logo">
+      <span>🌐</span> BlockBum Explorer
+      <span class="badge">Testnet DevNet</span>
+    </div>
+    <div style="font-size: 13px; color: var(--text-muted);">
+      Node: <strong style="color: var(--success);" id="nodeStatus">Connected (Synced)</strong>
+    </div>
+  </header>
+
+  <div class="privacy-notice">
+    <span>🛡️</span>
+    <span><strong>Privacy Invariant</strong>: Private messaging payloads, encrypted chat keys, and sensitive CIDs are strictly excluded from public explorer records.</span>
+  </div>
+
+  <section class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Block Height</div>
+      <div class="stat-value" id="statHeight">#1,420</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Circulating Supply</div>
+      <div class="stat-value" id="statSupply">2,628,000 BUM</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Block Subsidy</div>
+      <div class="stat-value">50.0 BUM (Era 0)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Active Peers</div>
+      <div class="stat-value" id="statPeers">4 Connected</div>
+    </div>
+  </section>
+
+  <div class="search-box">
+    <input type="text" class="search-input" id="searchInput" placeholder="Search by Block Height, Block Hash (0x...), Tx ID (0x...), or Account Address (bb1...)">
+    <button class="btn" onclick="performSearch()">Search</button>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('blocks')">Latest Blocks</button>
+    <button class="tab-btn" onclick="switchTab('transactions')">Recent Transfers</button>
+    <button class="tab-btn" onclick="switchTab('faucet')">Developer Faucet</button>
+  </div>
+
+  <div id="tabBlocks" class="card">
+    <h3 style="margin-bottom: 16px;">Latest Confirmed Blocks</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Height</th>
+          <th>Block Hash</th>
+          <th>Proposer / Validator</th>
+          <th>Tx Count</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody id="blocksTableBody">
+        <tr>
+          <td><strong style="color: var(--primary);">#1420</strong></td>
+          <td><span class="hash">0x7f9a2b8c4d1e...</span></td>
+          <td>bb1_validator_alice</td>
+          <td>3</td>
+          <td>Just now</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--primary);">#1419</strong></td>
+          <td><span class="hash">0x3e1d9c7a5b2f...</span></td>
+          <td>bb1_validator_bob</td>
+          <td>1</td>
+          <td>30s ago</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--primary);">#1418</strong></td>
+          <td><span class="hash">0x9a8b7c6d5e4f...</span></td>
+          <td>bb1_validator_carol</td>
+          <td>2</td>
+          <td>1m ago</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="tabTransactions" class="card" style="display: none;">
+    <h3 style="margin-bottom: 16px;">Recent Native Value Transfers</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Tx ID</th>
+          <th>Sender</th>
+          <th>Recipient</th>
+          <th>Amount</th>
+          <th>Fee</th>
+          <th>Confidential</th>
+        </tr>
+      </thead>
+      <tbody id="txsTableBody">
+        <tr>
+          <td><span class="hash">0x4a8c...d91e</span></td>
+          <td>bb1_alice_f2b9...</td>
+          <td>bb1_bob_98c1...</td>
+          <td>25.000 BUM</td>
+          <td>0.0018 BUM</td>
+          <td><span class="badge" style="background:#1e3a8a;">SCRUBBED</span></td>
+        </tr>
+        <tr>
+          <td><span class="hash">0x1f2e...7b4a</span></td>
+          <td>bb1_carol_34d1...</td>
+          <td>bb1_community_treasury</td>
+          <td>10.000 BUM</td>
+          <td>0.0018 BUM</td>
+          <td><span class="badge" style="background:#1e3a8a;">SCRUBBED</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="tabFaucet" class="card" style="display: none;">
+    <h3 style="margin-bottom: 8px;">Testnet Developer Faucet</h3>
+    <p style="color: var(--text-muted); margin-bottom: 16px; font-size: 14px;">
+      Request 10 tBUM testnet tokens for development and smart client integration. Limited to 1 request per hour per address/IP.
+    </p>
+    <div style="max-width: 500px;">
+      <div style="margin-bottom: 12px;">
+        <label class="stat-label">Recipient Address</label>
+        <input type="text" id="faucetAddress" class="search-input" style="width: 100%; border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px;" placeholder="bb1...">
+      </div>
+      <button class="btn" onclick="requestFaucetTokens()">Request 10 tBUM</button>
+      <div id="faucetAlert" style="margin-top: 16px; font-size: 14px; display: none;"></div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tabBlocks').style.display = 'none';
+      document.getElementById('tabTransactions').style.display = 'none';
+      document.getElementById('tabFaucet').style.display = 'none';
+
+      if (tab === 'blocks') {
+        document.getElementById('tabBlocks').style.display = 'block';
+        event.target.classList.add('active');
+      } else if (tab === 'transactions') {
+        document.getElementById('tabTransactions').style.display = 'block';
+        event.target.classList.add('active');
+      } else if (tab === 'faucet') {
+        document.getElementById('tabFaucet').style.display = 'block';
+        event.target.classList.add('active');
+      }
+    }
+
+    function performSearch() {
+      const q = document.getElementById('searchInput').value.trim();
+      if (!q) return;
+      alert(`Search requested for: ${q}\nQuerying node RPC index...`);
+    }
+
+    function requestFaucetTokens() {
+      const addr = document.getElementById('faucetAddress').value.trim();
+      const alertBox = document.getElementById('faucetAlert');
+      if (!addr || !addr.startsWith('bb1')) {
+        alertBox.style.display = 'block';
+        alertBox.style.color = 'var(--danger)';
+        alertBox.innerText = 'Error: Invalid BlockBum address. Must begin with bb1...';
+        return;
+      }
+      alertBox.style.display = 'block';
+      alertBox.style.color = 'var(--success)';
+      alertBox.innerText = `[SUCCESS] 10 tBUM dispensed to ${addr.substring(0, 16)}... (Tx: 0x${Math.random().toString(16).substring(2)})`;
+    }
+  </script>
+</body>
+</html>

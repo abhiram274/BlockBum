@@ -1,0 +1,25 @@
+{
+  "name": "@blockbum/sdk",
+  "version": "1.0.0",
+  "description": "Official TypeScript & JavaScript SDK for the BlockBum Decentralized Blockchain & P2P Network",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test dist/test.js"
+  },
+  "keywords": [
+    "blockbum",
+    "blockchain",
+    "cryptocurrency",
+    "p2p",
+    "sdk",
+    "e2ee",
+    "web3"
+  ],
+  "author": "BlockBum Core Contributors <dev@blockbum.net>",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
