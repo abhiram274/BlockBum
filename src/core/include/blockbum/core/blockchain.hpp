@@ -11,6 +11,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 #include <algorithm>
@@ -52,10 +53,36 @@ struct ReorgResult {
 
 inline constexpr size_t MAX_REORG_DEPTH = 100;
 
+namespace detail {
+class InMemoryStorageEngine : public storage::IStorageEngine {
+public:
+    bool open(const std::string&) override { return true; }
+    void close() override { data_.clear(); }
+    [[nodiscard]] std::optional<std::vector<uint8_t>> get(std::span<const uint8_t> key) const override {
+        std::vector<uint8_t> k(key.begin(), key.end());
+        auto it = data_.find(k);
+        if (it != data_.end()) return it->second;
+        return std::nullopt;
+    }
+    bool put(std::span<const uint8_t> key, std::span<const uint8_t> value) override {
+        data_[std::vector<uint8_t>(key.begin(), key.end())] = std::vector<uint8_t>(value.begin(), value.end());
+        return true;
+    }
+    bool remove(std::span<const uint8_t> key) override {
+        return data_.erase(std::vector<uint8_t>(key.begin(), key.end())) > 0;
+    }
+    [[nodiscard]] bool has(std::span<const uint8_t> key) const override {
+        return data_.find(std::vector<uint8_t>(key.begin(), key.end())) != data_.end();
+    }
+private:
+    std::map<std::vector<uint8_t>, std::vector<uint8_t>> data_;
+};
+} // namespace detail
+
 class Blockchain {
 public:
-    explicit Blockchain(std::shared_ptr<storage::IStorageEngine> storage)
-        : storage_(std::move(storage)) {}
+    explicit Blockchain(std::shared_ptr<storage::IStorageEngine> storage = nullptr)
+        : storage_(storage ? std::move(storage) : std::make_shared<detail::InMemoryStorageEngine>()) {}
 
     static Block create_genesis_block() {
         Block genesis;
@@ -233,6 +260,10 @@ public:
         return execute_reorganization(block, new_total_work);
     }
 
+    ReorgResult add_block_with_fork_choice(Block block, const consensus::IConsensusEngine& consensus) {
+        return add_block_with_fork_choice(std::move(block), &consensus);
+    }
+
     // Default backward-compatible add_block
     bool add_block(Block block) {
         auto res = add_block_with_fork_choice(std::move(block), nullptr);
@@ -290,6 +321,18 @@ public:
 
     [[nodiscard]] BlockHeight height() const noexcept {
         return height_;
+    }
+
+    [[nodiscard]] BlockHeight get_height() const noexcept {
+        return height_;
+    }
+
+    [[nodiscard]] Hash256 tip_hash() const noexcept {
+        return tip_hash_;
+    }
+
+    [[nodiscard]] Hash256 get_tip_hash() const noexcept {
+        return tip_hash_;
     }
 
     [[nodiscard]] uint64_t active_chain_work() const noexcept {

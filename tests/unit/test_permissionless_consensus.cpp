@@ -4,7 +4,6 @@
 #include "blockbum/crypto/crypto_utils.hpp"
 #include <vector>
 #include <memory>
-#include <chrono>
 
 using namespace blockbum::core;
 using namespace blockbum::consensus;
@@ -12,9 +11,7 @@ using namespace blockbum::crypto;
 
 class PermissionlessConsensusTest : public ::testing::Test {
 protected:
-    void SetUp() override {
-        // Set up test environment
-    }
+    void SetUp() override {}
 };
 
 // =========================================================================
@@ -111,29 +108,23 @@ TEST_F(PermissionlessConsensusTest, DynamicDifficultyRetargeting) {
 // =========================================================================
 TEST_F(PermissionlessConsensusTest, DeterministicForkChoiceAndReorg) {
     Blockchain chain;
-    PoWConsensusEngine pow_engine(4); // 4 zero bits
-
-    // 1. Mine Genesis Block
-    Block genesis;
-    genesis.header.version = 1;
-    genesis.header.height = 0;
-    genesis.header.previous_hash = Hash256{};
-    genesis.header.merkle_root = CryptoUtils::sha256({'g', 'e', 'n'});
-    genesis.header.timestamp = 1000;
-    pow_engine.mine_block(genesis, 4);
-
-    auto res_gen = chain.add_block_with_fork_choice(genesis, pow_engine);
-    EXPECT_TRUE(res_gen.accepted);
+    ASSERT_TRUE(chain.initialize());
     EXPECT_EQ(chain.get_height(), 0U);
 
-    // 2. Chain Branch A (Length 2: 1A -> 2A)
+    auto genesis_opt = chain.get_tip_block();
+    ASSERT_TRUE(genesis_opt.has_value());
+    const auto& genesis = *genesis_opt;
+
+    PoWConsensusEngine pow_engine(4); // 4 zero bits
+
+    // 1. Chain Branch A (Length 2: 1A -> 2A)
     Block block1A;
     block1A.header.version = 1;
     block1A.header.height = 1;
     block1A.header.previous_hash = genesis.block_hash;
     block1A.header.merkle_root = CryptoUtils::sha256({'1', 'A'});
-    block1A.header.timestamp = 1010;
-    pow_engine.mine_block(block1A, 4);
+    block1A.header.timestamp = genesis.header.timestamp + 10;
+    ASSERT_TRUE(pow_engine.mine_block(block1A, 4));
     EXPECT_TRUE(chain.add_block_with_fork_choice(block1A, pow_engine).accepted);
 
     Block block2A;
@@ -141,20 +132,20 @@ TEST_F(PermissionlessConsensusTest, DeterministicForkChoiceAndReorg) {
     block2A.header.height = 2;
     block2A.header.previous_hash = block1A.block_hash;
     block2A.header.merkle_root = CryptoUtils::sha256({'2', 'A'});
-    block2A.header.timestamp = 1020;
-    pow_engine.mine_block(block2A, 4);
+    block2A.header.timestamp = block1A.header.timestamp + 10;
+    ASSERT_TRUE(pow_engine.mine_block(block2A, 4));
     EXPECT_TRUE(chain.add_block_with_fork_choice(block2A, pow_engine).accepted);
     EXPECT_EQ(chain.get_height(), 2U);
     EXPECT_EQ(chain.get_tip_hash(), block2A.block_hash);
 
-    // 3. Competing Branch B (Length 3: 1B -> 2B -> 3B) branching from Genesis
+    // 2. Competing Branch B (Length 3: 1B -> 2B -> 3B) branching from Genesis
     Block block1B;
     block1B.header.version = 1;
     block1B.header.height = 1;
     block1B.header.previous_hash = genesis.block_hash;
     block1B.header.merkle_root = CryptoUtils::sha256({'1', 'B'});
-    block1B.header.timestamp = 1012;
-    pow_engine.mine_block(block1B, 4);
+    block1B.header.timestamp = genesis.header.timestamp + 12;
+    ASSERT_TRUE(pow_engine.mine_block(block1B, 4));
     // 1B is accepted as side branch (work 1B < work 2A)
     auto res_1b = chain.add_block_with_fork_choice(block1B, pow_engine);
     EXPECT_TRUE(res_1b.accepted);
@@ -166,8 +157,8 @@ TEST_F(PermissionlessConsensusTest, DeterministicForkChoiceAndReorg) {
     block2B.header.height = 2;
     block2B.header.previous_hash = block1B.block_hash;
     block2B.header.merkle_root = CryptoUtils::sha256({'2', 'B'});
-    block2B.header.timestamp = 1022;
-    pow_engine.mine_block(block2B, 4);
+    block2B.header.timestamp = block1B.header.timestamp + 10;
+    ASSERT_TRUE(pow_engine.mine_block(block2B, 4));
     // 2B has equal work to 2A, branch A arrived first so remains tip
     auto res_2b = chain.add_block_with_fork_choice(block2B, pow_engine);
     EXPECT_TRUE(res_2b.accepted);
@@ -177,8 +168,8 @@ TEST_F(PermissionlessConsensusTest, DeterministicForkChoiceAndReorg) {
     block3B.header.height = 3;
     block3B.header.previous_hash = block2B.block_hash;
     block3B.header.merkle_root = CryptoUtils::sha256({'3', 'B'});
-    block3B.header.timestamp = 1032;
-    pow_engine.mine_block(block3B, 4);
+    block3B.header.timestamp = block2B.header.timestamp + 10;
+    ASSERT_TRUE(pow_engine.mine_block(block3B, 4));
 
     // 3B brings Branch B to higher accumulated work!
     // Automatic deterministic reorganization should switch active tip to 3B!
@@ -207,31 +198,27 @@ TEST_F(PermissionlessConsensusTest, NetworkPartitionSplitBrainAndHealing) {
     // Two isolated node clusters: Node East and Node West
     Blockchain node_east;
     Blockchain node_west;
-    PoWConsensusEngine pow(4);
+    ASSERT_TRUE(node_east.initialize());
+    ASSERT_TRUE(node_west.initialize());
 
-    // Common Genesis
-    Block genesis;
-    genesis.header.height = 0;
-    genesis.header.timestamp = 1000;
-    pow.mine_block(genesis, 4);
-    node_east.add_block_with_fork_choice(genesis, pow);
-    node_west.add_block_with_fork_choice(genesis, pow);
+    auto genesis = *node_east.get_tip_block();
+    PoWConsensusEngine pow(4);
 
     // PARTITION: East cluster (minority hash power) mines 2 blocks
     Block east1;
     east1.header.height = 1;
     east1.header.previous_hash = genesis.block_hash;
     east1.header.merkle_root = CryptoUtils::sha256({'e', '1'});
-    east1.header.timestamp = 1010;
-    pow.mine_block(east1, 4);
+    east1.header.timestamp = genesis.header.timestamp + 10;
+    ASSERT_TRUE(pow.mine_block(east1, 4));
     node_east.add_block_with_fork_choice(east1, pow);
 
     Block east2;
     east2.header.height = 2;
     east2.header.previous_hash = east1.block_hash;
     east2.header.merkle_root = CryptoUtils::sha256({'e', '2'});
-    east2.header.timestamp = 1020;
-    pow.mine_block(east2, 4);
+    east2.header.timestamp = east1.header.timestamp + 10;
+    ASSERT_TRUE(pow.mine_block(east2, 4));
     node_east.add_block_with_fork_choice(east2, pow);
 
     // West cluster (majority hash power) mines 4 blocks
@@ -239,32 +226,32 @@ TEST_F(PermissionlessConsensusTest, NetworkPartitionSplitBrainAndHealing) {
     west1.header.height = 1;
     west1.header.previous_hash = genesis.block_hash;
     west1.header.merkle_root = CryptoUtils::sha256({'w', '1'});
-    west1.header.timestamp = 1008;
-    pow.mine_block(west1, 4);
+    west1.header.timestamp = genesis.header.timestamp + 8;
+    ASSERT_TRUE(pow.mine_block(west1, 4));
     node_west.add_block_with_fork_choice(west1, pow);
 
     Block west2;
     west2.header.height = 2;
     west2.header.previous_hash = west1.block_hash;
     west2.header.merkle_root = CryptoUtils::sha256({'w', '2'});
-    west2.header.timestamp = 1016;
-    pow.mine_block(west2, 4);
+    west2.header.timestamp = west1.header.timestamp + 8;
+    ASSERT_TRUE(pow.mine_block(west2, 4));
     node_west.add_block_with_fork_choice(west2, pow);
 
     Block west3;
     west3.header.height = 3;
     west3.header.previous_hash = west2.block_hash;
     west3.header.merkle_root = CryptoUtils::sha256({'w', '3'});
-    west3.header.timestamp = 1024;
-    pow.mine_block(west3, 4);
+    west3.header.timestamp = west2.header.timestamp + 8;
+    ASSERT_TRUE(pow.mine_block(west3, 4));
     node_west.add_block_with_fork_choice(west3, pow);
 
     Block west4;
     west4.header.height = 4;
     west4.header.previous_hash = west3.block_hash;
     west4.header.merkle_root = CryptoUtils::sha256({'w', '4'});
-    west4.header.timestamp = 1032;
-    pow.mine_block(west4, 4);
+    west4.header.timestamp = west3.header.timestamp + 8;
+    ASSERT_TRUE(pow.mine_block(west4, 4));
     node_west.add_block_with_fork_choice(west4, pow);
 
     EXPECT_EQ(node_east.get_height(), 2U);
@@ -288,37 +275,33 @@ TEST_F(PermissionlessConsensusTest, NetworkPartitionSplitBrainAndHealing) {
 // =========================================================================
 TEST_F(PermissionlessConsensusTest, MaliciousSybilBranchRejection) {
     Blockchain chain;
+    ASSERT_TRUE(chain.initialize());
+    auto genesis = *chain.get_tip_block();
     PoWConsensusEngine pow(4);
-
-    Block genesis;
-    genesis.header.height = 0;
-    genesis.header.timestamp = 1000;
-    pow.mine_block(genesis, 4);
-    chain.add_block_with_fork_choice(genesis, pow);
 
     // Honest chain produces 3 valid blocks
     Block h1, h2, h3;
-    h1.header.height = 1; h1.header.previous_hash = genesis.block_hash; h1.header.timestamp = 1010;
-    pow.mine_block(h1, 4);
+    h1.header.height = 1; h1.header.previous_hash = genesis.block_hash; h1.header.timestamp = genesis.header.timestamp + 10;
+    ASSERT_TRUE(pow.mine_block(h1, 4));
     chain.add_block_with_fork_choice(h1, pow);
 
-    h2.header.height = 2; h2.header.previous_hash = h1.block_hash; h2.header.timestamp = 1020;
-    pow.mine_block(h2, 4);
+    h2.header.height = 2; h2.header.previous_hash = h1.block_hash; h2.header.timestamp = h1.header.timestamp + 10;
+    ASSERT_TRUE(pow.mine_block(h2, 4));
     chain.add_block_with_fork_choice(h2, pow);
 
-    h3.header.height = 3; h3.header.previous_hash = h2.block_hash; h3.header.timestamp = 1030;
-    pow.mine_block(h3, 4);
+    h3.header.height = 3; h3.header.previous_hash = h2.block_hash; h3.header.timestamp = h2.header.timestamp + 10;
+    ASSERT_TRUE(pow.mine_block(h3, 4));
     chain.add_block_with_fork_choice(h3, pow);
 
     EXPECT_EQ(chain.get_height(), 3U);
     EXPECT_EQ(chain.get_tip_hash(), h3.block_hash);
 
-    // Malicious attacker attempts Sybil attack: generates 100 fake identities with low/zero work
+    // Malicious attacker attempts Sybil attack: generates fake block with low/zero work
     Block sybil_block;
     sybil_block.header.height = 1;
     sybil_block.header.previous_hash = genesis.block_hash;
-    sybil_block.header.timestamp = 1010;
-    sybil_block.header.nonce = 1; // Not mined, zero bits = 0
+    sybil_block.header.timestamp = genesis.header.timestamp + 10;
+    sybil_block.header.nonce = 1; // Not mined
     sybil_block.block_hash = CryptoUtils::sha256(sybil_block.header.serialize());
 
     // Fails PoW verification

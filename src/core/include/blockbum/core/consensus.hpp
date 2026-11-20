@@ -114,7 +114,7 @@ public:
                 zeros += 8;
             } else {
                 for (int bit = 7; bit >= 0; --bit) {
-                    if ((byte & (1 << bit)) == 0) {
+                    if ((byte & (static_cast<uint8_t>(1U << bit))) == 0) {
                         zeros++;
                     } else {
                         return zeros;
