@@ -135,12 +135,7 @@ public:
         if (active >= target_connections) return 0;
 
         size_t needed = target_connections - active;
-        std::vector<std::string> connected;
-        // In real transport, get_peers() returns active connected peer IDs
-        auto* tcp_t = dynamic_cast<TcpNetworkTransport*>(transport_.get());
-        if (tcp_t) {
-            connected = tcp_t->get_peers();
-        }
+        std::vector<std::string> connected = transport_->get_peers();
 
         auto candidates = peer_book_->select_candidates(needed, connected);
         size_t connected_count = 0;

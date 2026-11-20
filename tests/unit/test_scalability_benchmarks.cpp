@@ -54,7 +54,11 @@ public:
         handler_ = std::move(handler);
     }
 
-    [[nodiscard]] std::vector<std::string> get_peers() const override {
+    [[nodiscard]] size_t peer_count() const override {
+        return peers_.size();
+    }
+
+    [[nodiscard]] std::vector<PeerId> get_peers() const override {
         return peers_;
     }
 
@@ -73,9 +77,8 @@ Block create_test_block(const Hash256& prev_hash, BlockHeight height, uint32_t n
     block.header.height = height;
     block.header.timestamp = 1700000000 + height * 10;
     block.header.nonce = nonce;
-    block.header.difficulty_target = 0;
     block.header.merkle_root = Hash256{};
-    block.block_hash = block.header.hash();
+    block.block_hash = CryptoUtils::sha256(block.header.serialize());
     return block;
 }
 
@@ -220,7 +223,7 @@ TEST_F(ScalabilityBenchmarksTest, StateConsistencyInvariantsAndTamperDetection) 
 
 // 4. Storage WriteBatch Benchmark (Atomic Batch vs Single Put)
 TEST_F(ScalabilityBenchmarksTest, StorageWriteBatchPerformance) {
-    std::filesystem::path test_dir = std::filesystem::temp_path() / "blockbum_bench_storage";
+    std::filesystem::path test_dir = std::filesystem::temp_directory_path() / "blockbum_bench_storage";
     std::filesystem::remove_all(test_dir);
     std::filesystem::create_directories(test_dir);
 

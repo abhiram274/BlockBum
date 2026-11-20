@@ -40,6 +40,9 @@ public:
     /// Get current active peer count
     [[nodiscard]] virtual size_t peer_count() const = 0;
 
+    /// Get list of active connected peer IDs
+    [[nodiscard]] virtual std::vector<PeerId> get_peers() const { return {}; }
+
     /// Terminate and disconnect a specific peer
     virtual bool disconnect_peer(const PeerId& peer_id) { (void)peer_id; return false; }
 };
