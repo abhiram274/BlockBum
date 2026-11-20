@@ -258,7 +258,7 @@ export const App: React.FC = () => {
         {activeTab === "messages" && (
           <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
             <div style={{ width: "240px", backgroundColor: "#0f172a", borderRight: "1px solid #334155", padding: "16px" }}>
-              <h4 style={{ fontSize: "0.8rem", color: "#94a3b8", textTransform: "uppercase", margin: "0 0 12px 0" }}>Discussions</h4>
+              <h4 style={{ fontSize: "0.8rem", color: "#94a3b8", textTransform: "uppercase", margin: "0 0 12px 0" }}>Discussions ({selectedCommunity})</h4>
               <div style={{ padding: "8px", backgroundColor: "#1e293b", borderRadius: "6px", color: "#38bdf8", marginBottom: "8px", cursor: "pointer" }}># general-chat</div>
               <div style={{ padding: "8px", color: "#94a3b8", cursor: "pointer" }}># core-engineering</div>
             </div>
