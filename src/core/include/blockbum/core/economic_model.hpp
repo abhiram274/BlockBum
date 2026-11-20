@@ -142,6 +142,7 @@ public:
                               const core::Hash256& proof_hash,
                               core::BlockHeight current_height,
                               core::Balance& out_payout_amount) {
+        (void)provider_address;
         std::lock_guard<std::mutex> lock(mutex_);
         auto it = escrows_.find(escrow_id);
         if (it == escrows_.end() || it->second.is_closed) return false;

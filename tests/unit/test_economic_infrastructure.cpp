@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "blockbum/core/economic_model.hpp"
 #include "blockbum/core/account_ledger.hpp"
-#include "blockbum/crypto/crypto_engine.hpp"
+#include "blockbum/crypto/standard_crypto.hpp"
 #include <numeric>
 
 using namespace blockbum;
