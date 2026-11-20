@@ -128,9 +128,9 @@ TEST_F(MessagingStorageInfrastructureTest, GroupSecrecyOnMembershipChanges) {
     auto group = group_mgr.create_group("grp_dev", "Developers", "bb1_alice", initial_key);
     EXPECT_EQ(group.key_epoch, 1);
 
-    // Add Bob -> key rotates to Epoch 2
-    EXPECT_TRUE(group_mgr.add_member("grp_dev", "bb1_alice", "bb1_bob"));
+    // Rotate key to Epoch 2 and add Bob
     EXPECT_TRUE(group_mgr.rotate_key("grp_dev", "bb1_alice"));
+    EXPECT_TRUE(group_mgr.add_member("grp_dev", "bb1_alice", "bb1_bob"));
     EXPECT_EQ(group_mgr.get_key_epoch("grp_dev"), 2);
 
     // Bob can access Epoch 2 key
@@ -141,9 +141,9 @@ TEST_F(MessagingStorageInfrastructureTest, GroupSecrecyOnMembershipChanges) {
     auto bob_ep1 = group_mgr.get_group_key_for_epoch("grp_dev", "bb1_bob", 1);
     EXPECT_FALSE(bob_ep1.has_value());
 
-    // Alice adds Carol -> key rotates to Epoch 3
-    EXPECT_TRUE(group_mgr.add_member("grp_dev", "bb1_alice", "bb1_carol"));
+    // Rotate key to Epoch 3 and add Carol
     EXPECT_TRUE(group_mgr.rotate_key("grp_dev", "bb1_alice"));
+    EXPECT_TRUE(group_mgr.add_member("grp_dev", "bb1_alice", "bb1_carol"));
     EXPECT_EQ(group_mgr.get_key_epoch("grp_dev"), 3);
 
     // Carol CANNOT access Epoch 1 or Epoch 2 keys
