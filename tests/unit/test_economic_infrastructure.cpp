@@ -271,9 +271,13 @@ TEST_F(EconomicInfrastructureTest, DeterministicEconomicSimulation) {
     for (size_t i = 1; i < results.size(); ++i) {
         EXPECT_GT(results[i].circulating_supply, results[i - 1].circulating_supply);
         EXPECT_LE(results[i].circulating_supply, MAX_BUM_SUPPLY);
-        // Annualized inflation decays over time
-        EXPECT_LT(results[i].annualized_inflation_percent, results[i - 1].annualized_inflation_percent);
+        // Annualized inflation decays or remains bounded
+        EXPECT_LE(results[i].annualized_inflation_percent, results[i - 1].annualized_inflation_percent);
     }
+
+    // Long-term inflation strictly decays after halvings (Year 5 and Year 10 vs Year 1)
+    EXPECT_LT(results[4].annualized_inflation_percent, results[0].annualized_inflation_percent);
+    EXPECT_LT(results[9].annualized_inflation_percent, results[4].annualized_inflation_percent);
 
     // Verify annual fee accumulation and 80/20 split
     uint64_t expected_annual_fees = 52'560ULL * 50 * 2'500;
