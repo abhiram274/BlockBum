@@ -345,12 +345,12 @@ private:
         uint8_t temp[4096];
 
         while (running_) {
-            int bytes = recv(sock, reinterpret_cast<char*>(temp), sizeof(temp), 0);
+            auto bytes = recv(sock, reinterpret_cast<char*>(temp), sizeof(temp), 0);
             if (bytes <= 0 || !running_) {
                 break; // Disconnected or shutting down
             }
 
-            rx_buffer.insert(rx_buffer.end(), temp, temp + bytes);
+            rx_buffer.insert(rx_buffer.end(), temp, temp + static_cast<size_t>(bytes));
 
             // Process complete framed messages
             while (rx_buffer.size() >= 13) {

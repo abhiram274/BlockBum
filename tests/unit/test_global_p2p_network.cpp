@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include "blockbum/core/serializer.hpp"
 #include "blockbum/network/peer_book.hpp"
 #include "blockbum/network/tcp_transport.hpp"
 #include "blockbum/network/sync_manager.hpp"
