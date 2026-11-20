@@ -43,8 +43,8 @@ where $\text{INITIAL\_BLOCK\_REWARD} = 50,000,000\text{ atomic units}$.
 - In era $k = 26$ (block $5,460,000$), $50,000,000 \gg 26 = 0\text{ atomic units}$.
 - For all eras $k \ge 64$, the subsidy is explicitly clamped to 0.
 
-Evaluating the discrete sum over all 26 non-zero eras:
-$$\sum_{k=0}^{25} 210,000 \times \left\lfloor \frac{50,000,000}{2^k} \right\rfloor = 20,999,999,976,900\text{ atomic units} = 20,999,999.9769\text{ BUM}$$
+Evaluating the discrete sum over all 26 non-zero eras with 6 decimal places ($10^6$ atomic units):
+$$\sum_{k=0}^{25} 210,000 \times \left\lfloor \frac{50,000,000}{2^k} \right\rfloor = 20,999,997,480,000\text{ atomic units} = 20,999,997.48\text{ BUM} \le 21,000,000\text{ BUM}$$
 
 ### 2.3 Formal Resolution
 1. **Ceiling Resolution**: The protocol establishes **21,000,000 BUM** as the absolute immutable maximum supply cap (`MAX_BUM_SUPPLY = 21'000'000 * 10^6`).

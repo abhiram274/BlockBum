@@ -49,8 +49,8 @@ TEST_F(EconomicInfrastructureTest, MathematicalConsistencyOfSupplyCap) {
     EXPECT_LE(total_subsidy_minted, MAX_BUM_SUPPLY);
     EXPECT_EQ(MAX_BUM_SUPPLY, 21'000'000ULL * BUM_DECIMALS);
 
-    // Exact discrete sum with integer right-shift truncation: 20,999,999.976900 BUM
-    EXPECT_EQ(total_subsidy_minted, 20'999'999'976'900ULL);
+    // Exact discrete sum with integer right-shift truncation at 6 decimal places: 20,999,997.48 BUM
+    EXPECT_EQ(total_subsidy_minted, 20'999'997'480'000ULL);
 
     // Legacy 100M placeholder is strictly rejected
     EXPECT_NE(MAX_BUM_SUPPLY, 100'000'000ULL * BUM_DECIMALS);
