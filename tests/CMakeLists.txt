@@ -23,6 +23,7 @@ add_executable(blockbum_tests
     unit/test_community.cpp
     unit/test_token_ledger.cpp
     unit/test_security_reliability.cpp
+    unit/test_permissionless_consensus.cpp
 )
 
 target_link_libraries(blockbum_tests PRIVATE

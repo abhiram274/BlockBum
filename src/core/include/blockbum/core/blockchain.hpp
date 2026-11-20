@@ -4,6 +4,7 @@
 #include "blockbum/core/block.hpp"
 #include "blockbum/core/transaction.hpp"
 #include "blockbum/core/merkle_tree.hpp"
+#include "blockbum/core/consensus.hpp"
 #include "blockbum/storage/istorage.hpp"
 #include "blockbum/crypto/crypto_utils.hpp"
 #include <memory>
@@ -12,6 +13,8 @@
 #include <vector>
 #include <sstream>
 #include <stdexcept>
+#include <algorithm>
+#include <cstdint>
 
 namespace blockbum::core {
 
@@ -37,6 +40,17 @@ inline const char* validation_result_to_string(ValidationResult res) {
     }
     return "Unknown";
 }
+
+struct ReorgResult {
+    bool accepted{false};
+    bool reorganized{false};
+    BlockHeight old_height{0};
+    BlockHeight new_height{0};
+    size_t blocks_reverted{0};
+    size_t blocks_applied{0};
+};
+
+inline constexpr size_t MAX_REORG_DEPTH = 100;
 
 class Blockchain {
 public:
@@ -88,6 +102,7 @@ public:
 
         height_ = tip_block_opt->header.height;
         tip_hash_ = tip_block_opt->block_hash;
+        active_chain_work_ = get_chain_work(tip_hash_);
         return true;
     }
 
@@ -136,13 +151,92 @@ public:
         return ValidationResult::Valid;
     }
 
-    bool add_block(Block block) {
-        auto latest = get_tip_block();
-        auto res = validate_block(block, latest);
-        if (res != ValidationResult::Valid) {
-            return false;
+    // Add block with pluggable consensus and deterministic fork-choice resolution
+    ReorgResult add_block_with_fork_choice(Block block, const consensus::IConsensusEngine* consensus = nullptr) {
+        ReorgResult result;
+
+        // Genesis block handling
+        if (block.header.height == 0) {
+            auto genesis = create_genesis_block();
+            if (block.block_hash != genesis.block_hash) {
+                return result;
+            }
+            if (store_block(block, 1)) {
+                result.accepted = true;
+                result.new_height = 0;
+            }
+            return result;
         }
-        return store_block(block);
+
+        // 1. Fetch parent block from storage
+        auto parent_opt = get_block_by_hash(block.header.previous_hash);
+        if (!parent_opt.has_value()) {
+            return result; // Orphan: parent unknown
+        }
+
+        // 2. Structural validation against parent
+        auto val_res = validate_block(block, parent_opt);
+        if (val_res != ValidationResult::Valid) {
+            return result;
+        }
+
+        // 3. Consensus validation (PoW difficulty or PoA authority)
+        if (consensus != nullptr) {
+            if (!consensus->validate_block_consensus(block, parent_opt)) {
+                return result;
+            }
+        }
+
+        // 4. Calculate accumulated work
+        uint64_t block_work = consensus ? consensus->calculate_block_work(block.header) : 1;
+        uint64_t parent_work = get_chain_work(block.header.previous_hash);
+        uint64_t new_total_work = parent_work + block_work;
+
+        // Persist block data and branch work
+        if (!persist_block_data(block, new_total_work)) {
+            return result;
+        }
+
+        // 5. Evaluate fork-choice: Is this extending active tip?
+        if (block.header.previous_hash == tip_hash_) {
+            store_height_mapping(block.header.height, block.block_hash);
+            storage_->put(as_span("tip_hash"), as_span(block.block_hash));
+            storage_->put(as_span("active_work"), to_work_bytes(new_total_work));
+
+            result.old_height = height_;
+            height_ = block.header.height;
+            tip_hash_ = block.block_hash;
+            active_chain_work_ = new_total_work;
+
+            result.accepted = true;
+            result.reorganized = false;
+            result.new_height = height_;
+            result.blocks_applied = 1;
+            return result;
+        }
+
+        // 6. Block is on a competing branch (Fork detected)
+        uint64_t current_active_work = get_active_chain_work();
+        bool heavier = new_total_work > current_active_work;
+        bool tie_breaker = (new_total_work == current_active_work) && (block.block_hash < tip_hash_);
+
+        if (!heavier && !tie_breaker) {
+            // Side-chain stored, active tip preserved
+            result.accepted = true;
+            result.reorganized = false;
+            result.old_height = height_;
+            result.new_height = height_;
+            return result;
+        }
+
+        // 7. Competing branch is heavier: execute deterministic reorganization
+        return execute_reorganization(block, new_total_work);
+    }
+
+    // Default backward-compatible add_block
+    bool add_block(Block block) {
+        auto res = add_block_with_fork_choice(std::move(block), nullptr);
+        return res.accepted;
     }
 
     Block create_next_block(std::vector<Transaction> transactions, uint64_t nonce = 0, TimestampMs timestamp = 0) {
@@ -198,6 +292,10 @@ public:
         return height_;
     }
 
+    [[nodiscard]] uint64_t active_chain_work() const noexcept {
+        return active_chain_work_;
+    }
+
     [[nodiscard]] ValidationResult validate_entire_chain() const {
         auto tip = get_tip_block();
         if (!tip.has_value()) {
@@ -220,9 +318,40 @@ public:
         return ValidationResult::Valid;
     }
 
+    [[nodiscard]] uint64_t get_chain_work(const Hash256& hash) const {
+        std::string key = "work:" + core::to_hex(hash);
+        auto opt = storage_->get(as_span(key));
+        if (opt.has_value() && opt->size() == sizeof(uint64_t)) {
+            uint64_t val = 0;
+            std::memcpy(&val, opt->data(), sizeof(uint64_t));
+            return val;
+        }
+        return 1;
+    }
+
 private:
     static std::span<const uint8_t> as_span(std::string_view s) {
         return std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(s.data()), s.size());
+    }
+
+    static std::span<const uint8_t> as_span(const Hash256& hash) {
+        return std::span<const uint8_t>(hash.data(), hash.size());
+    }
+
+    static std::vector<uint8_t> to_work_bytes(uint64_t work) {
+        std::vector<uint8_t> bytes(sizeof(uint64_t));
+        std::memcpy(bytes.data(), &work, sizeof(uint64_t));
+        return bytes;
+    }
+
+    [[nodiscard]] uint64_t get_active_chain_work() const {
+        auto opt = storage_->get(as_span("active_work"));
+        if (opt.has_value() && opt->size() == sizeof(uint64_t)) {
+            uint64_t val = 0;
+            std::memcpy(&val, opt->data(), sizeof(uint64_t));
+            return val;
+        }
+        return active_chain_work_;
     }
 
     [[nodiscard]] std::optional<Block> get_block_by_hash_raw(std::span<const uint8_t> hash_bytes) const {
@@ -233,31 +362,121 @@ private:
         return Block::deserialize(d);
     }
 
-    bool store_block(const Block& block) {
-        std::string height_key = "height:" + std::to_string(block.header.height);
-        auto hash_span = std::span<const uint8_t>(block.block_hash.data(), block.block_hash.size());
-        if (!storage_->put(as_span(height_key), hash_span)) {
-            return false;
-        }
-
+    bool persist_block_data(const Block& block, uint64_t total_work) {
         std::string block_key = "block:" + core::to_hex(block.block_hash);
         auto block_bytes = block.serialize();
-        if (!storage_->put(as_span(block_key), block_bytes)) {
-            return false;
-        }
+        if (!storage_->put(as_span(block_key), block_bytes)) return false;
 
-        if (!storage_->put(as_span("tip_hash"), hash_span)) {
-            return false;
-        }
+        std::string work_key = "work:" + core::to_hex(block.block_hash);
+        auto work_bytes = to_work_bytes(total_work);
+        if (!storage_->put(as_span(work_key), work_bytes)) return false;
+
+        std::string parent_key = "parent:" + core::to_hex(block.block_hash);
+        if (!storage_->put(as_span(parent_key), as_span(block.header.previous_hash))) return false;
+
+        return true;
+    }
+
+    bool store_height_mapping(BlockHeight height, const Hash256& hash) {
+        std::string height_key = "height:" + std::to_string(height);
+        return storage_->put(as_span(height_key), as_span(hash));
+    }
+
+    bool store_block(const Block& block, uint64_t total_work = 1) {
+        if (!persist_block_data(block, total_work)) return false;
+        if (!store_height_mapping(block.header.height, block.block_hash)) return false;
+        if (!storage_->put(as_span("tip_hash"), as_span(block.block_hash))) return false;
+        storage_->put(as_span("active_work"), to_work_bytes(total_work));
 
         height_ = block.header.height;
         tip_hash_ = block.block_hash;
+        active_chain_work_ = total_work;
         return true;
+    }
+
+    ReorgResult execute_reorganization(const Block& fork_tip, uint64_t fork_work) {
+        ReorgResult res;
+
+        // 1. Trace active chain backward
+        std::vector<Hash256> active_hashes;
+        Hash256 curr_active = tip_hash_;
+        while (true) {
+            active_hashes.push_back(curr_active);
+            auto b = get_block_by_hash(curr_active);
+            if (!b || b->header.height == 0) break;
+            curr_active = b->header.previous_hash;
+        }
+
+        // 2. Trace fork branch backward
+        std::vector<Block> fork_blocks;
+        Block curr_fork = fork_tip;
+        while (true) {
+            fork_blocks.push_back(curr_fork);
+            if (curr_fork.header.height == 0) break;
+            auto p = get_block_by_hash(curr_fork.header.previous_hash);
+            if (!p) break;
+            curr_fork = *p;
+        }
+
+        // 3. Find Common Ancestor
+        std::optional<Hash256> common_ancestor_hash = std::nullopt;
+        for (const auto& fb : fork_blocks) {
+            auto it = std::find(active_hashes.begin(), active_hashes.end(), fb.block_hash);
+            if (it != active_hashes.end()) {
+                common_ancestor_hash = fb.block_hash;
+                break;
+            }
+        }
+
+        if (!common_ancestor_hash.has_value()) {
+            return res; // No common ancestor
+        }
+
+        auto ancestor_block = get_block_by_hash(*common_ancestor_hash);
+        if (!ancestor_block) return res;
+
+        BlockHeight common_height = ancestor_block->header.height;
+        size_t reorg_depth = static_cast<size_t>(height_ - common_height);
+        if (reorg_depth > MAX_REORG_DEPTH) {
+            return res; // Depth limit exceeded
+        }
+
+        // 4. Collect blocks to apply from ancestor+1 to fork_tip
+        std::vector<Block> blocks_to_apply;
+        for (const auto& b : fork_blocks) {
+            if (b.header.height > common_height) {
+                blocks_to_apply.push_back(b);
+            }
+        }
+        std::reverse(blocks_to_apply.begin(), blocks_to_apply.end());
+
+        // 5. Update height mappings to the new heavier branch
+        for (const auto& b : blocks_to_apply) {
+            store_height_mapping(b.header.height, b.block_hash);
+        }
+
+        // 6. Update active tip and chain work
+        storage_->put(as_span("tip_hash"), as_span(fork_tip.block_hash));
+        storage_->put(as_span("active_work"), to_work_bytes(fork_work));
+
+        res.accepted = true;
+        res.reorganized = true;
+        res.old_height = height_;
+        res.new_height = fork_tip.header.height;
+        res.blocks_reverted = reorg_depth;
+        res.blocks_applied = blocks_to_apply.size();
+
+        height_ = fork_tip.header.height;
+        tip_hash_ = fork_tip.block_hash;
+        active_chain_work_ = fork_work;
+
+        return res;
     }
 
     std::shared_ptr<storage::IStorageEngine> storage_;
     BlockHeight height_{0};
     Hash256 tip_hash_{};
+    uint64_t active_chain_work_{1};
 };
 
 } // namespace blockbum::core
