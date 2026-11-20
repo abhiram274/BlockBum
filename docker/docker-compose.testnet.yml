@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # Bootstrap Node 1 (Frankfurt seed)
+  seed-1:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: blockbum_seed_1
+    restart: unless-stopped
+    command: ["run-node", "--port", "9001"]
+    ports:
+      - "9001:9001"
+      - "8541:8545"
+    volumes:
+      - seed1_data:/home/blockbum/.blockbum
+
+  # Bootstrap Node 2 (Virginia seed)
+  seed-2:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: blockbum_seed_2
+    restart: unless-stopped
+    command: ["run-node", "--port", "9002", "--peer", "seed-1:9001"]
+    ports:
+      - "9002:9002"
+      - "8542:8545"
+    depends_on:
+      - seed-1
+    volumes:
+      - seed2_data:/home/blockbum/.blockbum
+
+  # Bootstrap Node 3 (Singapore seed)
+  seed-3:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: blockbum_seed_3
+    restart: unless-stopped
+    command: ["run-node", "--port", "9003", "--peer", "seed-1:9001", "--peer", "seed-2:9002"]
+    ports:
+      - "9003:9003"
+      - "8543:8545"
+    depends_on:
+      - seed-1
+      - seed-2
+    volumes:
+      - seed3_data:/home/blockbum/.blockbum
+
+volumes:
+  seed1_data:
+  seed2_data:
+  seed3_data:

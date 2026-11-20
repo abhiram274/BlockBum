@@ -135,7 +135,18 @@ flowchart TB
   * Throughput and latency benchmarks for transaction processing, Merkle tree construction, and file transfer.
   * Detailed security and risk report in [docs/SECURITY_REPORT.md](SECURITY_REPORT.md).
 
-### Project Status: All 9 Engineering & Security Phases Complete!
+### Phase 10: BlockBum Public Testnet Launch [COMPLETED]
+* **Status**: Completed (Multi-bootstrap node topology, reproducible binaries, zero-value test cryptocurrency, health monitoring, and operator onboarding).
+* **Deliverables**:
+  * Reproducible Docker multi-node cluster deployment (`docker-compose.testnet.yml`).
+  * Dedicated multi-bootstrap nodes configured for Frankfurt, Virginia, and Singapore seeds.
+  * Testnet cryptocurrency (`tBUM`) with zero monetary value and built-in community faucet support.
+  * Network health telemetry and status monitoring CLI (`blockbum_node status`).
+  * End-to-end test suite for node synchronization and recovery after network disconnection.
+  * Complete documentation covering identity creation, community participation, and vulnerability disclosure in [docs/TESTNET_GUIDE.md](TESTNET_GUIDE.md).
+  * Strict mainnet guardrail: mainnet deployment and real monetary issuance prohibited until independent security review and legal compliance audits are complete.
+
+### Project Status: All 10 Engineering, Security & Testnet Phases Complete!
 * **Goal**: Transition from in-memory objects to a persistent, atomic blockchain database.
 * **Key Components**:
   * Abstract Storage Interface (`IStorageEngine`).

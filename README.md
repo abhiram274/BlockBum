@@ -85,5 +85,6 @@ docker compose -f docker/docker-compose.yml up --build
 * [Phase 7 Native Cryptocurrency & Economics](docs/TOKEN_ECONOMICS.md)
 * [Phase 8 Desktop Application Guide](docs/DESKTOP_APPLICATION.md)
 * [Phase 9 Security, Threat Model & Reliability Report](docs/SECURITY_REPORT.md)
+* [Phase 10 Public Testnet Launch & Operator Guide](docs/TESTNET_GUIDE.md)
 * [Phase Roadmap](docs/ROADMAP.md)
 * [Contributing Guidelines](docs/CONTRIBUTING.md)

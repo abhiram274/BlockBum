@@ -136,7 +136,21 @@ TEST_F(MultiNodeNetworkTest, ThreeNodesSynchronizeAndConverge) {
     EXPECT_EQ(node1.chain->height(), 3);
     EXPECT_EQ(node1.chain->get_tip_block()->block_hash, node3.chain->get_tip_block()->block_hash);
 
+    // 7. Node Recovery Test: Node 2 rejoins the network after disconnection
+    // Spin Node 2 back up from its persistent storage on disk
+    TestNode recovered_node2 = create_node("node2", 19504);
+    // Connect to Node 1 (bootstrap) and request sync
+    recovered_node2.sync_mgr->connect_to_bootstrap_nodes({"127.0.0.1:19501"});
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    // Verify Node 2 recovered and caught up to tip height 3
+    EXPECT_EQ(recovered_node2.chain->height(), 3);
+    auto tip_recovered = recovered_node2.chain->get_tip_block();
+    ASSERT_TRUE(tip_recovered.has_value());
+    EXPECT_EQ(tip_recovered->block_hash, node1.chain->get_tip_block()->block_hash);
+
     // Clean up
+    recovered_node2.stop();
     node1.stop();
     node3.stop();
 }
