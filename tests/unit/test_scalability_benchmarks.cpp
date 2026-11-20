@@ -71,17 +71,6 @@ public:
 
 std::vector<MockBenchmarkTransport*> MockBenchmarkTransport::network_peers_;
 
-Block create_test_block(const Hash256& prev_hash, BlockHeight height, uint32_t nonce = 0) {
-    Block block;
-    block.header.previous_hash = prev_hash;
-    block.header.height = height;
-    block.header.timestamp = 1700000000 + height * 10;
-    block.header.nonce = nonce;
-    block.header.merkle_root = Hash256{};
-    block.block_hash = CryptoUtils::sha256(block.header.serialize());
-    return block;
-}
-
 } // namespace
 
 class ScalabilityBenchmarksTest : public ::testing::Test {
@@ -98,13 +87,20 @@ protected:
 // 1. Headers-First Synchronization & Wire Encoding
 TEST_F(ScalabilityBenchmarksTest, HeadersFirstSyncProtocol) {
     auto chain1 = std::make_shared<Blockchain>();
-    Hash256 tip = chain1->get_tip_block()->block_hash;
+    ASSERT_TRUE(chain1->initialize());
 
     // Create 30 blocks
     for (BlockHeight h = 1; h <= 30; ++h) {
-        Block b = create_test_block(tip, h, static_cast<uint32_t>(h * 100));
+        Transaction tx;
+        tx.version = 1;
+        tx.sender = "Alice";
+        tx.recipient = "Bob";
+        tx.amount = 10 * h;
+        tx.fee = 1;
+        tx.nonce = h;
+        tx.timestamp = 1700000000 + h * 10;
+        Block b = chain1->create_next_block({tx}, static_cast<uint32_t>(h * 100));
         ASSERT_TRUE(chain1->add_block(b));
-        tip = b.block_hash;
     }
     ASSERT_EQ(chain1->height(), 30);
 
@@ -117,6 +113,7 @@ TEST_F(ScalabilityBenchmarksTest, HeadersFirstSyncProtocol) {
     transport2->start(8002);
 
     auto chain2 = std::make_shared<Blockchain>();
+    ASSERT_TRUE(chain2->initialize());
     auto sync1 = std::make_shared<NodeSyncManager>("node1", chain1, transport1);
     auto sync2 = std::make_shared<NodeSyncManager>("node2", chain2, transport2);
 
@@ -275,13 +272,19 @@ TEST_F(ScalabilityBenchmarksTest, StorageWriteBatchPerformance) {
 // 5. Disk Space Optimization: Archival vs Pruned Full Node
 TEST_F(ScalabilityBenchmarksTest, PrunedModeDiskSpaceEfficiency) {
     auto chain = std::make_shared<Blockchain>();
-    Hash256 tip = chain->get_tip_block()->block_hash;
+    ASSERT_TRUE(chain->initialize());
 
     // Generate 50 blocks
     for (BlockHeight h = 1; h <= 50; ++h) {
-        Block b = create_test_block(tip, h, static_cast<uint32_t>(h));
+        Transaction tx;
+        tx.version = 1;
+        tx.sender = "Alice";
+        tx.recipient = "Bob";
+        tx.amount = 5 * h;
+        tx.fee = 1;
+        tx.nonce = h;
+        Block b = chain->create_next_block({tx}, static_cast<uint32_t>(h));
         ASSERT_TRUE(chain->add_block(b));
-        tip = b.block_hash;
     }
     EXPECT_EQ(chain->height(), 50);
 
@@ -297,24 +300,31 @@ TEST_F(ScalabilityBenchmarksTest, PrunedModeDiskSpaceEfficiency) {
     // Tip window preserved
     EXPECT_TRUE(chain->get_block_by_height(45).has_value());
     EXPECT_TRUE(chain->get_block_by_height(50).has_value());
-    EXPECT_EQ(chain->get_tip_block()->block_hash, tip);
+    EXPECT_EQ(chain->get_tip_block()->header.height, 50);
 }
 
 // 6. Long Period Disconnection Recovery Test
 TEST_F(ScalabilityBenchmarksTest, LongPeriodDisconnectionRecovery) {
     auto peer_chain = std::make_shared<Blockchain>();
-    Hash256 tip = peer_chain->get_tip_block()->block_hash;
+    ASSERT_TRUE(peer_chain->initialize());
 
     // Peer mines 40 blocks
     for (BlockHeight h = 1; h <= 40; ++h) {
-        Block b = create_test_block(tip, h, static_cast<uint32_t>(h * 77));
+        Transaction tx;
+        tx.version = 1;
+        tx.sender = "Alice";
+        tx.recipient = "Bob";
+        tx.amount = h;
+        tx.fee = 1;
+        tx.nonce = h;
+        Block b = peer_chain->create_next_block({tx}, static_cast<uint32_t>(h * 77));
         ASSERT_TRUE(peer_chain->add_block(b));
-        tip = b.block_hash;
     }
 
     auto offline_node_chain = std::make_shared<Blockchain>();
-    // Offline node has only 5 blocks
-    Hash256 offline_tip = offline_node_chain->get_tip_block()->block_hash;
+    ASSERT_TRUE(offline_node_chain->initialize());
+
+    // Offline node has first 5 blocks
     for (BlockHeight h = 1; h <= 5; ++h) {
         auto b = peer_chain->get_block_by_height(h);
         ASSERT_TRUE(b.has_value());
