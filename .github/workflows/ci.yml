@@ -57,6 +57,7 @@ jobs:
           -DBLOCKBUM_WARNINGS_AS_ERRORS=OFF
           -DCMAKE_CXX_FLAGS="${{ matrix.sanitizers }}"
           -DCMAKE_C_FLAGS="${{ matrix.sanitizers }}"
+          -DCMAKE_EXE_LINKER_FLAGS="${{ matrix.sanitizers }}"
         env:
           CC: ${{ matrix.c_compiler }}
           CXX: ${{ matrix.cxx_compiler }}
@@ -66,6 +67,9 @@ jobs:
 
       - name: Run Test Suite
         working-directory: build
+        env:
+          ASAN_OPTIONS: "detect_leaks=0"
+          UBSAN_OPTIONS: "print_stacktrace=1"
         run: ctest --output-on-failure -C Release
 
       - name: Test BlockBum Node Executable
