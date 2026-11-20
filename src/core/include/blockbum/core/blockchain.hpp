@@ -382,7 +382,7 @@ public:
         }
         BlockHeight prune_threshold = height_ - keep_depth;
         size_t pruned_count = 0;
-        for (BlockHeight h = 1; h < prune_threshold; ++h) {
+        for (BlockHeight h = 1; h <= prune_threshold; ++h) {
             std::string key = "height:" + std::to_string(h);
             auto hash_opt = storage_->get(as_span(key));
             if (hash_opt.has_value() && hash_opt->size() == 32) {

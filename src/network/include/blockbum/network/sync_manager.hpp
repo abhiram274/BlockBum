@@ -163,16 +163,25 @@ private:
     }
 
     void process_orphans_for(const core::Hash256& parent_hash) {
-        std::lock_guard<std::mutex> lock(orphan_mutex_);
-        std::string parent_hex = core::to_hex(parent_hash);
-        auto it = orphan_pool_.find(parent_hex);
-        if (it != orphan_pool_.end()) {
-            core::Block child = it->second;
-            orphan_pool_.erase(it);
-            if (chain_->add_block(child)) {
-                send_message("", MessageType::NewBlock, child.serialize());
-                process_orphans_for(child.block_hash);
+        std::vector<core::Block> attached_blocks;
+        {
+            std::lock_guard<std::mutex> lock(orphan_mutex_);
+            std::string current_parent = core::to_hex(parent_hash);
+            while (true) {
+                auto it = orphan_pool_.find(current_parent);
+                if (it == orphan_pool_.end()) break;
+                core::Block child = it->second;
+                orphan_pool_.erase(it);
+                if (chain_->add_block(child)) {
+                    attached_blocks.push_back(child);
+                    current_parent = core::to_hex(child.block_hash);
+                } else {
+                    break;
+                }
             }
+        }
+        for (const auto& child : attached_blocks) {
+            send_message("", MessageType::NewBlock, child.serialize());
         }
     }
 
