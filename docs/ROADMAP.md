@@ -146,6 +146,40 @@ flowchart TB
   * Complete documentation covering identity creation, community participation, and vulnerability disclosure in [docs/TESTNET_GUIDE.md](TESTNET_GUIDE.md).
   * Strict mainnet guardrail: mainnet deployment and real monetary issuance prohibited until independent security review and legal compliance audits are complete.
 
+### Phase 11: Production Readiness Audit & Cryptographic Hardening [COMPLETED]
+* **Status**: Completed (Independent architectural audit, cryptographic upgrade to Monocypher RFC 8032 Ed25519 and RFC 7748/8439 E2EE, 21M BUM supply cap mathematical reconciliation).
+* **Deliverables**:
+  * Comprehensive production readiness audit report with threat model and mitigation matrix.
+  * Fixed 21,000,000 BUM max supply cap mathematically aligned with 50 BUM initial block reward and 210,000-block halving schedule.
+  * Address ownership verification in `AccountLedger` preventing sender forgery.
+  * Monocypher embedded library providing audited RFC 8032 Ed25519 signatures and X25519-ChaCha20-Poly1305 AEAD.
+  * Zero-defect CI across GCC-14, Clang-18, Clang-18-ASan-UBSan, and MSVC.
+
+### Phase 12: Permissionless Nakamoto Consensus & Dynamic Difficulty [COMPLETED]
+* **Status**: Completed (Pluggable `IConsensusEngine`, PoW Nakamoto consensus, dynamic difficulty retargeting, heaviest accumulated work fork-choice, deep reorg engine up to 100 blocks).
+* **Deliverables**:
+  * Consensus decision document in [docs/CONSENSUS_DECISION.md](CONSENSUS_DECISION.md).
+  * Modular `IConsensusEngine` supporting `PoAConsensusEngine` (DevNet) and `PoWConsensusEngine` (Mainnet).
+  * Dynamic difficulty retargeting algorithm with 2x/0.5x damping.
+  * Heaviest accumulated work fork-choice rule with lexicographical block hash tie-breaker.
+  * Deep chain reorganization (`execute_reorganization`) with `MAX_REORG_DEPTH = 100`.
+  * Comprehensive simulation test suite in `tests/unit/test_permissionless_consensus.cpp`.
+
+### Phase 13: Technical Protocol Standardization [COMPLETED]
+* **Status**: Completed (Official Technical Protocol Specification v1.0, versioned documentation structure, JSON-RPC 2.0 interface, canonical test vectors, and conformance test suite).
+* **Deliverables**:
+  * Official versioned protocol specification in `docs/protocol/v1/`:
+    * [01_DATA_FORMATS.md](protocol/v1/01_DATA_FORMATS.md): Binary formats, little-endian rules, `BlockHeader`, `Transaction`, `Block`, and Merkle tree layouts.
+    * [02_NETWORK_PROTOCOL.md](protocol/v1/02_NETWORK_PROTOCOL.md): Wire framing, 13-byte header, message types 1-10, handshake, P2P sync, flood protection.
+    * [03_CONSENSUS_RULES.md](protocol/v1/03_CONSENSUS_RULES.md): PoW Nakamoto consensus, dynamic difficulty retargeting, PoA fallback, fork-choice, finality.
+    * [04_STATE_AND_LEDGER.md](protocol/v1/04_STATE_AND_LEDGER.md): Account state model, sequential nonces, transaction execution, 21M BUM supply schedule.
+    * [05_NODE_RPC_AND_API.md](protocol/v1/05_NODE_RPC_AND_API.md): Standard JSON-RPC 2.0 interface (`bb_*`), schemas, requests and responses.
+    * [06_IDENTITY_AND_CRYPTO.md](protocol/v1/06_IDENTITY_AND_CRYPTO.md): RFC 8032 Ed25519, X25519-ChaCha20-Poly1305 E2EE, `bb1` address format, keystore schema.
+    * [07_COMPATIBILITY_AND_UPGRADES.md](protocol/v1/07_COMPATIBILITY_AND_UPGRADES.md): Protocol error registry (100-399), soft/hard fork rules, BIP-9 signaling.
+    * [08_TEST_VECTORS.md](protocol/v1/08_TEST_VECTORS.md): Exact hex test vectors for serialization, transactions, blocks, signatures, wire frames.
+  * Automated conformance test suite in `tests/unit/test_protocol_vectors.cpp`.
+
+
 ### Project Status: All 10 Engineering, Security & Testnet Phases Complete!
 * **Goal**: Transition from in-memory objects to a persistent, atomic blockchain database.
 * **Key Components**:
