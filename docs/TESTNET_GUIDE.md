@@ -61,7 +61,7 @@ The testnet provides three canonical bootstrap nodes maintaining round-robin con
 1. **Denomination & Supply**:
    - Token Symbol: `tBUM` (Test BUM).
    - Atomic Unit: `Micro-tBUM` ($10^{-6}$ tBUM).
-   - Maximum Supply Cap: $100,000,000\text{ tBUM}$.
+   - Maximum Supply Cap: $21,000,000\text{ tBUM}$ (Mathematically verified ceiling across 64 halving eras).
    - Block Subsidy: $50\text{ tBUM}$ per block, halving every 210,000 blocks.
 2. **Economic Assumption**:
    - Fees are required solely to deter denial-of-service (DoS) and mempool spamming (`MIN_TRANSACTION_FEE = 1,000 Micro-tBUM`).

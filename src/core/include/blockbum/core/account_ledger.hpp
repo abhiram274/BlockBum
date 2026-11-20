@@ -4,10 +4,12 @@
 #include "blockbum/core/transaction.hpp"
 #include "blockbum/core/merkle_tree.hpp"
 #include "blockbum/core/serializer.hpp"
+#include "blockbum/core/economic_model.hpp"
 #include "blockbum/crypto/icrypto.hpp"
 #include "blockbum/crypto/crypto_utils.hpp"
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <mutex>
 #include <optional>
@@ -216,6 +218,79 @@ public:
             // Cap reached: only credit fees
             accounts_[miner_address].balance += fees_collected;
         }
+        rewarded_heights_.insert(height);
+    }
+
+    /// Award block subsidy and distribute fees with deterministic 80/20 proposer/treasury split
+    /// Prevents duplicate reward claims for the same block height
+    bool credit_block_reward_with_split(const std::string& miner_address,
+                                        core::BlockHeight height,
+                                        core::Balance fees_collected) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (rewarded_heights_.find(height) != rewarded_heights_.end()) {
+            return false; // Duplicate reward for this height rejected
+        }
+
+        uint64_t reward = calculate_block_reward(height);
+        auto split = economics::split_fees(fees_collected);
+
+        if (total_supply_ + reward <= MAX_BUM_SUPPLY) {
+            accounts_[miner_address].balance += (reward + split.proposer_share);
+            accounts_[economics::COMMUNITY_TREASURY_ADDRESS].balance += split.treasury_share;
+            total_supply_ += reward;
+        } else {
+            // Cap reached: only credit fees
+            accounts_[miner_address].balance += split.proposer_share;
+            accounts_[economics::COMMUNITY_TREASURY_ADDRESS].balance += split.treasury_share;
+        }
+
+        rewarded_heights_.insert(height);
+        return true;
+    }
+
+    [[nodiscard]] bool is_height_rewarded(core::BlockHeight height) const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return rewarded_heights_.find(height) != rewarded_heights_.end();
+    }
+
+    /// Revert a rewarded block height during chain reorganizations
+    bool revert_block_reward(const std::string& miner_address,
+                             core::BlockHeight height,
+                             core::Balance fees_collected) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto it = rewarded_heights_.find(height);
+        if (it == rewarded_heights_.end()) return false;
+
+        uint64_t reward = calculate_block_reward(height);
+        auto split = economics::split_fees(fees_collected);
+
+        // Deduct proposer share
+        auto miner_it = accounts_.find(miner_address);
+        if (miner_it != accounts_.end()) {
+            core::Balance total_miner_credit = reward + split.proposer_share;
+            if (miner_it->second.balance >= total_miner_credit) {
+                miner_it->second.balance -= total_miner_credit;
+            } else {
+                miner_it->second.balance = 0;
+            }
+        }
+
+        // Deduct treasury share
+        auto treasury_it = accounts_.find(economics::COMMUNITY_TREASURY_ADDRESS);
+        if (treasury_it != accounts_.end()) {
+            if (treasury_it->second.balance >= split.treasury_share) {
+                treasury_it->second.balance -= split.treasury_share;
+            } else {
+                treasury_it->second.balance = 0;
+            }
+        }
+
+        if (total_supply_ >= reward) {
+            total_supply_ -= reward;
+        }
+
+        rewarded_heights_.erase(it);
+        return true;
     }
 
     [[nodiscard]] std::vector<TransferRecord> get_account_history(const std::string& address) const {
@@ -325,6 +400,7 @@ private:
     mutable std::mutex mutex_;
     std::unordered_map<std::string, AccountState> accounts_;
     std::unordered_map<std::string, std::vector<TransferRecord>> history_;
+    std::unordered_set<core::BlockHeight> rewarded_heights_;
     uint64_t total_supply_{0};
 };
 

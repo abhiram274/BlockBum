@@ -2,6 +2,8 @@
 
 This document details the economic model, accounting choice, monetary issuance rules, network incentives, threat model, and regulatory safety boundaries for the native cryptocurrency **BUM**.
 
+For the exhaustive mathematical proof and node validation rules, see the official [BUM Monetary Policy Specification](file:///c:/Users/DELL/Downloads/BlockBum/docs/BUM_MONETARY_POLICY.md).
+
 ---
 
 ## 1. Accounting Model: Account-Based Ledger
@@ -16,33 +18,40 @@ BlockBum selected an **Account-Based Accounting Model** (similar to Ethereum/Cos
 
 ## 2. Tokenomics & Issuance Schedule
 
-* **Token Symbol**: `BUM`
+* **Token Symbol**: `BUM` (Mainnet) / `tBUM` (Testnet)
 * **Divisibility**: $10^6$ atomic units (1 BUM = 1,000,000 MicroBUM)
-* **Maximum Supply Cap**: 21,000,000 BUM (Deflationary hard ceiling, mathematically verified)
-* **Block Subsidy Reward**: 50 BUM per block
-* **Halving Schedule**: Subsidy halves every 210,000 blocks (~4 years at typical block intervals)
+* **Maximum Supply Cap**: 21,000,000 BUM (Deflationary hard ceiling, mathematically verified across 64 halving eras)
+* **Block Subsidy Reward**: 50 BUM per block at Genesis
+* **Halving Schedule**: Subsidy halves every 210,000 blocks (~4 years at typical 10-minute block intervals)
 * **Minimum Network Fee**: 0.001 BUM (`1,000` atomic units) required per transaction to deter spam.
+* **Dynamic Fee Rate**: 10 atomic units per serialized byte ($\text{fee} = \max(\text{MIN\_FEE}, \text{bytes} \times \text{BYTE\_FEE})$).
 
 ```
-Total Supply Projection (Sum over 64 halving eras):
+Total Supply Projection (Sum over 26 active halving eras):
 Block 0         -> 50 BUM subsidy
 Block 210,000   -> 25 BUM subsidy
 Block 420,000   -> 12.5 BUM subsidy
 ...
-Block ~5.46M    -> Supply cap reached (21,000,000 BUM). Proposer revenue transitions purely to transaction fees.
+Block 5,460,000 -> Supply cap reached (~20,999,999.98 BUM). Proposer revenue transitions purely to transaction fees.
 ```
 
 ---
 
-## 3. Network Incentive Model & Block Rewards
+## 3. Network Incentive Model & Fee Distribution
 
-1. **Node Proposer Compensation**:
-   - For every valid block produced, the proposer is credited:
-     $$\text{Payout} = \text{BlockSubsidy}(\text{height}) + \sum \text{TransactionFees}$$
-2. **Community Utility**:
-   - Paying content publication fees.
-   - Micro-tipping community posts and rewarding coding challenge solutions.
-   - Staking collateral for network validator nodes.
+1. **Deterministic 80/20 Fee Distribution**:
+   - For every confirmed block, collected transaction fees are split:
+     - **80% to Block Proposer**: Direct incentive for network liveness, block creation, and transaction ordering.
+     - **20% to Community Ecosystem Treasury** (`bb1_community_treasury`): Protocol-level reserve funding decentralized development and community bounties.
+2. **Validator / Proposer Compensation**:
+   $$\text{Payout}_{\text{proposer}}(H) = \text{BlockSubsidy}(H) + \text{Fee}_{\text{proposer}}(H)$$
+3. **Optional Storage-Provider Compensation**:
+   - Content uploaders lock lease escrows (`StorageLeaseEscrow`).
+   - Storage providers claim compensation proportional to verified cryptographic Proofs of Retrievability (PoR).
+   - No protocol inflation for storage: payouts are strictly funded by clients who deposit lease escrow.
+4. **Community Utility & Tipping**:
+   - Micro-tipping community feed posts and coding challenge solutions.
+   - Timelocked Community Treasury grants.
 
 ---
 
@@ -54,10 +63,18 @@ Block ~5.46M    -> Supply cap reached (21,000,000 BUM). Proposer revenue transit
 
 ---
 
-## 5. Economic Assumptions, Risks, & Regulatory Guardrails
+## 5. Prevention of Reward Duplication & Unauthorized Issuance
+
+* **Single Reward per Height**: Every node tracks `rewarded_heights_`. A block height cannot be credited more than once.
+* **Total Supply Bound**: `total_supply <= MAX_BUM_SUPPLY` enforced unconditionally by every full node.
+* **State Balance Invariant**: $\sum \text{balances} \equiv \text{total\_supply}$.
+
+---
+
+## 6. Economic Assumptions, Risks, & Regulatory Guardrails
 
 > [!CAUTION]
 > **Regulatory Notice & Security Safeguards**:
-> 1. **No Real-Value Deployment**: BUM is currently implemented strictly for development and testing on private DevNet clusters.
-> 2. **Pre-Production Security Audit**: BUM will **not** be deployed on any public network without formal external smart contract audits, cryptographic proof reviews, and legal assessments.
-> 3. **Economic Risks**: Token price volatility, liquidity risks, miner collusion, and potential 51% reorganization attacks on small networks must be mitigated before public launch.
+> 1. **No Token Appreciation Promises**: The BlockBum protocol makes no representations or promises regarding future token price, liquidity, or capital appreciation.
+> 2. **No Guaranteed Storage Income**: Storage hosting income is market-dependent and requires satisfying continuous cryptographic retrievability proofs.
+> 3. **Economic Transition**: Validators must prepare for long-term fee-only security budgets as block subsidies halve over time.

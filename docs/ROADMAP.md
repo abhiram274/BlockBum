@@ -220,6 +220,21 @@ flowchart TB
   * Technical specification and benchmarks in [docs/MESSAGING_AND_STORAGE_SPEC.md](MESSAGING_AND_STORAGE_SPEC.md).
   * Comprehensive test suite in `tests/unit/test_messaging_storage_infrastructure.cpp`.
 
+### Phase 17: BUM Cryptocurrency Economic Infrastructure [COMPLETED]
+* **Status**: Completed (Supply cap audit, mathematical resolution of 100M legacy placeholder to 21M BUM, dynamic size-based fee market, 80/20 validator/treasury fee split, storage-provider lease compensation escrow, community bounty escrow, timelocked governance treasury, duplicate reward prevention, and deterministic economic simulations).
+* **Deliverables**:
+  * Audited supply cap and block subsidy issuance: proved exact integer right-shift emission across 64 eras sums to $20,999,999.9769\text{ BUM} \le 21,000,000\text{ BUM}$.
+  * Resolved the inconsistency with early 100M testnet placeholder draft; standardized immutable 21,000,000 BUM ceiling (`MAX_BUM_SUPPLY = 21'000'000 * 10^6`).
+  * Dynamic size-based transaction fee engine (`calculate_minimum_fee`) protecting against DoS and memory flooding.
+  * Deterministic fee distribution (`split_fees`): 80% to block proposer for liveness incentives, 20% to Community Ecosystem Treasury (`bb1_community_treasury`).
+  * Optional storage-provider compensation (`StorageEscrowManager`): uploader-funded lease escrows, cryptographic Proof-of-Retrievability verification, and post-expiration refunds. Zero protocol inflation for storage.
+  * Community contribution bounties (`ChallengeBountyManager`): funded escrow and single-claim execution.
+  * Protocol Community Treasury (`CommunityTreasuryManager`): 100-block timelock, multi-signature quorum (2/2), 10% per-proposal disbursement cap, and non-reentrancy.
+  * Duplicate block reward prevention: single-reward-per-height invariant in `AccountLedger` and reorganization rollback support (`revert_block_reward`).
+  * Deterministic long-term economic simulation engine (`EconomicSimulator`) modeling 10-year trajectories across low, moderate, and high participation regimes.
+  * Official monetary policy specification in [docs/BUM_MONETARY_POLICY.md](BUM_MONETARY_POLICY.md).
+  * Comprehensive test suite in `tests/unit/test_economic_infrastructure.cpp`.
+
 
 ### Project Status: All 10 Engineering, Security & Testnet Phases Complete!
 * **Goal**: Transition from in-memory objects to a persistent, atomic blockchain database.
