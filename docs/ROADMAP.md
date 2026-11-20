@@ -205,6 +205,21 @@ flowchart TB
   * Benchmark specification and reproducible metrics in [docs/SCALABILITY_AND_BENCHMARKS.md](SCALABILITY_AND_BENCHMARKS.md).
   * Comprehensive test suite in `tests/unit/test_scalability_benchmarks.cpp`.
 
+### Phase 16: Global Messaging and Storage Infrastructure [COMPLETED]
+* **Status**: Completed (Double Ratchet forward secrecy & post-compromise security, group epoch rotation, TTL-managed offline relays, multi-device sync, resumable CAS downloads, Proof-of-Retrievability availability challenges, and provider reputation scoring).
+* **Deliverables**:
+  * Signal-style Double Ratchet protocol in `DoubleRatchetSession`: forward secrecy via symmetric KDF message key ratchet and post-compromise security via DH ratchet steps.
+  * Out-of-order message delivery supported with bounded skipped key caching.
+  * Group messaging upgrade in `GroupManager` with epoch key rotation enforcing pre-join backward secrecy and post-removal forward secrecy.
+  * Upgraded `OfflineRelayMailbox` supporting configurable TTL expiration, automatic expired message purging, mailbox quota enforcement, and blinded routing (sealed sender).
+  * Multi-device identity authorization and synchronization in `MultiDeviceManager` with signed device certificates and revocation.
+  * Resumable large-file downloads in `ResumableDownloadSession` with chunk-level tracking, corrupted chunk detection, and re-fetching.
+  * Decentralized storage availability verification (`StorageNetworkManager`) via cryptographic Proof-of-Retrievability challenges ($\text{SHA256}(\text{chunk} \parallel \text{salt} \parallel \text{provider\_id})$), automated provider reputation scoring, and quarantine enforcement.
+  * Storage retention leases with automatic eviction and 500 MB uploader quota limits preventing resource exhaustion.
+  * Off-chain guarantee: private messages and file contents strictly off-chain.
+  * Technical specification and benchmarks in [docs/MESSAGING_AND_STORAGE_SPEC.md](MESSAGING_AND_STORAGE_SPEC.md).
+  * Comprehensive test suite in `tests/unit/test_messaging_storage_infrastructure.cpp`.
+
 
 ### Project Status: All 10 Engineering, Security & Testnet Phases Complete!
 * **Goal**: Transition from in-memory objects to a persistent, atomic blockchain database.

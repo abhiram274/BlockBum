@@ -8,8 +8,14 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <mutex>
+#include <optional>
 
 namespace blockbum::messaging {
+
+struct GroupMemberMetadata {
+    uint32_t joined_epoch{1};
+    uint32_t left_epoch{0}; // 0 = currently active
+};
 
 struct GroupChannel {
     std::string group_id;
@@ -17,10 +23,11 @@ struct GroupChannel {
     std::string creator_address;
     uint32_t key_epoch{1};
     core::Hash256 current_shared_key{};
-    std::unordered_set<std::string> member_addresses;
+    std::unordered_map<std::string, GroupMemberMetadata> member_registry;
+    std::unordered_map<uint32_t, core::Hash256> epoch_keys;
 };
 
-// Manages group channels, membership access, and cryptographic key rotation
+/// Manages group channels, membership access, and forward-secure key rotation
 class GroupManager {
 public:
     GroupManager() = default;
@@ -36,7 +43,8 @@ public:
         group.creator_address = creator_address;
         group.key_epoch = 1;
         group.current_shared_key = initial_key;
-        group.member_addresses.insert(creator_address);
+        group.member_registry[creator_address] = {1, 0};
+        group.epoch_keys[1] = initial_key;
 
         groups_[group_id] = group;
         return group;
@@ -49,12 +57,15 @@ public:
         auto it = groups_.find(group_id);
         if (it == groups_.end()) return false;
 
-        // Only existing members or creator can add members
-        if (it->second.member_addresses.find(requester) == it->second.member_addresses.end()) {
+        // Requester must be an active member
+        auto req_it = it->second.member_registry.find(requester);
+        if (req_it == it->second.member_registry.end() || req_it->second.left_epoch != 0) {
             return false;
         }
 
-        it->second.member_addresses.insert(new_member);
+        // Backward Secrecy: Rotate key when adding member so newcomer cannot decrypt history
+        rotate_key_internal(it->second);
+        it->second.member_registry[new_member] = {it->second.key_epoch, 0};
         return true;
     }
 
@@ -69,19 +80,26 @@ public:
             return false; // Only creator can remove members
         }
 
-        it->second.member_addresses.erase(target_member);
-        // Automatic forward-secrecy key rotation: derive new key
+        auto target_it = it->second.member_registry.find(target_member);
+        if (target_it == it->second.member_registry.end() || target_it->second.left_epoch != 0) {
+            return false;
+        }
+
+        // Mark member as departed at current epoch
+        target_it->second.left_epoch = it->second.key_epoch;
+
+        // Forward Secrecy: Immediately rotate key so removed member cannot read future messages
         rotate_key_internal(it->second);
         return true;
     }
 
-    // Trigger key rotation (e.g. forward secrecy on member change or epoch refresh)
     bool rotate_key(const std::string& group_id, const std::string& requester) {
         std::lock_guard<std::mutex> lock(mutex_);
         auto it = groups_.find(group_id);
         if (it == groups_.end()) return false;
 
-        if (it->second.member_addresses.find(requester) == it->second.member_addresses.end()) {
+        auto req_it = it->second.member_registry.find(requester);
+        if (req_it == it->second.member_registry.end() || req_it->second.left_epoch != 0) {
             return false;
         }
 
@@ -93,19 +111,52 @@ public:
         std::lock_guard<std::mutex> lock(mutex_);
         auto it = groups_.find(group_id);
         if (it == groups_.end()) return false;
-        return it->second.member_addresses.find(address) != it->second.member_addresses.end();
+        auto mem_it = it->second.member_registry.find(address);
+        return mem_it != it->second.member_registry.end() && mem_it->second.left_epoch == 0;
     }
 
+    /// Retrieve active current group key (only for currently active members)
     [[nodiscard]] std::optional<core::Hash256> get_group_key(const std::string& group_id, const std::string& requester) const {
         std::lock_guard<std::mutex> lock(mutex_);
         auto it = groups_.find(group_id);
         if (it == groups_.end()) return std::nullopt;
 
-        if (it->second.member_addresses.find(requester) == it->second.member_addresses.end()) {
+        auto req_it = it->second.member_registry.find(requester);
+        if (req_it == it->second.member_registry.end() || req_it->second.left_epoch != 0) {
             return std::nullopt; // Unauthorized
         }
 
         return it->second.current_shared_key;
+    }
+
+    /// Retrieve historical group key for a specific epoch (verifying membership boundaries)
+    [[nodiscard]] std::optional<core::Hash256> get_group_key_for_epoch(const std::string& group_id,
+                                                                      const std::string& requester,
+                                                                      uint32_t epoch) const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto it = groups_.find(group_id);
+        if (it == groups_.end()) return std::nullopt;
+
+        auto req_it = it->second.member_registry.find(requester);
+        if (req_it == it->second.member_registry.end()) {
+            return std::nullopt; // Not in group
+        }
+
+        // Enforce Backward Secrecy: member cannot read epochs prior to joining
+        if (epoch < req_it->second.joined_epoch) {
+            return std::nullopt;
+        }
+
+        // Enforce Forward Secrecy: departed member cannot read epochs after leaving
+        if (req_it->second.left_epoch != 0 && epoch > req_it->second.left_epoch) {
+            return std::nullopt;
+        }
+
+        auto key_it = it->second.epoch_keys.find(epoch);
+        if (key_it != it->second.epoch_keys.end()) {
+            return key_it->second;
+        }
+        return std::nullopt;
     }
 
     [[nodiscard]] std::optional<uint32_t> get_key_epoch(const std::string& group_id) const {
@@ -113,6 +164,20 @@ public:
         auto it = groups_.find(group_id);
         if (it == groups_.end()) return std::nullopt;
         return it->second.key_epoch;
+    }
+
+    [[nodiscard]] std::vector<std::string> get_active_members(const std::string& group_id) const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        std::vector<std::string> members;
+        auto it = groups_.find(group_id);
+        if (it != groups_.end()) {
+            for (const auto& [addr, meta] : it->second.member_registry) {
+                if (meta.left_epoch == 0) {
+                    members.push_back(addr);
+                }
+            }
+        }
+        return members;
     }
 
 private:
@@ -128,6 +193,7 @@ private:
         input.insert(input.end(), group.group_id.begin(), group.group_id.end());
 
         group.current_shared_key = crypto::CryptoUtils::sha256(input);
+        group.epoch_keys[group.key_epoch] = group.current_shared_key;
     }
 
     mutable std::mutex mutex_;

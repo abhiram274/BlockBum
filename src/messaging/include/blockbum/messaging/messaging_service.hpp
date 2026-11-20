@@ -4,6 +4,8 @@
 #include "blockbum/messaging/group_manager.hpp"
 #include "blockbum/messaging/history_store.hpp"
 #include "blockbum/messaging/relay_mailbox.hpp"
+#include "blockbum/messaging/double_ratchet.hpp"
+#include "blockbum/messaging/device_manager.hpp"
 #include "blockbum/crypto/wallet.hpp"
 #include "blockbum/crypto/e2e_encryption.hpp"
 #include "blockbum/crypto/standard_crypto.hpp"
@@ -77,6 +79,71 @@ public:
         }
 
         return msg;
+    }
+
+    /// 1b. Send Forward-Secure Double Ratchet Message
+    RatchetMessage send_forward_secure_message(const std::string& recipient_address,
+                                               const std::array<uint8_t, 32>& peer_dh_pubkey,
+                                               const std::string& plaintext) {
+        if (!check_rate_limit(identity_.address())) {
+            throw std::runtime_error("Rate limit exceeded for sender");
+        }
+
+        std::lock_guard<std::mutex> lock(ratchet_mutex_);
+        auto it = ratchet_sessions_.find(recipient_address);
+        if (it == ratchet_sessions_.end()) {
+            // Establish root key from long-term identity exchange
+            auto master_key = crypto::CryptoUtils::sha256(
+                std::span<const uint8_t>(identity_.secret_key().data(), 32));
+            it = ratchet_sessions_.emplace(recipient_address,
+                DoubleRatchetSession::init_initiator(master_key, peer_dh_pubkey)).first;
+        }
+
+        std::span<const uint8_t> pt_span(reinterpret_cast<const uint8_t*>(plaintext.data()), plaintext.size());
+        auto ratchet_msg = it->second.encrypt(pt_span);
+
+        // Record to local encrypted history
+        if (history_store_) {
+            std::string msg_id = "ratchet_" + core::to_hex(crypto_engine_->hash256(ratchet_msg.serialize())).substr(0, 24);
+            history_store_->append_message({msg_id, identity_.address(), recipient_address,
+                                            current_time_ms(), it->second.sending_message_count(), plaintext, true});
+        }
+
+        return ratchet_msg;
+    }
+
+    /// 1c. Receive Forward-Secure Double Ratchet Message
+    std::string receive_forward_secure_message(const std::string& sender_address,
+                                               const RatchetMessage& ratchet_msg,
+                                               const std::array<uint8_t, 32>& our_dh_seckey,
+                                               const std::array<uint8_t, 32>& our_dh_pubkey) {
+        std::lock_guard<std::mutex> lock(ratchet_mutex_);
+        auto it = ratchet_sessions_.find(sender_address);
+        if (it == ratchet_sessions_.end()) {
+            auto master_key = crypto::CryptoUtils::sha256(
+                std::span<const uint8_t>(identity_.secret_key().data(), 32));
+            it = ratchet_sessions_.emplace(sender_address,
+                DoubleRatchetSession::init_receiver(master_key, our_dh_seckey, our_dh_pubkey)).first;
+        }
+
+        auto pt_bytes = it->second.decrypt(ratchet_msg);
+        std::string plaintext(pt_bytes.begin(), pt_bytes.end());
+
+        if (history_store_ && !plaintext.empty()) {
+            std::string msg_id = "ratchet_" + core::to_hex(crypto_engine_->hash256(ratchet_msg.serialize())).substr(0, 24);
+            history_store_->append_message({msg_id, sender_address, identity_.address(),
+                                            current_time_ms(), it->second.receiving_message_count(), plaintext, false});
+        }
+
+        return plaintext;
+    }
+
+    [[nodiscard]] MultiDeviceManager& device_manager() noexcept {
+        return device_manager_;
+    }
+
+    [[nodiscard]] const MultiDeviceManager& device_manager() const noexcept {
+        return device_manager_;
     }
 
     // 2. Send Encrypted Group Message
@@ -258,6 +325,10 @@ private:
 
     std::mutex rate_mutex_;
     std::unordered_map<std::string, RateTracker> rate_limits_;
+
+    MultiDeviceManager device_manager_;
+    std::mutex ratchet_mutex_;
+    std::unordered_map<std::string, DoubleRatchetSession> ratchet_sessions_;
 };
 
 } // namespace blockbum::messaging

@@ -2,6 +2,8 @@
 
 #include "blockbum/content/types.hpp"
 #include "blockbum/content/content_store.hpp"
+#include "blockbum/content/resumable_transfer.hpp"
+#include "blockbum/content/storage_network.hpp"
 #include "blockbum/crypto/e2e_encryption.hpp"
 #include "blockbum/crypto/crypto_utils.hpp"
 #include "blockbum/crypto/wallet.hpp"
@@ -158,6 +160,11 @@ public:
         auto chunk = store_->get_chunk(cid);
         if (!chunk) return false;
         return peer_store.put_chunk(*chunk);
+    }
+
+    /// Create a resumable download session for an incoming manifest
+    [[nodiscard]] ResumableDownloadSession create_resumable_download(const ContentManifest& manifest) const {
+        return ResumableDownloadSession(manifest);
     }
 
     bool replicate_manifest_to_peer(const std::string& root_cid, ContentStore& peer_store) {

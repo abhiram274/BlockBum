@@ -27,6 +27,7 @@ add_executable(blockbum_tests
     unit/test_protocol_vectors.cpp
     unit/test_global_p2p_network.cpp
     unit/test_scalability_benchmarks.cpp
+    unit/test_messaging_storage_infrastructure.cpp
 )
 
 target_link_libraries(blockbum_tests PRIVATE
