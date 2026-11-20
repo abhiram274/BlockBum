@@ -377,7 +377,7 @@ TEST_F(SecurityAndReliabilityTest, PerformanceBenchmarks) {
     auto cas_store = std::make_shared<content::ContentStore>((test_dir_ / "bench_cas").string());
     content::ContentManager mgr(cas_store);
 
-    std::vector<uint8_t> payload_5mb(5 * 1024 * 1024, 0x55); // 5 MB payload
+    std::vector<uint8_t> payload_5mb((5 * 1024 * 1024) - 16, 0x55); // 5 MB encrypted payload (including AEAD MAC)
     auto cas_start = std::chrono::high_resolution_clock::now();
     auto cas_res = mgr.prepare_and_store_file("bench.bin", content::FileContentType::GenericBinary, payload_5mb, sender, true);
     auto cas_end = std::chrono::high_resolution_clock::now();

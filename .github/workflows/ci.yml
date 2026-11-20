@@ -70,7 +70,7 @@ jobs:
         env:
           ASAN_OPTIONS: "detect_leaks=0"
           UBSAN_OPTIONS: "print_stacktrace=1"
-        run: ctest --output-on-failure -C Release
+        run: ctest --output-on-failure --verbose -C Release
 
       - name: Test BlockBum Node Executable
         run: |
