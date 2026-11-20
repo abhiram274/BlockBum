@@ -28,7 +28,9 @@ namespace {
 Identity create_test_identity(uint8_t seed_byte) {
     std::array<uint8_t, 32> seed{};
     seed.fill(seed_byte);
-    return Identity::from_seed(seed);
+    StandardCryptoEngine engine;
+    auto kp = engine.derive_keypair_from_seed(seed);
+    return Identity("test_id_" + std::to_string(seed_byte), kp);
 }
 
 } // namespace
