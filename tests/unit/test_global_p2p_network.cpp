@@ -203,7 +203,7 @@ TEST(GlobalP2PTest, PeerExchangeWireSerialization) {
     auto serialized = pex.serialize();
     EXPECT_GT(serialized.size(), 0U);
 
-    core::BinaryDeserializer d(serialized);
+    BinaryDeserializer d(serialized);
     PeersPayload deserialized = PeersPayload::deserialize(d);
 
     ASSERT_EQ(deserialized.peers.size(), 2U);
