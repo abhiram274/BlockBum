@@ -9,7 +9,8 @@ function createWindow() {
     minHeight: 700,
     title: "BlockBum Network - Decentralized Platform & Node Client",
     backgroundColor: '#090d16',
-    autoHideMenuBar: true,
+    autoHideMenuBar: false,
+    show: true,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -17,11 +18,12 @@ function createWindow() {
     }
   });
 
-  if (process.env.VITE_DEV_SERVER_URL) {
-    win.loadURL(process.env.VITE_DEV_SERVER_URL);
-  } else {
-    win.loadFile(path.join(__dirname, 'dist/index.html'));
-  }
+  win.loadFile(path.join(__dirname, 'dist', 'index.html'));
+
+  win.once('ready-to-show', () => {
+    win.show();
+    win.focus();
+  });
 }
 
 app.whenReady().then(() => {
