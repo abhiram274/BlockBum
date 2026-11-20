@@ -1,0 +1,23 @@
+[Unit]
+Description=BlockBum Decentralized Core Node Daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=blockbum
+Group=blockbum
+WorkingDirectory=/var/lib/blockbum
+ExecStart=/usr/local/bin/blockbum_node run-node --port 9000 --peer-file /var/lib/blockbum/peers.dat
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+
+# Sandboxing and Security hardening
+ProtectSystem=full
+ProtectHome=true
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

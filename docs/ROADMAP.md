@@ -179,6 +179,18 @@ flowchart TB
     * [08_TEST_VECTORS.md](protocol/v1/08_TEST_VECTORS.md): Exact hex test vectors for serialization, transactions, blocks, signatures, wire frames.
   * Automated conformance test suite in `tests/unit/test_protocol_vectors.cpp`.
 
+### Phase 14: Global P2P Infrastructure & Bootstrap Independence [COMPLETED]
+* **Status**: Completed (IPv4/IPv6 dual-stack networking, peer address book with reputation scoring and banning, peer exchange (PEX), orphan block buffering, archival and pruned modes, and bootstrap independence).
+* **Deliverables**:
+  * Dual-stack IPv4 and IPv6 stream transport (`TcpNetworkTransport`) with connection slot protection.
+  * Persistent peer address book (`PeerAddressBook` / `data/peers.dat`) with automated scoring and 24-hour banning for misbehaving peers.
+  * Dynamic Peer Exchange protocol (`GetPeers` / `Peers` wire framing).
+  * Robust network recovery: orphan block pool buffering out-of-order blocks with automatic cascade resolution.
+  * Storage configurations: Archival mode (full history) and Pruned mode (`--prune <blocks>`).
+  * Bootstrap independence: nodes discover peers, persist address books, and continue syncing even when all original bootstrap seeds become unavailable.
+  * Comprehensive test suite in `tests/unit/test_global_p2p_network.cpp`.
+  * Node operator guide in [docs/NODE_OPERATOR_GUIDE.md](NODE_OPERATOR_GUIDE.md), Linux installer `scripts/install-node.sh`, Windows installer `scripts/install-node.bat`, and `systemd/blockbum-node.service`.
+
 
 ### Project Status: All 10 Engineering, Security & Testnet Phases Complete!
 * **Goal**: Transition from in-memory objects to a persistent, atomic blockchain database.

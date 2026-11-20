@@ -2,11 +2,14 @@
 
 #include "blockbum/network/inetwork.hpp"
 #include "blockbum/network/wire_protocol.hpp"
+#include "blockbum/network/peer_book.hpp"
 #include "blockbum/core/blockchain.hpp"
 #include <memory>
 #include <unordered_set>
+#include <unordered_map>
 #include <mutex>
 #include <vector>
+#include <string>
 #include <iostream>
 
 namespace blockbum::network {
@@ -15,10 +18,12 @@ class NodeSyncManager {
 public:
     NodeSyncManager(std::string node_id,
                     std::shared_ptr<core::Blockchain> chain,
-                    std::shared_ptr<INetworkTransport> transport)
+                    std::shared_ptr<INetworkTransport> transport,
+                    std::shared_ptr<PeerAddressBook> peer_book = nullptr)
         : node_id_(std::move(node_id)),
           chain_(std::move(chain)),
-          transport_(std::move(transport)) {
+          transport_(std::move(transport)),
+          peer_book_(peer_book ? std::move(peer_book) : std::make_shared<PeerAddressBook>()) {
 
         transport_->set_message_handler([this](const PeerId& from, std::span<const uint8_t> msg) {
             handle_message(from, msg);
@@ -42,6 +47,12 @@ public:
         req.from_height = chain_->height() + 1;
         req.max_count = 50;
         send_message(peer, MessageType::GetBlocks, req.serialize());
+    }
+
+    void request_peers_from_peer(const PeerId& peer) {
+        GetPeersPayload req;
+        req.max_count = 50;
+        send_message(peer, MessageType::GetPeers, req.serialize());
     }
 
     static constexpr size_t MAX_SEEN_CACHE = 50'000;
@@ -80,12 +91,54 @@ public:
 
     void connect_to_bootstrap_nodes(const std::vector<std::string>& bootstrap_nodes) {
         for (const auto& addr : bootstrap_nodes) {
+            peer_book_->add_peer(addr);
             if (transport_->connect(addr)) {
-                // Connected, exchange status
+                peer_book_->record_peer_success(addr);
+                request_peers_from_peer(addr);
                 request_sync_from_peer(addr);
                 broadcast_status();
+            } else {
+                peer_book_->record_peer_failure(addr);
             }
         }
+    }
+
+    // Connect to known peers from local address book (allows bootstrap independence)
+    size_t connect_to_known_peers(size_t target_connections = 8) {
+        auto active = transport_->peer_count();
+        if (active >= target_connections) return 0;
+
+        size_t needed = target_connections - active;
+        std::vector<std::string> connected;
+        // In real transport, get_peers() returns active connected peer IDs
+        auto* tcp_t = dynamic_cast<TcpNetworkTransport*>(transport_.get());
+        if (tcp_t) {
+            connected = tcp_t->get_peers();
+        }
+
+        auto candidates = peer_book_->select_candidates(needed, connected);
+        size_t connected_count = 0;
+        for (const auto& candidate : candidates) {
+            if (transport_->connect(candidate)) {
+                peer_book_->record_peer_success(candidate);
+                request_peers_from_peer(candidate);
+                request_sync_from_peer(candidate);
+                broadcast_status();
+                connected_count++;
+            } else {
+                peer_book_->record_peer_failure(candidate);
+            }
+        }
+        return connected_count;
+    }
+
+    [[nodiscard]] std::shared_ptr<PeerAddressBook> peer_book() const noexcept {
+        return peer_book_;
+    }
+
+    [[nodiscard]] size_t orphan_pool_size() const {
+        std::lock_guard<std::mutex> lock(orphan_mutex_);
+        return orphan_pool_.size();
     }
 
 private:
@@ -106,6 +159,20 @@ private:
             transport_->broadcast(packet);
         } else {
             transport_->send_to(recipient, packet);
+        }
+    }
+
+    void process_orphans_for(const core::Hash256& parent_hash) {
+        std::lock_guard<std::mutex> lock(orphan_mutex_);
+        std::string parent_hex = core::to_hex(parent_hash);
+        auto it = orphan_pool_.find(parent_hex);
+        if (it != orphan_pool_.end()) {
+            core::Block child = it->second;
+            orphan_pool_.erase(it);
+            if (chain_->add_block(child)) {
+                send_message("", MessageType::NewBlock, child.serialize());
+                process_orphans_for(child.block_hash);
+            }
         }
     }
 
@@ -132,8 +199,8 @@ private:
             }
             case MessageType::Status: {
                 StatusPayload remote_status = StatusPayload::deserialize(pd);
+                peer_book_->record_peer_success(from);
                 if (remote_status.height > chain_->height()) {
-                    // Remote node has longer chain: request block sync
                     request_sync_from_peer(from);
                 }
                 break;
@@ -151,6 +218,7 @@ private:
             }
             case MessageType::BlockBatch: {
                 BlockBatchPayload batch = BlockBatchPayload::deserialize(pd);
+                peer_book_->record_peer_success(from);
                 for (const auto& b : batch.blocks) {
                     std::string hex_id = core::to_hex(b.block_hash);
                     {
@@ -158,7 +226,9 @@ private:
                         if (seen_blocks_.size() >= MAX_SEEN_CACHE) seen_blocks_.clear();
                         seen_blocks_.insert(hex_id);
                     }
-                    chain_->add_block(b);
+                    if (chain_->add_block(b)) {
+                        process_orphans_for(b.block_hash);
+                    }
                 }
                 break;
             }
@@ -176,11 +246,24 @@ private:
                 }
 
                 if (chain_->add_block(block)) {
-                    // Valid block added: relay to other peers
+                    peer_book_->record_peer_success(from);
                     send_message("", MessageType::NewBlock, payload_to_vector(payload));
+                    process_orphans_for(block.block_hash);
                 } else if (block.header.height > chain_->height() + 1) {
-                    // We are missing intermediate blocks: trigger full sync
+                    // Buffer in orphan pool and request sync
+                    {
+                        std::lock_guard<std::mutex> lock(orphan_mutex_);
+                        if (orphan_pool_.size() < 1000) {
+                            orphan_pool_[core::to_hex(block.header.previous_hash)] = block;
+                        }
+                    }
                     request_sync_from_peer(from);
+                } else {
+                    // Misbehaving peer sent an invalid block: penalize reputation
+                    peer_book_->adjust_score(from, -50);
+                    if (peer_book_->is_banned(from)) {
+                        transport_->disconnect_peer(from);
+                    }
                 }
                 break;
             }
@@ -201,6 +284,31 @@ private:
                 send_message("", MessageType::NewTransaction, payload_to_vector(payload));
                 break;
             }
+            case MessageType::GetPeers: {
+                GetPeersPayload req = GetPeersPayload::deserialize(pd);
+                PeersPayload resp;
+                auto known = peer_book_->get_known_peers(req.max_count);
+                resp.peers.reserve(known.size());
+                for (const auto& k : known) {
+                    PeerEntry entry;
+                    entry.address = k.address;
+                    entry.last_seen = k.last_seen;
+                    entry.services = k.services;
+                    resp.peers.push_back(entry);
+                }
+                send_message(from, MessageType::Peers, resp.serialize());
+                break;
+            }
+            case MessageType::Peers: {
+                PeersPayload pex = PeersPayload::deserialize(pd);
+                peer_book_->record_peer_success(from);
+                for (const auto& entry : pex.peers) {
+                    peer_book_->add_peer(entry.address, entry.services);
+                }
+                // Try connecting to discovered candidates if we need more peers
+                connect_to_known_peers(8);
+                break;
+            }
             default:
                 break;
         }
@@ -213,10 +321,14 @@ private:
     std::string node_id_;
     std::shared_ptr<core::Blockchain> chain_;
     std::shared_ptr<INetworkTransport> transport_;
+    std::shared_ptr<PeerAddressBook> peer_book_;
 
     std::mutex seen_mutex_;
     std::unordered_set<std::string> seen_blocks_;
     std::unordered_set<std::string> seen_txs_;
+
+    mutable std::mutex orphan_mutex_;
+    std::unordered_map<std::string, core::Block> orphan_pool_;
 };
 
 } // namespace blockbum::network

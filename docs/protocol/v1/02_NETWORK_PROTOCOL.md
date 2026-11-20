@@ -56,6 +56,8 @@ BlockBum defines 10 core wire message types identified by the 1-byte `type` fiel
 | `0x08` | `BlockBatch` | Bidirectional | `BlockBatchPayload` | Returns batch of requested blocks. |
 | `0x09` | `NewBlock` | Broadcast | Serialized `Block` | Propagates newly mined/verified block. |
 | `0x0A` | `NewTransaction`| Broadcast | Serialized `Transaction` | Propagates newly received unconfirmed tx. |
+| `0x0B` | `GetPeers` | Bidirectional | `GetPeersPayload` | Query known peer addresses for PEX discovery. |
+| `0x0C` | `Peers` | Bidirectional | `PeersPayload` | Returns list of active peers with timestamps. |
 
 ---
 

@@ -39,6 +39,9 @@ public:
 
     /// Get current active peer count
     [[nodiscard]] virtual size_t peer_count() const = 0;
+
+    /// Terminate and disconnect a specific peer
+    virtual bool disconnect_peer(const PeerId& peer_id) { (void)peer_id; return false; }
 };
 
 } // namespace blockbum::network

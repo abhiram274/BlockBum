@@ -374,6 +374,35 @@ public:
         return 1;
     }
 
+    // Prune raw transaction payloads for blocks older than (current_height - keep_depth)
+    // while keeping headers, block hashes, and height mappings intact for state verification
+    size_t prune_history(size_t keep_depth) {
+        if (keep_depth == 0 || height_ <= keep_depth) {
+            return 0; // Archival mode (keep_depth = 0) or chain not deep enough
+        }
+        BlockHeight prune_threshold = height_ - keep_depth;
+        size_t pruned_count = 0;
+        for (BlockHeight h = 1; h < prune_threshold; ++h) {
+            std::string key = "height:" + std::to_string(h);
+            auto hash_opt = storage_->get(as_span(key));
+            if (hash_opt.has_value() && hash_opt->size() == 32) {
+                Hash256 b_hash;
+                std::memcpy(b_hash.data(), hash_opt->data(), 32);
+                auto blk_opt = get_block_by_hash(b_hash);
+                if (blk_opt && !blk_opt->transactions.empty()) {
+                    Block pruned_b;
+                    pruned_b.header = blk_opt->header;
+                    pruned_b.block_hash = blk_opt->block_hash;
+                    std::string block_key = "block:" + core::to_hex(b_hash);
+                    auto s_bytes = pruned_b.serialize();
+                    storage_->put(as_span(block_key), std::span<const uint8_t>(s_bytes.data(), s_bytes.size()));
+                    pruned_count++;
+                }
+            }
+        }
+        return pruned_count;
+    }
+
 private:
     static std::span<const uint8_t> as_span(std::string_view s) {
         return std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(s.data()), s.size());

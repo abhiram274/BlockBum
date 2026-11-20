@@ -25,6 +25,7 @@ add_executable(blockbum_tests
     unit/test_security_reliability.cpp
     unit/test_permissionless_consensus.cpp
     unit/test_protocol_vectors.cpp
+    unit/test_global_p2p_network.cpp
 )
 
 target_link_libraries(blockbum_tests PRIVATE

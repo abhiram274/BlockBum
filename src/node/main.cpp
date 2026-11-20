@@ -19,7 +19,14 @@ void print_usage() {
               << "  create-block <msg>                Create and append a new block with a payload\n"
               << "  list                              List all blocks in the local chain\n"
               << "  validate                          Validate the entire chain structure and hashes\n"
-              << "  run-node --port <p> [--peer <h>]  Start P2P node daemon on port, connect to peer\n\n"
+              << "  run-node [options]                Start P2P node daemon (IPv4/IPv6 dual-stack)\n"
+              << "    --port <p>                      P2P listen port (default: 9000)\n"
+              << "    --peer <h>                      Connect to remote peer (can repeat)\n"
+              << "    --bootstrap <h>                 Connect to bootstrap node\n"
+              << "    --no-bootstrap                  Do not connect to default bootstrap nodes\n"
+              << "    --peer-file <path>              Path to persistent peer book (default: data/peers.dat)\n"
+              << "    --prune <blocks>                Pruned mode: keep last N blocks (0 = archival)\n"
+              << "    --max-peers <n>                 Maximum inbound peer connections (default: 32)\n\n"
               << "Wallet & Identity Commands:\n"
               << "  wallet-create <alias>             Generate a new pseudonymous identity keypair\n"
               << "  wallet-list                       List all identities in the local wallet\n"
@@ -185,6 +192,10 @@ int main(int argc, char* argv[]) {
     } else if (command == "run-node") {
         uint16_t port = 9000;
         std::vector<std::string> peers;
+        std::string peer_file = "data/peers.dat";
+        size_t prune_depth = 0; // 0 = Archival mode
+        size_t max_peers = 32;
+        bool no_bootstrap = false;
 
         for (int i = 2; i < argc; ++i) {
             std::string arg = argv[i];
@@ -192,20 +203,36 @@ int main(int argc, char* argv[]) {
                 port = static_cast<uint16_t>(std::stoi(argv[++i]));
             } else if (arg == "--peer" && i + 1 < argc) {
                 peers.push_back(argv[++i]);
+            } else if (arg == "--bootstrap" && i + 1 < argc) {
+                peers.push_back(argv[++i]);
+            } else if (arg == "--peer-file" && i + 1 < argc) {
+                peer_file = argv[++i];
+            } else if (arg == "--prune" && i + 1 < argc) {
+                prune_depth = static_cast<size_t>(std::stoul(argv[++i]));
+            } else if (arg == "--max-peers" && i + 1 < argc) {
+                max_peers = static_cast<size_t>(std::stoul(argv[++i]));
+            } else if (arg == "--no-bootstrap") {
+                no_bootstrap = true;
             }
         }
 
-        auto transport = std::make_shared<blockbum::network::TcpNetworkTransport>();
+        auto peer_book = std::make_shared<blockbum::network::PeerAddressBook>(peer_file);
+        auto transport = std::make_shared<blockbum::network::TcpNetworkTransport>(max_peers);
         if (!transport->start(port)) {
             std::cerr << "Failed to start listening on port " << port << "\n";
             return 1;
         }
 
         std::string node_id = "node_" + std::to_string(port);
-        auto sync_mgr = std::make_shared<blockbum::network::NodeSyncManager>(node_id, chain, transport);
-        std::cout << "[P2P] BlockBum node " << node_id << " listening on port " << port << "...\n";
+        auto sync_mgr = std::make_shared<blockbum::network::NodeSyncManager>(node_id, chain, transport, peer_book);
+        std::cout << "[P2P] BlockBum node " << node_id << " listening on dual-stack port " << port << "...\n";
+        std::cout << "[P2P] Node Mode: " << (prune_depth > 0 ? ("Pruned (retain last " + std::to_string(prune_depth) + " blocks)") : "Archival (retains full chain history)") << "\n";
+        std::cout << "[P2P] Loaded " << peer_book->size() << " known peers from address book (" << peer_file << ")\n";
 
-        if (!peers.empty()) {
+        // Connect to known peers from local address book first
+        sync_mgr->connect_to_known_peers(8);
+
+        if (!no_bootstrap && !peers.empty()) {
             std::cout << "[P2P] Connecting to bootstrap peers...\n";
             sync_mgr->connect_to_bootstrap_nodes(peers);
         }
@@ -214,6 +241,11 @@ int main(int argc, char* argv[]) {
         while (true) {
             std::this_thread::sleep_for(std::chrono::seconds(5));
             sync_mgr->broadcast_status();
+            sync_mgr->connect_to_known_peers(8);
+
+            if (prune_depth > 0) {
+                chain->prune_history(prune_depth);
+            }
         }
     } else {
         std::cerr << "Unknown command: " << command << "\n\n";

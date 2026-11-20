@@ -26,7 +26,9 @@ enum class MessageType : uint8_t {
     GetBlocks = 7,     // Request blocks from height H to H+N
     BlockBatch = 8,    // Batch of blocks returned for sync
     NewBlock = 9,      // Broadcast newly mined/validated block
-    NewTransaction = 10// Broadcast newly submitted transaction
+    NewTransaction = 10,// Broadcast newly submitted transaction
+    GetPeers = 11,     // Query known peers from remote peer
+    Peers = 12         // List of peers returned
 };
 
 struct MessageHeader {
@@ -116,6 +118,70 @@ struct BlockBatchPayload {
             auto b_bytes = d.read_bytes();
             core::BinaryDeserializer bd(b_bytes);
             p.blocks.push_back(core::Block::deserialize(bd));
+        }
+        return p;
+    }
+};
+
+struct PeerEntry {
+    std::string address;
+    uint64_t last_seen{0};
+    uint32_t services{1};
+
+    [[nodiscard]] std::vector<uint8_t> serialize() const {
+        core::BinarySerializer s;
+        s.write_string(address);
+        s.write_u64(last_seen);
+        s.write_u32(services);
+        return s.take_data();
+    }
+
+    static PeerEntry deserialize(core::BinaryDeserializer& d) {
+        PeerEntry e;
+        e.address = d.read_string();
+        e.last_seen = d.read_u64();
+        e.services = d.read_u32();
+        return e;
+    }
+};
+
+struct GetPeersPayload {
+    uint32_t max_count{50};
+
+    [[nodiscard]] std::vector<uint8_t> serialize() const {
+        core::BinarySerializer s;
+        s.write_u32(max_count);
+        return s.take_data();
+    }
+
+    static GetPeersPayload deserialize(core::BinaryDeserializer& d) {
+        GetPeersPayload p;
+        p.max_count = d.read_u32();
+        return p;
+    }
+};
+
+struct PeersPayload {
+    std::vector<PeerEntry> peers;
+
+    [[nodiscard]] std::vector<uint8_t> serialize() const {
+        core::BinarySerializer s;
+        s.write_u32(static_cast<uint32_t>(peers.size()));
+        for (const auto& peer : peers) {
+            auto b = peer.serialize();
+            s.write_bytes(b);
+        }
+        return s.take_data();
+    }
+
+    static PeersPayload deserialize(core::BinaryDeserializer& d) {
+        PeersPayload p;
+        uint32_t count = d.read_u32();
+        p.peers.reserve(count);
+        for (uint32_t i = 0; i < count; ++i) {
+            auto b = d.read_bytes();
+            core::BinaryDeserializer pd(b);
+            p.peers.push_back(PeerEntry::deserialize(pd));
         }
         return p;
     }
