@@ -18,7 +18,7 @@ struct KeypairIdentity {
     std::string alias;
     std::string address;
     crypto::PublicKey public_key{};
-    crypto::PrivateKey private_key{};
+    crypto::SecretKey secret_key{};
 };
 
 /// Public C++ Developer SDK for building, signing, and verifying BlockBum transactions
@@ -48,7 +48,7 @@ public:
     [[nodiscard]] KeypairIdentity generate_keypair(const std::string& alias = "dev_identity") {
         auto kp = crypto_->generate_keypair();
         std::string addr = derive_address(kp.public_key);
-        return {alias, std::move(addr), kp.public_key, kp.private_key};
+        return {alias, std::move(addr), kp.public_key, kp.secret_key};
     }
 
     /// Build an unsigned value transfer transaction
@@ -79,10 +79,10 @@ public:
         return tx;
     }
 
-    /// Cryptographically sign transaction with Ed25519 private key
-    bool sign_transaction(core::Transaction& tx, const crypto::PrivateKey& private_key) {
+    /// Cryptographically sign transaction with Ed25519 secret key
+    bool sign_transaction(core::Transaction& tx, const crypto::SecretKey& secret_key) {
         auto data_to_sign = tx.serialize_for_id();
-        auto sig_bytes = crypto_->sign(data_to_sign, private_key);
+        auto sig_bytes = crypto_->sign(data_to_sign, secret_key);
         tx.signature = sig_bytes;
         tx.tx_id = crypto::CryptoUtils::sha256(tx.serialize_for_id());
         return true;

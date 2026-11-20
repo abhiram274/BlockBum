@@ -44,7 +44,7 @@ int main() {
     std::cout << "  Nonce:     " << tx.nonce << "\n\n";
 
     // 6. Cryptographically Sign Transaction
-    bool signed_ok = client.sign_transaction(tx, alice.private_key);
+    bool signed_ok = client.sign_transaction(tx, alice.secret_key);
     std::cout << "[SDK] Transaction Signed: " << (signed_ok ? "SUCCESS" : "FAILED") << "\n";
     std::cout << "  Tx ID:     0x" << blockbum::core::to_hex(tx.tx_id) << "\n";
     std::cout << "  Signature: " << blockbum::core::to_hex(tx.signature).substr(0, 32) << "...\n\n";

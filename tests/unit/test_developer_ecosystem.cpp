@@ -261,7 +261,7 @@ TEST_F(DeveloperEcosystemTest, CppDeveloperSdkOperations) {
     EXPECT_GE(tx.fee, economics::MIN_TRANSACTION_FEE);
 
     // Sign Transaction
-    ASSERT_TRUE(sdk_client_->sign_transaction(tx, alice.private_key));
+    ASSERT_TRUE(sdk_client_->sign_transaction(tx, alice.secret_key));
     EXPECT_FALSE(tx.signature.empty());
     EXPECT_NE(tx.tx_id, core::Hash256{});
 
