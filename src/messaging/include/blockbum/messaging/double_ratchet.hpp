@@ -68,6 +68,43 @@ class DoubleRatchetSession {
 public:
     DoubleRatchetSession() = default;
 
+    DoubleRatchetSession(DoubleRatchetSession&& other) noexcept {
+        std::lock_guard<std::mutex> lock(other.mutex_);
+        initialized_ = other.initialized_;
+        has_our_dh_ = other.has_our_dh_;
+        has_sending_chain_ = other.has_sending_chain_;
+        root_key_ = other.root_key_;
+        sending_chain_key_ = other.sending_chain_key_;
+        receiving_chain_key_ = other.receiving_chain_key_;
+        our_dh_seckey_ = other.our_dh_seckey_;
+        our_dh_pubkey_ = other.our_dh_pubkey_;
+        peer_dh_pubkey_ = other.peer_dh_pubkey_;
+        sending_message_number_ = other.sending_message_number_;
+        receiving_message_number_ = other.receiving_message_number_;
+        previous_chain_length_ = other.previous_chain_length_;
+        skipped_message_keys_ = std::move(other.skipped_message_keys_);
+    }
+
+    DoubleRatchetSession& operator=(DoubleRatchetSession&& other) noexcept {
+        if (this != &other) {
+            std::scoped_lock lock(mutex_, other.mutex_);
+            initialized_ = other.initialized_;
+            has_our_dh_ = other.has_our_dh_;
+            has_sending_chain_ = other.has_sending_chain_;
+            root_key_ = other.root_key_;
+            sending_chain_key_ = other.sending_chain_key_;
+            receiving_chain_key_ = other.receiving_chain_key_;
+            our_dh_seckey_ = other.our_dh_seckey_;
+            our_dh_pubkey_ = other.our_dh_pubkey_;
+            peer_dh_pubkey_ = other.peer_dh_pubkey_;
+            sending_message_number_ = other.sending_message_number_;
+            receiving_message_number_ = other.receiving_message_number_;
+            previous_chain_length_ = other.previous_chain_length_;
+            skipped_message_keys_ = std::move(other.skipped_message_keys_);
+        }
+        return *this;
+    }
+
     /// Initialize as session initiator (Alice starting with Bob's known DH public key)
     static DoubleRatchetSession init_initiator(const core::Hash256& shared_master_key,
                                                const std::array<uint8_t, 32>& peer_dh_pubkey) {

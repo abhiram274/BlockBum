@@ -17,6 +17,9 @@ namespace blockbum::content {
 // Local Content-Addressed Storage (CAS) for chunks and manifests
 class ContentStore {
 public:
+    ContentStore()
+        : ContentStore(std::filesystem::temp_directory_path() / "blockbum_default_cas") {}
+
     explicit ContentStore(std::filesystem::path storage_dir, size_t max_cached_chunks = 1000)
         : storage_dir_(std::move(storage_dir)), max_cached_chunks_(max_cached_chunks) {
         if (!std::filesystem::exists(storage_dir_)) {

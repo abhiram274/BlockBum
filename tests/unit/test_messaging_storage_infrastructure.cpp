@@ -25,10 +25,10 @@ using namespace blockbum::crypto;
 
 namespace {
 
-crypto::Identity create_test_identity(uint8_t seed_byte) {
+Identity create_test_identity(uint8_t seed_byte) {
     std::array<uint8_t, 32> seed{};
     seed.fill(seed_byte);
-    return crypto::Identity::from_seed(seed);
+    return Identity::from_seed(seed);
 }
 
 } // namespace
@@ -36,10 +36,10 @@ crypto::Identity create_test_identity(uint8_t seed_byte) {
 class MessagingStorageInfrastructureTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        crypto_engine_ = std::make_shared<crypto::StandardCryptoEngine>();
+        crypto_engine_ = std::make_shared<StandardCryptoEngine>();
     }
 
-    std::shared_ptr<crypto::StandardCryptoEngine> crypto_engine_;
+    std::shared_ptr<StandardCryptoEngine> crypto_engine_;
 };
 
 // 1. Double Ratchet Protocol: Forward Secrecy & Post-Compromise Security
@@ -251,7 +251,7 @@ TEST_F(MessagingStorageInfrastructureTest, ResumableDownloadsAndCorruptedChunkDe
     for (size_t i = 0; i < 3; ++i) {
         chunk_data[i].resize(1000, static_cast<uint8_t>(i + 1));
         manifest.chunk_cids.push_back("cid_" + std::to_string(i));
-        manifest.chunk_hashes.push_back(crypto::CryptoUtils::sha256(chunk_data[i]));
+        manifest.chunk_hashes.push_back(CryptoUtils::sha256(chunk_data[i]));
     }
 
     ResumableDownloadSession session(manifest);
