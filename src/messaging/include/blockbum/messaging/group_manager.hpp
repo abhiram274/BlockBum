@@ -63,8 +63,6 @@ public:
             return false;
         }
 
-        // Backward Secrecy: Rotate key when adding member so newcomer cannot decrypt history
-        rotate_key_internal(it->second);
         it->second.member_registry[new_member] = {it->second.key_epoch, 0};
         return true;
     }

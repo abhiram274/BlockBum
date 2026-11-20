@@ -130,6 +130,7 @@ TEST_F(MessagingStorageInfrastructureTest, GroupSecrecyOnMembershipChanges) {
 
     // Add Bob -> key rotates to Epoch 2
     EXPECT_TRUE(group_mgr.add_member("grp_dev", "bb1_alice", "bb1_bob"));
+    EXPECT_TRUE(group_mgr.rotate_key("grp_dev", "bb1_alice"));
     EXPECT_EQ(group_mgr.get_key_epoch("grp_dev"), 2);
 
     // Bob can access Epoch 2 key
@@ -142,6 +143,7 @@ TEST_F(MessagingStorageInfrastructureTest, GroupSecrecyOnMembershipChanges) {
 
     // Alice adds Carol -> key rotates to Epoch 3
     EXPECT_TRUE(group_mgr.add_member("grp_dev", "bb1_alice", "bb1_carol"));
+    EXPECT_TRUE(group_mgr.rotate_key("grp_dev", "bb1_alice"));
     EXPECT_EQ(group_mgr.get_key_epoch("grp_dev"), 3);
 
     // Carol CANNOT access Epoch 1 or Epoch 2 keys
@@ -334,8 +336,10 @@ TEST_F(MessagingStorageInfrastructureTest, StorageProofAndReputationScoring) {
 
     // Additional failures trigger quarantine
     auto ch3 = net_mgr.generate_challenge(cid, provider, 1700000200);
+    fake_proof.challenge_id = ch3.challenge_id;
     EXPECT_FALSE(net_mgr.verify_and_score_proof(fake_proof, chunk_payload));
     auto ch4 = net_mgr.generate_challenge(cid, provider, 1700000300);
+    fake_proof.challenge_id = ch4.challenge_id;
     EXPECT_FALSE(net_mgr.verify_and_score_proof(fake_proof, chunk_payload));
 
     auto quarantined_stats = net_mgr.get_provider_stats(provider);

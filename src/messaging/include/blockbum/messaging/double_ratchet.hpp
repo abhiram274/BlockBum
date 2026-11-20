@@ -173,6 +173,17 @@ public:
             throw std::runtime_error("DoubleRatchetSession is not initialized");
         }
 
+        // 0. Check if message key was previously skipped and cached
+        auto skipped_it = skipped_message_keys_.find({msg.header.dh_pubkey, msg.header.message_number});
+        if (skipped_it != skipped_message_keys_.end()) {
+            auto mk = skipped_it->second;
+            skipped_message_keys_.erase(skipped_it); // Forward secrecy: erase immediately!
+            uint64_t nonce = (static_cast<uint64_t>(msg.header.previous_chain_length) << 32) | msg.header.message_number;
+            auto plaintext = crypto::E2EEncryptionEngine::decrypt(msg.ciphertext, mk, nonce);
+            std::fill(mk.begin(), mk.end(), 0);
+            return plaintext;
+        }
+
         // 1. Check if peer performed a DH ratchet step (new ephemeral public key)
         if (msg.header.dh_pubkey != peer_dh_pubkey_) {
             skip_message_keys(msg.header.previous_chain_length);
