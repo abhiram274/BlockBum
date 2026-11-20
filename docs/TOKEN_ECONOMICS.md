@@ -18,18 +18,18 @@ BlockBum selected an **Account-Based Accounting Model** (similar to Ethereum/Cos
 
 * **Token Symbol**: `BUM`
 * **Divisibility**: $10^6$ atomic units (1 BUM = 1,000,000 MicroBUM)
-* **Maximum Supply Cap**: 100,000,000 BUM (Deflationary hard ceiling)
+* **Maximum Supply Cap**: 21,000,000 BUM (Deflationary hard ceiling, mathematically verified)
 * **Block Subsidy Reward**: 50 BUM per block
 * **Halving Schedule**: Subsidy halves every 210,000 blocks (~4 years at typical block intervals)
 * **Minimum Network Fee**: 0.001 BUM (`1,000` atomic units) required per transaction to deter spam.
 
 ```
-Total Supply Projection:
+Total Supply Projection (Sum over 64 halving eras):
 Block 0         -> 50 BUM subsidy
 Block 210,000   -> 25 BUM subsidy
 Block 420,000   -> 12.5 BUM subsidy
 ...
-Block ~6.7M     -> Supply cap reached (100,000,000 BUM). Miner revenue transitions purely to transaction fees.
+Block ~5.46M    -> Supply cap reached (21,000,000 BUM). Proposer revenue transitions purely to transaction fees.
 ```
 
 ---

@@ -44,10 +44,13 @@ public:
         send_message(peer, MessageType::GetBlocks, req.serialize());
     }
 
+    static constexpr size_t MAX_SEEN_CACHE = 50'000;
+
     bool broadcast_transaction(const core::Transaction& tx) {
         std::string hex_id = core::to_hex(tx.tx_id);
         {
             std::lock_guard<std::mutex> lock(seen_mutex_);
+            if (seen_txs_.size() >= MAX_SEEN_CACHE) seen_txs_.clear();
             if (seen_txs_.find(hex_id) != seen_txs_.end()) {
                 return false; // Already processed
             }
@@ -63,6 +66,7 @@ public:
         std::string hex_id = core::to_hex(block.block_hash);
         {
             std::lock_guard<std::mutex> lock(seen_mutex_);
+            if (seen_blocks_.size() >= MAX_SEEN_CACHE) seen_blocks_.clear();
             if (seen_blocks_.find(hex_id) != seen_blocks_.end()) {
                 return false; // Prevent infinite propagation loop
             }
@@ -151,6 +155,7 @@ private:
                     std::string hex_id = core::to_hex(b.block_hash);
                     {
                         std::lock_guard<std::mutex> lock(seen_mutex_);
+                        if (seen_blocks_.size() >= MAX_SEEN_CACHE) seen_blocks_.clear();
                         seen_blocks_.insert(hex_id);
                     }
                     chain_->add_block(b);
@@ -163,6 +168,7 @@ private:
 
                 {
                     std::lock_guard<std::mutex> lock(seen_mutex_);
+                    if (seen_blocks_.size() >= MAX_SEEN_CACHE) seen_blocks_.clear();
                     if (seen_blocks_.find(hex_id) != seen_blocks_.end()) {
                         return; // Prevent duplicate processing and gossip storms
                     }
@@ -184,6 +190,7 @@ private:
 
                 {
                     std::lock_guard<std::mutex> lock(seen_mutex_);
+                    if (seen_txs_.size() >= MAX_SEEN_CACHE) seen_txs_.clear();
                     if (seen_txs_.find(hex_id) != seen_txs_.end()) {
                         return;
                     }

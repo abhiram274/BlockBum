@@ -2,95 +2,101 @@
 
 #include "blockbum/crypto/icrypto.hpp"
 #include "blockbum/crypto/crypto_utils.hpp"
+#include "monocypher.h"
+#include "monocypher-ed25519.h"
 #include <vector>
 #include <span>
 #include <string>
 #include <stdexcept>
 #include <cstring>
 #include <algorithm>
+#include <array>
 
 namespace blockbum::crypto {
 
-// Diffie-Hellman Key Exchange & Symmetric Stream Cipher (CTR/Keystream)
+// Standard X25519 Diffie-Hellman Key Exchange & Authenticated AEAD Encryption (ChaCha20-Poly1305)
 class E2EEncryptionEngine {
 public:
-    // Symmetric Diffie-Hellman Key Agreement:
-    // For commutative shared secret agreement between party A and party B:
-    // Party A computes: SHA-256(min(A.pub, B.pub) || max(A.pub, B.pub) || SHA-256(A.secret_key[0..32]))
-    // In DH / ECDH over curves (X25519), scalar_mult(A.sk, B.pk) == scalar_mult(B.sk, A.pk).
-    // In our key agreement abstraction, we compute the commutative public-key combination
-    // bound with the respective party's secret key:
-    // Since B.pk = SHA-256(B.sk) and A.pk = SHA-256(A.sk):
-    // SHA-256(A.pk || B.pk) is identical for both Alice and Bob.
-    // To bind both parties symmetrically:
+    // RFC 7748 X25519 Diffie-Hellman Key Agreement:
+    // Derives symmetric shared secret between two Ed25519 identities
     [[nodiscard]] static core::Hash256 compute_shared_secret(
         const PublicKey& peer_public_key,
         const PublicKey& my_public_key,
         const SecretKey& my_secret_key) {
 
-        (void)my_secret_key;
-        // Commutative key derivation: sort public keys lexicographically
-        std::vector<uint8_t> input;
-        input.reserve(32 + 32);
+        (void)my_public_key;
 
-        if (std::memcmp(my_public_key.data(), peer_public_key.data(), 32) < 0) {
-            input.insert(input.end(), my_public_key.begin(), my_public_key.end());
-            input.insert(input.end(), peer_public_key.begin(), peer_public_key.end());
-        } else {
-            input.insert(input.end(), peer_public_key.begin(), peer_public_key.end());
-            input.insert(input.end(), my_public_key.begin(), my_public_key.end());
-        }
+        // 1. Convert peer's Ed25519 public key to Curve25519 (X25519)
+        uint8_t peer_x_pk[32]{};
+        crypto_eddsa_to_x25519(peer_x_pk, peer_public_key.data());
 
-        return CryptoUtils::sha256(input);
+        // 2. Derive X25519 private scalar from Ed25519 32-byte secret seed via SHA-512 + clamping
+        uint8_t hash[64]{};
+        crypto_sha512(hash, my_secret_key.data(), 32);
+
+        uint8_t my_x_sk[32]{};
+        std::memcpy(my_x_sk, hash, 32);
+        my_x_sk[0]  &= 248;
+        my_x_sk[31] &= 127;
+        my_x_sk[31] |= 64;
+
+        // 3. Perform standard X25519 scalar multiplication
+        uint8_t raw_shared[32]{};
+        crypto_x25519(raw_shared, my_x_sk, peer_x_pk);
+
+        // 4. Hash raw shared secret with SHA-256 for uniform key distribution
+        return CryptoUtils::sha256(std::span<const uint8_t>(raw_shared, 32));
     }
 
-    // Encrypt plaintext with 256-bit key using cryptographic keystream generator with nonce
+    // Authenticated encryption (AEAD) with 256-bit key and 128-bit Poly1305 authentication tag
     [[nodiscard]] static std::vector<uint8_t> encrypt(
         std::span<const uint8_t> plaintext,
         const core::Hash256& key,
         uint64_t nonce) {
 
-        std::vector<uint8_t> ciphertext;
-        ciphertext.resize(plaintext.size());
-
-        size_t offset = 0;
-        uint32_t counter = 0;
-
-        while (offset < plaintext.size()) {
-            // Generate 32-byte pseudorandom keystream block:
-            // KeystreamBlock = SHA-256(Key || Nonce || Counter)
-            std::vector<uint8_t> block_input;
-            block_input.reserve(32 + 8 + 4);
-            block_input.insert(block_input.end(), key.begin(), key.end());
-
-            for (int i = 0; i < 8; ++i) {
-                block_input.push_back(static_cast<uint8_t>((nonce >> (i * 8)) & 0xFF));
-            }
-            for (int i = 0; i < 4; ++i) {
-                block_input.push_back(static_cast<uint8_t>((counter >> (i * 8)) & 0xFF));
-            }
-
-            auto keystream = CryptoUtils::sha256(block_input);
-            size_t bytes_to_xor = (std::min)(static_cast<size_t>(32), plaintext.size() - offset);
-
-            for (size_t i = 0; i < bytes_to_xor; ++i) {
-                ciphertext[offset + i] = plaintext[offset + i] ^ keystream[i];
-            }
-
-            offset += bytes_to_xor;
-            counter++;
+        uint8_t nonce24[24]{};
+        for (int i = 0; i < 8; ++i) {
+            nonce24[i] = static_cast<uint8_t>((nonce >> (i * 8)) & 0xFF);
         }
+        const char tag[16] = "BLOCKBUM_AEAD_1";
+        std::memcpy(nonce24 + 8, tag, 16);
 
-        return ciphertext;
+        std::vector<uint8_t> output(plaintext.size() + 16);
+        crypto_aead_lock(output.data(), output.data() + plaintext.size(),
+                         key.data(), nonce24,
+                         nullptr, 0,
+                         plaintext.data(), plaintext.size());
+        return output;
     }
 
-    // Decrypt ciphertext (symmetric inverse)
+    // Authenticated decryption (symmetric inverse): verifies Poly1305 MAC tag before returning plaintext
     [[nodiscard]] static std::vector<uint8_t> decrypt(
         std::span<const uint8_t> ciphertext,
         const core::Hash256& key,
         uint64_t nonce) {
-        // Keystream XOR decryption is identical to encryption
-        return encrypt(ciphertext, key, nonce);
+
+        if (ciphertext.size() < 16) {
+            return {};
+        }
+
+        uint8_t nonce24[24]{};
+        for (int i = 0; i < 8; ++i) {
+            nonce24[i] = static_cast<uint8_t>((nonce >> (i * 8)) & 0xFF);
+        }
+        const char tag[16] = "BLOCKBUM_AEAD_1";
+        std::memcpy(nonce24 + 8, tag, 16);
+
+        size_t pt_size = ciphertext.size() - 16;
+        std::vector<uint8_t> plaintext(pt_size);
+        const uint8_t* mac = ciphertext.data() + pt_size;
+
+        if (crypto_aead_unlock(plaintext.data(), mac,
+                               key.data(), nonce24,
+                               nullptr, 0,
+                               ciphertext.data(), pt_size) != 0) {
+            return {}; // MAC authentication failed: message corrupted or forged
+        }
+        return plaintext;
     }
 };
 

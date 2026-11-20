@@ -34,6 +34,7 @@ _deps/
 # Package managers & dependencies
 vcpkg_installed/
 node_modules/
+dist/
 
 # Local data & environment
 .env

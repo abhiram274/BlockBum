@@ -85,7 +85,13 @@ public:
 private:
     void load_index() {
         if (!std::filesystem::exists(db_file_)) {
-            return;
+            std::filesystem::path tmp_file = db_file_.string() + ".tmp";
+            if (std::filesystem::exists(tmp_file)) {
+                std::error_code ec;
+                std::filesystem::copy_file(tmp_file, db_file_, std::filesystem::copy_options::overwrite_existing, ec);
+            } else {
+                return;
+            }
         }
         std::ifstream file(db_file_, std::ios::binary);
         if (!file.is_open()) return;
@@ -108,7 +114,8 @@ private:
 
     void flush_to_disk() const {
         if (!is_open_ || db_file_.empty()) return;
-        std::ofstream file(db_file_, std::ios::binary | std::ios::trunc);
+        std::filesystem::path tmp_file = db_file_.string() + ".tmp";
+        std::ofstream file(tmp_file, std::ios::binary | std::ios::trunc);
         if (!file.is_open()) return;
 
         for (const auto& [k, v] : memory_map_) {
@@ -120,6 +127,12 @@ private:
             file.write(reinterpret_cast<const char*>(&vlen), sizeof(vlen));
             file.write(reinterpret_cast<const char*>(v.data()), static_cast<std::streamsize>(vlen));
         }
+        file.flush();
+        file.close();
+
+        std::error_code ec;
+        std::filesystem::copy_file(tmp_file, db_file_, std::filesystem::copy_options::overwrite_existing, ec);
+        std::filesystem::remove(tmp_file, ec);
     }
 
     std::filesystem::path base_dir_;

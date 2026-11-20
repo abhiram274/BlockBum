@@ -15,8 +15,8 @@ namespace blockbum::ledger {
 // Token Economics & Issuance Parameters for BUM:
 // 1 BUM = 1,000,000 Atomic Units (MicroBUM / 6 decimal precision)
 inline constexpr uint64_t BUM_DECIMALS = 1'000'000;
-// Maximum Supply Cap: 100,000,000 BUM (100 Million BUM)
-inline constexpr uint64_t MAX_BUM_SUPPLY = 100'000'000ULL * BUM_DECIMALS;
+// Maximum Supply Cap: 21,000,000 BUM (21 Million BUM, mathematically consistent with 50 BUM initial reward and 210,000-block halving schedule)
+inline constexpr uint64_t MAX_BUM_SUPPLY = 21'000'000ULL * BUM_DECIMALS;
 // Block subsidy reward paid to the node proposer
 inline constexpr uint64_t INITIAL_BLOCK_REWARD = 50ULL * BUM_DECIMALS;
 // Halving interval in blocks
@@ -80,6 +80,12 @@ public:
     [[nodiscard]] bool can_apply_transaction(const core::Transaction& tx, const crypto::ICryptoEngine& crypto) const {
         std::lock_guard<std::mutex> lock(mutex_);
 
+        // 0. Address authenticity: ensure sender address matches derived public key
+        std::string expected_sender = "bb1" + core::to_hex(tx.sender_pubkey).substr(0, 40);
+        if (tx.sender != expected_sender) {
+            return false; // Mismatched or forged sender address
+        }
+
         // 1. Transaction fee check
         if (tx.fee < MIN_TRANSACTION_FEE) {
             return false;
@@ -119,6 +125,9 @@ public:
     // Atomically apply transaction and update sender/recipient state
     bool apply_transaction(const core::Transaction& tx, const crypto::ICryptoEngine& crypto) {
         std::lock_guard<std::mutex> lock(mutex_);
+
+        std::string expected_sender = "bb1" + core::to_hex(tx.sender_pubkey).substr(0, 40);
+        if (tx.sender != expected_sender) return false;
 
         if (tx.fee < MIN_TRANSACTION_FEE) return false;
 

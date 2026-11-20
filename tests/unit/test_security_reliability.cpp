@@ -387,3 +387,100 @@ TEST_F(SecurityAndReliabilityTest, PerformanceBenchmarks) {
               << cas_elapsed_ms << " ms (" << (5.0 / (cas_elapsed_ms / 1000.0)) << " MB/s)" << std::endl;
     EXPECT_EQ(cas_res.chunks.size(), 20); // 5MB / 256KB = 20 chunks
 }
+
+// =========================================================================
+// 8. PHASE 11 AUDIT REMEDIATION VERIFICATION TESTS
+// =========================================================================
+
+TEST_F(SecurityAndReliabilityTest, Phase11AuditRemediation_TokenSupplyMathConsistency) {
+    uint64_t total_emitted = 0;
+    for (core::BlockHeight h = 0; h < 64 * ledger::HALVING_INTERVAL; h += ledger::HALVING_INTERVAL) {
+        uint64_t reward = ledger::AccountLedger::calculate_block_reward(h);
+        total_emitted += reward * ledger::HALVING_INTERVAL;
+    }
+
+    // Mathematical invariant: Total mining subsidy strictly respects MAX_BUM_SUPPLY
+    EXPECT_LE(total_emitted, ledger::MAX_BUM_SUPPLY);
+    EXPECT_GT(total_emitted, 20'999'000ULL * ledger::BUM_DECIMALS);
+    EXPECT_EQ(ledger::MAX_BUM_SUPPLY, 21'000'000ULL * ledger::BUM_DECIMALS);
+}
+
+TEST_F(SecurityAndReliabilityTest, Phase11AuditRemediation_RejectsSenderImpersonation) {
+    ledger::AccountLedger ledger;
+    crypto::StandardCryptoEngine crypto;
+    crypto::Wallet wallet(test_dir_ / "wallet_audit_test", crypto_engine_);
+
+    auto victim = wallet.create_identity("Victim");
+    auto attacker = wallet.create_identity("Attacker");
+
+    // Victim has 10,000 BUM
+    ledger.seed_balance(victim.address(), 10'000 * ledger::BUM_DECIMALS);
+    EXPECT_EQ(ledger.get_balance(victim.address()), 10'000 * ledger::BUM_DECIMALS);
+
+    // Attacker crafts a malicious transaction:
+    // sender claims to be victim, but sender_pubkey and signature belong to attacker
+    core::Transaction malicious_tx;
+    malicious_tx.version = 1;
+    malicious_tx.sender = victim.address(); // Victim address targeted!
+    malicious_tx.recipient = attacker.address();
+    malicious_tx.amount = 5'000 * ledger::BUM_DECIMALS;
+    malicious_tx.fee = ledger::MIN_TRANSACTION_FEE;
+    malicious_tx.nonce = 1;
+    malicious_tx.sender_pubkey = attacker.public_key(); // Attacker's public key
+    malicious_tx.signature = attacker.sign(malicious_tx.serialize_for_id(), crypto); // Signed by attacker!
+    malicious_tx.tx_id = crypto.hash256(malicious_tx.serialize_for_id());
+
+    // Both can_apply_transaction and apply_transaction MUST REJECT this impersonation attack!
+    EXPECT_FALSE(ledger.can_apply_transaction(malicious_tx, crypto));
+    EXPECT_FALSE(ledger.apply_transaction(malicious_tx, crypto));
+
+    // Victim balance must remain completely untouched
+    EXPECT_EQ(ledger.get_balance(victim.address()), 10'000 * ledger::BUM_DECIMALS);
+    EXPECT_EQ(ledger.get_balance(attacker.address()), 0);
+}
+
+TEST_F(SecurityAndReliabilityTest, Phase11AuditRemediation_RFC8032Ed25519SignatureIntegrity) {
+    crypto::StandardCryptoEngine crypto;
+    auto kp = crypto.generate_keypair();
+
+    std::string msg = "Critical protocol consensus message";
+    std::span<const uint8_t> msg_span(reinterpret_cast<const uint8_t*>(msg.data()), msg.size());
+
+    auto sig = crypto.sign(msg_span, kp.secret_key);
+    EXPECT_TRUE(crypto.verify(msg_span, sig, kp.public_key));
+
+    // Forgery Attempt: Mutating even 1 bit in signature MUST fail
+    for (size_t i = 0; i < sig.size(); ++i) {
+        auto forged_sig = sig;
+        forged_sig[i] ^= 0x01;
+        EXPECT_FALSE(crypto.verify(msg_span, forged_sig, kp.public_key));
+    }
+}
+
+TEST_F(SecurityAndReliabilityTest, Phase11AuditRemediation_AEADAuthenticatedIntegrity) {
+    crypto::StandardCryptoEngine crypto;
+    crypto::Wallet wallet(test_dir_ / "wallet_aead_test", crypto_engine_);
+
+    auto alice = wallet.create_identity("Alice");
+    auto bob = wallet.create_identity("Bob");
+
+    auto shared_key = crypto::E2EEncryptionEngine::compute_shared_secret(
+        bob.public_key(), alice.public_key(), alice.secret_key());
+
+    std::string secret = "Authenticated E2EE Payload";
+    std::span<const uint8_t> secret_bytes(reinterpret_cast<const uint8_t*>(secret.data()), secret.size());
+
+    uint64_t nonce = 123456789;
+    auto ciphertext = crypto::E2EEncryptionEngine::encrypt(secret_bytes, shared_key, nonce);
+
+    // Valid decryption matches plaintext
+    auto decrypted = crypto::E2EEncryptionEngine::decrypt(ciphertext, shared_key, nonce);
+    EXPECT_EQ(std::string(decrypted.begin(), decrypted.end()), secret);
+
+    // Tampered ciphertext (even 1 bit modified) MUST fail Poly1305 MAC check and return empty
+    auto tampered = ciphertext;
+    tampered[0] ^= 0x01;
+    auto tampered_decrypted = crypto::E2EEncryptionEngine::decrypt(tampered, shared_key, nonce);
+    EXPECT_TRUE(tampered_decrypted.empty());
+}
+

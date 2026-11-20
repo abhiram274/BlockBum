@@ -25,6 +25,7 @@ inline constexpr int SOCKET_ERROR_VAL = SOCKET_ERROR;
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <unistd.h>
 #include <fcntl.h>
 using socket_t = int;
@@ -118,22 +119,36 @@ public:
     }
 
     bool connect(const std::string& address) override {
-        size_t colon = address.find(':');
+        size_t colon = address.rfind(':');
         if (colon == std::string::npos) return false;
 
-        std::string ip = address.substr(0, colon);
-        uint16_t port = static_cast<uint16_t>(std::stoi(address.substr(colon + 1)));
+        std::string host = address.substr(0, colon);
+        std::string port_str = address.substr(colon + 1);
 
-        socket_t sock = socket(AF_INET, SOCK_STREAM, 0);
-        if (sock == INVALID_SOCKET_VAL) return false;
+        addrinfo hints{};
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_protocol = IPPROTO_TCP;
 
-        sockaddr_in addr{};
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(port);
-        inet_pton(AF_INET, ip.c_str(), &addr.sin_addr);
+        addrinfo* result = nullptr;
+        if (getaddrinfo(host.c_str(), port_str.c_str(), &hints, &result) != 0 || !result) {
+            return false;
+        }
 
-        if (::connect(sock, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == SOCKET_ERROR_VAL) {
+        socket_t sock = INVALID_SOCKET_VAL;
+        for (addrinfo* ptr = result; ptr != nullptr; ptr = ptr->ai_next) {
+            sock = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
+            if (sock == INVALID_SOCKET_VAL) continue;
+
+            if (::connect(sock, ptr->ai_addr, static_cast<int>(ptr->ai_addrlen)) != SOCKET_ERROR_VAL) {
+                break; // Successfully connected!
+            }
             close_socket(sock);
+            sock = INVALID_SOCKET_VAL;
+        }
+
+        freeaddrinfo(result);
+        if (sock == INVALID_SOCKET_VAL) {
             return false;
         }
 

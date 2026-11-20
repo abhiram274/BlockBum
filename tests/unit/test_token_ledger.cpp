@@ -36,6 +36,14 @@ TEST_F(NativeCryptocurrencyTest, InitialIssuanceAndSupplyRules) {
     ledger.seed_balance("community_treasury", 1'000'000 * ledger::BUM_DECIMALS);
     EXPECT_EQ(ledger.get_balance("community_treasury"), 1'000'000 * ledger::BUM_DECIMALS);
     EXPECT_EQ(ledger.total_supply(), 1'000'000 * ledger::BUM_DECIMALS);
+
+    // Verify halving emission sum strictly respects MAX_BUM_SUPPLY
+    uint64_t total_emitted = 0;
+    for (core::BlockHeight h = 0; h < 64 * ledger::HALVING_INTERVAL; h += ledger::HALVING_INTERVAL) {
+        total_emitted += ledger::AccountLedger::calculate_block_reward(h) * ledger::HALVING_INTERVAL;
+    }
+    EXPECT_LE(total_emitted, ledger::MAX_BUM_SUPPLY);
+    EXPECT_EQ(ledger::MAX_BUM_SUPPLY, 21'000'000ULL * ledger::BUM_DECIMALS);
 }
 
 TEST_F(NativeCryptocurrencyTest, ValidSignedTransferUpdatesBalances) {
