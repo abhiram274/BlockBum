@@ -4,6 +4,10 @@
 #include "blockbum/crypto/crypto_utils.hpp"
 #include <vector>
 #include <memory>
+#include <cstdint>
+#include <string>
+#include <optional>
+#include <cstring>
 
 using namespace blockbum::core;
 using namespace blockbum::consensus;

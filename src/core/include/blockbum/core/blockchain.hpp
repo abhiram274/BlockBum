@@ -12,6 +12,8 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <span>
+#include <cstring>
 #include <sstream>
 #include <stdexcept>
 #include <algorithm>
