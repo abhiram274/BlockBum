@@ -63,7 +63,7 @@ jobs:
           CXX: ${{ matrix.cxx_compiler }}
 
       - name: Build Project
-        run: cmake --build build --config Release --parallel
+        run: cmake --build build --config Release --verbose
 
       - name: Run Test Suite
         working-directory: build
