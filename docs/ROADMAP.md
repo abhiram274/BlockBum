@@ -223,7 +223,7 @@ flowchart TB
 ### Phase 17: BUM Cryptocurrency Economic Infrastructure [COMPLETED]
 * **Status**: Completed (Supply cap audit, mathematical resolution of 100M legacy placeholder to 21M BUM, dynamic size-based fee market, 80/20 validator/treasury fee split, storage-provider lease compensation escrow, community bounty escrow, timelocked governance treasury, duplicate reward prevention, and deterministic economic simulations).
 * **Deliverables**:
-  * Audited supply cap and block subsidy issuance: proved exact integer right-shift emission across 64 eras sums to $20,999,999.9769\text{ BUM} \le 21,000,000\text{ BUM}$.
+  * Audited supply cap and block subsidy issuance: proved exact integer right-shift emission across 64 eras sums to $20,999,997.48\text{ BUM} \le 21,000,000\text{ BUM}$.
   * Resolved the inconsistency with early 100M testnet placeholder draft; standardized immutable 21,000,000 BUM ceiling (`MAX_BUM_SUPPLY = 21'000'000 * 10^6`).
   * Dynamic size-based transaction fee engine (`calculate_minimum_fee`) protecting against DoS and memory flooding.
   * Deterministic fee distribution (`split_fees`): 80% to block proposer for liveness incentives, 20% to Community Ecosystem Treasury (`bb1_community_treasury`).
@@ -234,6 +234,22 @@ flowchart TB
   * Deterministic long-term economic simulation engine (`EconomicSimulator`) modeling 10-year trajectories across low, moderate, and high participation regimes.
   * Official monetary policy specification in [docs/BUM_MONETARY_POLICY.md](BUM_MONETARY_POLICY.md).
   * Comprehensive test suite in `tests/unit/test_economic_infrastructure.cpp`.
+
+### Phase 18: BlockBum Decentralized Governance [COMPLETED]
+* **Status**: Completed (Formal BBIP standard process, on-chain voting engine, proposal categorization, quorum & supermajority rules, execution timelocks, emergency security circuit breakers, and inviolate private balance protection).
+* **Deliverables**:
+  * Formal BlockBum Improvement Proposal (BBIP) standards process in [docs/bips/BBIP-0001.md](bips/BBIP-0001.md) and template in [docs/bips/bbip-template.md](bips/bbip-template.md).
+  * Comprehensive governance framework specification in [docs/GOVERNANCE.md](GOVERNANCE.md) defining stakeholder roles (developers, node operators, validators, users) and anti-capture principles.
+  * C++20 on-chain governance engine (`GovernanceManager` in `src/core/include/blockbum/core/governance.hpp`):
+    * Proposal categories (`CoreConsensus`, `NetworkProtocol`, `TreasuryGrant`, `ParameterChange`, `CommunityMeta`).
+    * Lifecycle state machine (`Draft`, `Active`, `Passed`, `Defeated`, `Queued`, `Executed`, `Cancelled`).
+    * On-chain cryptographic vote casting with single-vote invariant and Sybil double-voting prevention.
+    * Quorum (5%–20%) and supermajority approval thresholds (66.7% for CoreConsensus, 60% for Network, 50% for others).
+    * Mandatory execution timelock delay preventing surprise governance attacks.
+    * Inviolate private balance protection: governance engine blocks and cancels any proposal attempting to seize or alter user balances.
+    * Emergency circuit breaker: temporary module pauses with automatic expiration; fundamental ledger transfers strictly non-pausable.
+    * Public governance history and audit trails.
+  * Comprehensive test suite in `tests/unit/test_governance.cpp`.
 
 
 ### Project Status: All 10 Engineering, Security & Testnet Phases Complete!

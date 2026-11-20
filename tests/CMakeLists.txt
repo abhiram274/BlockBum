@@ -29,6 +29,7 @@ add_executable(blockbum_tests
     unit/test_scalability_benchmarks.cpp
     unit/test_messaging_storage_infrastructure.cpp
     unit/test_economic_infrastructure.cpp
+    unit/test_governance.cpp
 )
 
 target_link_libraries(blockbum_tests PRIVATE
