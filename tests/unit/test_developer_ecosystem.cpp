@@ -150,13 +150,6 @@ TEST_F(DeveloperEcosystemTest, RestHttpEndpoints) {
 
 // 5. Privacy Preservation in Public Explorer APIs (Payload Scrubbing)
 TEST_F(DeveloperEcosystemTest, PrivacyPreservingPayloadScrubbing) {
-    // Add block with transaction containing sensitive payload data
-    core::Block b1;
-    b1.header.version = 1;
-    b1.header.height = 1;
-    b1.header.timestamp = 1700000001;
-    b1.header.previous_hash = blockchain_->get_tip_block()->block_hash;
-
     core::Transaction priv_tx;
     priv_tx.version = 1;
     priv_tx.sender = "bb1sender_privacy_test";
@@ -169,8 +162,7 @@ TEST_F(DeveloperEcosystemTest, PrivacyPreservingPayloadScrubbing) {
     priv_tx.payload = std::vector<uint8_t>(sensitive_secret.begin(), sensitive_secret.end());
     priv_tx.tx_id = crypto::CryptoUtils::sha256(priv_tx.serialize_for_id());
 
-    b1.transactions.push_back(priv_tx);
-    b1.block_hash = b1.compute_block_hash();
+    auto b1 = blockchain_->create_next_block({priv_tx});
     ASSERT_TRUE(blockchain_->add_block(b1));
 
     // Query transaction through JSON-RPC
@@ -287,11 +279,11 @@ TEST_F(DeveloperEcosystemTest, CppDeveloperSdkOperations) {
 // 8. Protocol Test Vectors Invariants
 TEST_F(DeveloperEcosystemTest, ProtocolTestVectorsInvariants) {
     // Halving Schedule Invariants
-    EXPECT_EQ(ledger::calculate_block_reward(0), 50ULL * ledger::BUM_DECIMALS);
-    EXPECT_EQ(ledger::calculate_block_reward(ledger::HALVING_INTERVAL), 25ULL * ledger::BUM_DECIMALS);
-    EXPECT_EQ(ledger::calculate_block_reward(ledger::HALVING_INTERVAL * 2), 12ULL * ledger::BUM_DECIMALS + 500'000ULL);
-    EXPECT_EQ(ledger::calculate_block_reward(ledger::HALVING_INTERVAL * 25), 1ULL); // 1 atomic unit (0.000001 BUM)
-    EXPECT_EQ(ledger::calculate_block_reward(ledger::HALVING_INTERVAL * 26), 0ULL); // Complete cessation of subsidy
+    EXPECT_EQ(ledger::AccountLedger::calculate_block_reward(0), 50ULL * ledger::BUM_DECIMALS);
+    EXPECT_EQ(ledger::AccountLedger::calculate_block_reward(ledger::HALVING_INTERVAL), 25ULL * ledger::BUM_DECIMALS);
+    EXPECT_EQ(ledger::AccountLedger::calculate_block_reward(ledger::HALVING_INTERVAL * 2), 12ULL * ledger::BUM_DECIMALS + 500'000ULL);
+    EXPECT_EQ(ledger::AccountLedger::calculate_block_reward(ledger::HALVING_INTERVAL * 25), 1ULL); // 1 atomic unit (0.000001 BUM)
+    EXPECT_EQ(ledger::AccountLedger::calculate_block_reward(ledger::HALVING_INTERVAL * 26), 0ULL); // Complete cessation of subsidy
 
     // Supply Invariants
     EXPECT_EQ(economics::MAX_BUM_SUPPLY, 21'000'000ULL * ledger::BUM_DECIMALS);
