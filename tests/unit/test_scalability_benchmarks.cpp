@@ -289,17 +289,18 @@ TEST_F(ScalabilityBenchmarksTest, PrunedModeDiskSpaceEfficiency) {
     EXPECT_EQ(chain->height(), 50);
 
     // Prune history keeping only last 10 blocks
-    chain->prune_history(10);
+    size_t pruned = chain->prune_history(10);
+    EXPECT_EQ(pruned, 40U);
 
-    // Verify historical blocks pruned from memory while tip & height preserved
+    // Verify historical blocks have transactions pruned while headers & height are preserved
     EXPECT_EQ(chain->height(), 50);
-    EXPECT_FALSE(chain->get_block_by_height(10).has_value());
-    EXPECT_FALSE(chain->get_block_by_height(20).has_value());
-    EXPECT_FALSE(chain->get_block_by_height(35).has_value());
+    EXPECT_TRUE(chain->get_block_by_height(10)->transactions.empty());
+    EXPECT_TRUE(chain->get_block_by_height(20)->transactions.empty());
+    EXPECT_TRUE(chain->get_block_by_height(35)->transactions.empty());
 
-    // Tip window preserved
-    EXPECT_TRUE(chain->get_block_by_height(45).has_value());
-    EXPECT_TRUE(chain->get_block_by_height(50).has_value());
+    // Tip window preserved with full transactions
+    EXPECT_FALSE(chain->get_block_by_height(45)->transactions.empty());
+    EXPECT_FALSE(chain->get_block_by_height(50)->transactions.empty());
     EXPECT_EQ(chain->get_tip_block()->header.height, 50);
 }
 
