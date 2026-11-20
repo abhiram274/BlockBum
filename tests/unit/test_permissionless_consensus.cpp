@@ -28,8 +28,8 @@ TEST_F(PermissionlessConsensusTest, PoWMiningAndVerification) {
     Block block;
     block.header.version = 1;
     block.header.height = 1;
-    block.header.previous_hash = CryptoUtils::sha256({'g', 'e', 'n', 'e', 's', 'i', 's'});
-    block.header.merkle_root = CryptoUtils::sha256({'m', 'e', 'r', 'k', 'l', 'e'});
+    block.header.previous_hash = CryptoUtils::sha256("genesis");
+    block.header.merkle_root = CryptoUtils::sha256("merkle");
     block.header.timestamp = 1700000000;
     block.header.nonce = 0;
 
@@ -58,8 +58,8 @@ TEST_F(PermissionlessConsensusTest, PoWRejectionOnInsufficientDifficulty) {
     Block block;
     block.header.version = 1;
     block.header.height = 1;
-    block.header.previous_hash = CryptoUtils::sha256({'p', 'a', 'r', 'e', 'n', 't'});
-    block.header.merkle_root = CryptoUtils::sha256({'r', 'o', 'o', 't'});
+    block.header.previous_hash = CryptoUtils::sha256("parent");
+    block.header.merkle_root = CryptoUtils::sha256("root");
     block.header.timestamp = 1700000000;
     // Unmined nonce, hash will likely have < 16 zeros
     block.header.nonce = 42;
@@ -126,7 +126,7 @@ TEST_F(PermissionlessConsensusTest, DeterministicForkChoiceAndReorg) {
     block1A.header.version = 1;
     block1A.header.height = 1;
     block1A.header.previous_hash = genesis.block_hash;
-    block1A.header.merkle_root = CryptoUtils::sha256({'1', 'A'});
+    block1A.header.merkle_root = CryptoUtils::sha256("1A");
     block1A.header.timestamp = genesis.header.timestamp + 10;
     ASSERT_TRUE(pow_engine.mine_block(block1A, 4));
     EXPECT_TRUE(chain.add_block_with_fork_choice(block1A, pow_engine).accepted);
@@ -135,7 +135,7 @@ TEST_F(PermissionlessConsensusTest, DeterministicForkChoiceAndReorg) {
     block2A.header.version = 1;
     block2A.header.height = 2;
     block2A.header.previous_hash = block1A.block_hash;
-    block2A.header.merkle_root = CryptoUtils::sha256({'2', 'A'});
+    block2A.header.merkle_root = CryptoUtils::sha256("2A");
     block2A.header.timestamp = block1A.header.timestamp + 10;
     ASSERT_TRUE(pow_engine.mine_block(block2A, 4));
     EXPECT_TRUE(chain.add_block_with_fork_choice(block2A, pow_engine).accepted);
@@ -147,7 +147,7 @@ TEST_F(PermissionlessConsensusTest, DeterministicForkChoiceAndReorg) {
     block1B.header.version = 1;
     block1B.header.height = 1;
     block1B.header.previous_hash = genesis.block_hash;
-    block1B.header.merkle_root = CryptoUtils::sha256({'1', 'B'});
+    block1B.header.merkle_root = CryptoUtils::sha256("1B");
     block1B.header.timestamp = genesis.header.timestamp + 12;
     ASSERT_TRUE(pow_engine.mine_block(block1B, 4));
     // 1B is accepted as side branch (work 1B < work 2A)
@@ -160,7 +160,7 @@ TEST_F(PermissionlessConsensusTest, DeterministicForkChoiceAndReorg) {
     block2B.header.version = 1;
     block2B.header.height = 2;
     block2B.header.previous_hash = block1B.block_hash;
-    block2B.header.merkle_root = CryptoUtils::sha256({'2', 'B'});
+    block2B.header.merkle_root = CryptoUtils::sha256("2B");
     block2B.header.timestamp = block1B.header.timestamp + 10;
     ASSERT_TRUE(pow_engine.mine_block(block2B, 4));
     // 2B has equal work to 2A, branch A arrived first so remains tip
@@ -171,7 +171,7 @@ TEST_F(PermissionlessConsensusTest, DeterministicForkChoiceAndReorg) {
     block3B.header.version = 1;
     block3B.header.height = 3;
     block3B.header.previous_hash = block2B.block_hash;
-    block3B.header.merkle_root = CryptoUtils::sha256({'3', 'B'});
+    block3B.header.merkle_root = CryptoUtils::sha256("3B");
     block3B.header.timestamp = block2B.header.timestamp + 10;
     ASSERT_TRUE(pow_engine.mine_block(block3B, 4));
 
@@ -212,7 +212,7 @@ TEST_F(PermissionlessConsensusTest, NetworkPartitionSplitBrainAndHealing) {
     Block east1;
     east1.header.height = 1;
     east1.header.previous_hash = genesis.block_hash;
-    east1.header.merkle_root = CryptoUtils::sha256({'e', '1'});
+    east1.header.merkle_root = CryptoUtils::sha256("e1");
     east1.header.timestamp = genesis.header.timestamp + 10;
     ASSERT_TRUE(pow.mine_block(east1, 4));
     node_east.add_block_with_fork_choice(east1, pow);
@@ -220,7 +220,7 @@ TEST_F(PermissionlessConsensusTest, NetworkPartitionSplitBrainAndHealing) {
     Block east2;
     east2.header.height = 2;
     east2.header.previous_hash = east1.block_hash;
-    east2.header.merkle_root = CryptoUtils::sha256({'e', '2'});
+    east2.header.merkle_root = CryptoUtils::sha256("e2");
     east2.header.timestamp = east1.header.timestamp + 10;
     ASSERT_TRUE(pow.mine_block(east2, 4));
     node_east.add_block_with_fork_choice(east2, pow);
@@ -229,7 +229,7 @@ TEST_F(PermissionlessConsensusTest, NetworkPartitionSplitBrainAndHealing) {
     Block west1;
     west1.header.height = 1;
     west1.header.previous_hash = genesis.block_hash;
-    west1.header.merkle_root = CryptoUtils::sha256({'w', '1'});
+    west1.header.merkle_root = CryptoUtils::sha256("w1");
     west1.header.timestamp = genesis.header.timestamp + 8;
     ASSERT_TRUE(pow.mine_block(west1, 4));
     node_west.add_block_with_fork_choice(west1, pow);
@@ -237,7 +237,7 @@ TEST_F(PermissionlessConsensusTest, NetworkPartitionSplitBrainAndHealing) {
     Block west2;
     west2.header.height = 2;
     west2.header.previous_hash = west1.block_hash;
-    west2.header.merkle_root = CryptoUtils::sha256({'w', '2'});
+    west2.header.merkle_root = CryptoUtils::sha256("w2");
     west2.header.timestamp = west1.header.timestamp + 8;
     ASSERT_TRUE(pow.mine_block(west2, 4));
     node_west.add_block_with_fork_choice(west2, pow);
@@ -245,7 +245,7 @@ TEST_F(PermissionlessConsensusTest, NetworkPartitionSplitBrainAndHealing) {
     Block west3;
     west3.header.height = 3;
     west3.header.previous_hash = west2.block_hash;
-    west3.header.merkle_root = CryptoUtils::sha256({'w', '3'});
+    west3.header.merkle_root = CryptoUtils::sha256("w3");
     west3.header.timestamp = west2.header.timestamp + 8;
     ASSERT_TRUE(pow.mine_block(west3, 4));
     node_west.add_block_with_fork_choice(west3, pow);
@@ -253,7 +253,7 @@ TEST_F(PermissionlessConsensusTest, NetworkPartitionSplitBrainAndHealing) {
     Block west4;
     west4.header.height = 4;
     west4.header.previous_hash = west3.block_hash;
-    west4.header.merkle_root = CryptoUtils::sha256({'w', '4'});
+    west4.header.merkle_root = CryptoUtils::sha256("w4");
     west4.header.timestamp = west3.header.timestamp + 8;
     ASSERT_TRUE(pow.mine_block(west4, 4));
     node_west.add_block_with_fork_choice(west4, pow);
