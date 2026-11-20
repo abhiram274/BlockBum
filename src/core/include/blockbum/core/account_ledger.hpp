@@ -2,12 +2,16 @@
 
 #include "blockbum/core/types.hpp"
 #include "blockbum/core/transaction.hpp"
+#include "blockbum/core/merkle_tree.hpp"
+#include "blockbum/core/serializer.hpp"
 #include "blockbum/crypto/icrypto.hpp"
+#include "blockbum/crypto/crypto_utils.hpp"
 #include <string>
 #include <unordered_map>
 #include <vector>
 #include <mutex>
 #include <optional>
+#include <algorithm>
 #include <stdexcept>
 
 namespace blockbum::ledger {
@@ -27,6 +31,46 @@ inline constexpr uint64_t MIN_TRANSACTION_FEE = 1'000;
 struct AccountState {
     core::Balance balance{0};
     core::Nonce nonce{0};
+};
+
+struct StateSnapshot {
+    core::BlockHeight height{0};
+    core::Hash256 block_hash{};
+    core::Hash256 state_root{};
+    uint64_t total_supply{0};
+    std::vector<std::pair<std::string, AccountState>> accounts;
+
+    [[nodiscard]] std::vector<uint8_t> serialize() const {
+        core::BinarySerializer s;
+        s.write_u64(height);
+        s.write_hash(block_hash);
+        s.write_hash(state_root);
+        s.write_u64(total_supply);
+        s.write_u32(static_cast<uint32_t>(accounts.size()));
+        for (const auto& [addr, state] : accounts) {
+            s.write_string(addr);
+            s.write_u64(state.balance);
+            s.write_u64(state.nonce);
+        }
+        return s.take_data();
+    }
+
+    [[nodiscard]] static StateSnapshot deserialize(core::BinaryDeserializer& d) {
+        StateSnapshot snap;
+        snap.height = d.read_u64();
+        snap.block_hash = d.read_hash();
+        snap.state_root = d.read_hash();
+        snap.total_supply = d.read_u64();
+        uint32_t count = d.read_u32();
+        snap.accounts.reserve(count);
+        for (uint32_t i = 0; i < count; ++i) {
+            std::string addr = d.read_string();
+            core::Balance bal = d.read_u64();
+            core::Nonce nonce = d.read_u64();
+            snap.accounts.emplace_back(std::move(addr), AccountState{bal, nonce});
+        }
+        return snap;
+    }
 };
 
 struct TransferRecord {
@@ -179,6 +223,102 @@ public:
         auto it = history_.find(address);
         if (it != history_.end()) return it->second;
         return {};
+    }
+
+    [[nodiscard]] size_t account_count() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return accounts_.size();
+    }
+
+    // Deterministic state root calculation over sorted account trie/leaves
+    [[nodiscard]] static core::Hash256 compute_state_root(const std::vector<std::pair<std::string, AccountState>>& accounts) {
+        if (accounts.empty()) {
+            return core::Hash256{};
+        }
+        auto sorted = accounts;
+        std::sort(sorted.begin(), sorted.end(), [](const auto& a, const auto& b) {
+            return a.first < b.first;
+        });
+
+        std::vector<core::Hash256> leaves;
+        leaves.reserve(sorted.size());
+        for (const auto& [addr, state] : sorted) {
+            core::BinarySerializer ls;
+            ls.write_string(addr);
+            ls.write_u64(state.balance);
+            ls.write_u64(state.nonce);
+            leaves.push_back(crypto::CryptoUtils::sha256(ls.data()));
+        }
+        return core::MerkleTree::compute_root(leaves);
+    }
+
+    [[nodiscard]] core::Hash256 calculate_state_root() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        std::vector<std::pair<std::string, AccountState>> account_list;
+        account_list.reserve(accounts_.size());
+        for (const auto& [addr, state] : accounts_) {
+            account_list.emplace_back(addr, state);
+        }
+        return compute_state_root(account_list);
+    }
+
+    [[nodiscard]] StateSnapshot export_snapshot(core::BlockHeight height, const core::Hash256& block_hash) const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        StateSnapshot snap;
+        snap.height = height;
+        snap.block_hash = block_hash;
+        snap.total_supply = total_supply_;
+        snap.accounts.reserve(accounts_.size());
+        for (const auto& [addr, state] : accounts_) {
+            snap.accounts.emplace_back(addr, state);
+        }
+        std::sort(snap.accounts.begin(), snap.accounts.end(), [](const auto& a, const auto& b) {
+            return a.first < b.first;
+        });
+        snap.state_root = compute_state_root(snap.accounts);
+        return snap;
+    }
+
+    [[nodiscard]] bool import_snapshot(const StateSnapshot& snap) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        // 1. Verify authenticated state root against independent computation
+        auto computed_root = compute_state_root(snap.accounts);
+        if (computed_root != snap.state_root) {
+            return false;
+        }
+
+        // 2. Verify state consistency invariants
+        uint64_t calculated_supply = 0;
+        for (const auto& [addr, state] : snap.accounts) {
+            calculated_supply += state.balance;
+        }
+        if (calculated_supply != snap.total_supply || calculated_supply > MAX_BUM_SUPPLY) {
+            return false;
+        }
+
+        // 3. Atomically overwrite state
+        accounts_.clear();
+        for (const auto& [addr, state] : snap.accounts) {
+            accounts_[addr] = state;
+        }
+        total_supply_ = snap.total_supply;
+        history_.clear();
+        return true;
+    }
+
+    [[nodiscard]] bool verify_state_invariants() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        uint64_t sum_balances = 0;
+        for (const auto& [addr, state] : accounts_) {
+            sum_balances += state.balance;
+        }
+        if (sum_balances != total_supply_) {
+            return false; // Balance conservation violation
+        }
+        if (total_supply_ > MAX_BUM_SUPPLY) {
+            return false; // Supply cap violation
+        }
+        return true;
     }
 
 private:

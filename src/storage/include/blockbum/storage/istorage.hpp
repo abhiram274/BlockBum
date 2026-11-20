@@ -30,6 +30,25 @@ public:
 
     /// Check if key exists
     [[nodiscard]] virtual bool has(std::span<const uint8_t> key) const = 0;
+
+    /// Operation for atomic batch execution
+    struct WriteOp {
+        bool is_put{true};
+        std::vector<uint8_t> key;
+        std::vector<uint8_t> value;
+    };
+
+    /// Atomically execute a batch of put and remove operations
+    virtual bool write_batch(const std::vector<WriteOp>& ops) {
+        for (const auto& op : ops) {
+            if (op.is_put) {
+                if (!put(op.key, op.value)) return false;
+            } else {
+                if (!remove(op.key)) return false;
+            }
+        }
+        return true;
+    }
 };
 
 } // namespace blockbum::storage

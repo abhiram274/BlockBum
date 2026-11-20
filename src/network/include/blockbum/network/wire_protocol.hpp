@@ -28,7 +28,9 @@ enum class MessageType : uint8_t {
     NewBlock = 9,      // Broadcast newly mined/validated block
     NewTransaction = 10,// Broadcast newly submitted transaction
     GetPeers = 11,     // Query known peers from remote peer
-    Peers = 12         // List of peers returned
+    Peers = 12,        // List of peers returned
+    GetHeaders = 13,   // Request headers from height H to H+N (Headers-First Sync)
+    Headers = 14       // Batch of block headers returned
 };
 
 struct MessageHeader {
@@ -182,6 +184,51 @@ struct PeersPayload {
             auto b = d.read_bytes();
             core::BinaryDeserializer pd(b);
             p.peers.push_back(PeerEntry::deserialize(pd));
+        }
+        return p;
+    }
+};
+
+struct GetHeadersPayload {
+    core::BlockHeight from_height{0};
+    uint32_t max_count{500};
+
+    [[nodiscard]] std::vector<uint8_t> serialize() const {
+        core::BinarySerializer s;
+        s.write_u64(from_height);
+        s.write_u32(max_count);
+        return s.take_data();
+    }
+
+    static GetHeadersPayload deserialize(core::BinaryDeserializer& d) {
+        GetHeadersPayload p;
+        p.from_height = d.read_u64();
+        p.max_count = d.read_u32();
+        return p;
+    }
+};
+
+struct HeadersPayload {
+    std::vector<core::BlockHeader> headers;
+
+    [[nodiscard]] std::vector<uint8_t> serialize() const {
+        core::BinarySerializer s;
+        s.write_u32(static_cast<uint32_t>(headers.size()));
+        for (const auto& h : headers) {
+            auto b = h.serialize();
+            s.write_bytes(b);
+        }
+        return s.take_data();
+    }
+
+    static HeadersPayload deserialize(core::BinaryDeserializer& d) {
+        HeadersPayload p;
+        uint32_t count = d.read_u32();
+        p.headers.reserve(count);
+        for (uint32_t i = 0; i < count; ++i) {
+            auto b = d.read_bytes();
+            core::BinaryDeserializer hd(b);
+            p.headers.push_back(core::BlockHeader::deserialize(hd));
         }
         return p;
     }

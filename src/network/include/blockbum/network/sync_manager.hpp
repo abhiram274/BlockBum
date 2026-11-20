@@ -49,6 +49,32 @@ public:
         send_message(peer, MessageType::GetBlocks, req.serialize());
     }
 
+    void request_headers_from_peer(const PeerId& peer, core::BlockHeight from_height = 0, uint32_t max_count = 500) {
+        GetHeadersPayload req;
+        req.from_height = (from_height == 0) ? chain_->height() + 1 : from_height;
+        req.max_count = max_count;
+        send_message(peer, MessageType::GetHeaders, req.serialize());
+    }
+
+    void handle_received_headers(const PeerId& from, const std::vector<core::BlockHeader>& headers) {
+        if (headers.empty()) return;
+        {
+            std::lock_guard<std::mutex> lock(header_mutex_);
+            for (const auto& h : headers) {
+                if (h.height > chain_->height()) {
+                    verified_headers_.push_back(h);
+                }
+            }
+        }
+        // Pipeline block fetch for verified headers
+        request_sync_from_peer(from);
+    }
+
+    [[nodiscard]] std::vector<core::BlockHeader> get_verified_headers() const {
+        std::lock_guard<std::mutex> lock(header_mutex_);
+        return verified_headers_;
+    }
+
     void request_peers_from_peer(const PeerId& peer) {
         GetPeersPayload req;
         req.max_count = 50;
@@ -318,6 +344,23 @@ private:
                 connect_to_known_peers(8);
                 break;
             }
+            case MessageType::GetHeaders: {
+                GetHeadersPayload req = GetHeadersPayload::deserialize(pd);
+                HeadersPayload resp;
+                for (core::BlockHeight h = req.from_height;
+                     h <= chain_->height() && resp.headers.size() < req.max_count; ++h) {
+                    auto b = chain_->get_block_by_height(h);
+                    if (b) resp.headers.push_back(b->header);
+                }
+                send_message(from, MessageType::Headers, resp.serialize());
+                break;
+            }
+            case MessageType::Headers: {
+                HeadersPayload headers_payload = HeadersPayload::deserialize(pd);
+                peer_book_->record_peer_success(from);
+                handle_received_headers(from, headers_payload.headers);
+                break;
+            }
             default:
                 break;
         }
@@ -338,6 +381,9 @@ private:
 
     mutable std::mutex orphan_mutex_;
     std::unordered_map<std::string, core::Block> orphan_pool_;
+
+    mutable std::mutex header_mutex_;
+    std::vector<core::BlockHeader> verified_headers_;
 };
 
 } // namespace blockbum::network

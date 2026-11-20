@@ -82,6 +82,22 @@ public:
         return memory_map_.find(key_str) != memory_map_.end();
     }
 
+    bool write_batch(const std::vector<WriteOp>& ops) override {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (!is_open_) return false;
+
+        for (const auto& op : ops) {
+            std::string key_str(op.key.begin(), op.key.end());
+            if (op.is_put) {
+                memory_map_[key_str] = op.value;
+            } else {
+                memory_map_.erase(key_str);
+            }
+        }
+        flush_to_disk();
+        return true;
+    }
+
 private:
     void load_index() {
         if (!std::filesystem::exists(db_file_)) {
