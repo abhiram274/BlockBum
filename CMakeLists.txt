@@ -31,9 +31,11 @@ function(blockbum_set_compiler_warnings target_name)
     if(MSVC)
         target_compile_options(${target_name} PRIVATE
             /W4
+            /EHsc
             $<$<BOOL:${BLOCKBUM_WARNINGS_AS_ERRORS}>:/WX>
             /permissive-
             /Zc:__cplusplus
+            /DNOMINMAX
         )
     else()
         target_compile_options(${target_name} PRIVATE

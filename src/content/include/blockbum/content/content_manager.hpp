@@ -71,7 +71,7 @@ public:
 
         for (size_t i = 0; i < total_chunks; ++i) {
             size_t start = i * chunk_size;
-            size_t len = std::min(chunk_size, encrypted_payload.size() - start);
+            size_t len = (std::min)(chunk_size, encrypted_payload.size() - start);
 
             ContentChunk chunk;
             chunk.chunk_index = static_cast<uint32_t>(i);

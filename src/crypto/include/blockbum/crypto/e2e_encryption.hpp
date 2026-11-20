@@ -71,7 +71,7 @@ public:
             }
 
             auto keystream = CryptoUtils::sha256(block_input);
-            size_t bytes_to_xor = std::min<size_t>(32, plaintext.size() - offset);
+            size_t bytes_to_xor = (std::min)<size_t>(32, plaintext.size() - offset);
 
             for (size_t i = 0; i < bytes_to_xor; ++i) {
                 ciphertext[offset + i] = plaintext[offset + i] ^ keystream[i];
