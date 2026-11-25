@@ -180,7 +180,7 @@ TEST_F(ApplicationEcosystemTest, EncryptedVaultSerializationAndProtection) {
     // Serialize vault file
     core::BinarySerializer s;
     s.write_string("BLOCKBUM_ENCRYPTED_VAULT_V1");
-    s.write_bytes(auth_tag);
+    s.write_hash(auth_tag);
     s.write_bytes(ciphertext);
     auto vault_bytes = s.take_data();
 
@@ -190,7 +190,7 @@ TEST_F(ApplicationEcosystemTest, EncryptedVaultSerializationAndProtection) {
     EXPECT_EQ(header_tag, "BLOCKBUM_ENCRYPTED_VAULT_V1");
 
     auto read_tag = d.read_hash();
-    auto read_cipher = d.read_remaining();
+    auto read_cipher = d.read_bytes();
 
     // Verify integrity tag
     core::Hash256 computed_tag = crypto::CryptoUtils::sha256(read_cipher);
