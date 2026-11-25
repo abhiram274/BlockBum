@@ -1,0 +1,86 @@
+{
+  "version": "0.2.0",
+  "release_date": "2026-11-25",
+  "release_authority": {
+    "entity": "BlockBum Core Security Guild",
+    "ed25519_public_key": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
+  },
+  "critical_security_update": false,
+  "supported_protocols": [
+    "BBUM/1.0",
+    "RPC/2.0"
+  ],
+  "changelog": [
+    "Cross-platform expansion to Windows, Linux, macOS, Android, and iOS",
+    "Zero-install browser community onboarding portal",
+    "Lightweight Client (SPV) mode with Merkle inclusion proof verification",
+    "Multi-device identity pairing and revocation",
+    "Encrypted local storage vault with master password protection",
+    "7-language localization (EN, ES, ZH, DE, FR, HI, JA) and accessibility enhancements"
+  ],
+  "artifacts": [
+    {
+      "platform": "windows-x64",
+      "format": "msi",
+      "filename": "BlockBum-Setup-0.2.0.msi",
+      "size_bytes": 62,
+      "sha256": "2634dfe5f2b300d25888c21d1e012c97400a19c2794a2d481e78e929d399145c",
+      "ed25519_signature": "d02ae36676c25c7331a4f985d5291fa459ef89c3b5ee4f2ab8fb4dc72ab1f634082a4dabefc2ecacdfb0075b96b31b0ba83369a07b9c67095bac18ae59f9eb31",
+      "download_url": "https://releases.blockbum.net/v0.2.0/BlockBum-Setup-0.2.0.msi"
+    },
+    {
+      "platform": "windows-portable",
+      "format": "exe",
+      "filename": "BlockBum-0.2.0-portable.exe",
+      "size_bytes": 61,
+      "sha256": "baff5b8caa1e5a5ec1deb649d88d52280e8998e1c4f037642163cdf98781e4c9",
+      "ed25519_signature": "352b47e78fe7010f7c5465eb480b02c1309be4a19e53452e56519e90003b63078fb3eefbfc0da60b163803af90e17c40199c79076e8715362e2eb72ca11fa75d",
+      "download_url": "https://releases.blockbum.net/v0.2.0/BlockBum-0.2.0-portable.exe"
+    },
+    {
+      "platform": "linux-appimage",
+      "format": "AppImage",
+      "filename": "BlockBum-0.2.0.AppImage",
+      "size_bytes": 58,
+      "sha256": "6a7c8eda1092b8b70371285d9099e0d5dc06d1039bdea940031115c18e72b2e2",
+      "ed25519_signature": "7bbed11eb9d370c86626d7bf00ec63b6b937e3c9e2a0fdf3c9e48684c1f707ee1e2a92043749ac29b4d0f16ad47bbf67a0d9d2612ce7d7692227a141810a67b0",
+      "download_url": "https://releases.blockbum.net/v0.2.0/BlockBum-0.2.0.AppImage"
+    },
+    {
+      "platform": "linux-deb",
+      "format": "deb",
+      "filename": "blockbum_0.2.0_amd64.deb",
+      "size_bytes": 52,
+      "sha256": "d0d6f2716e5e973a66bd604dcf1dead562a4a5bb34c43b5eabbdb547635dd4f3",
+      "ed25519_signature": "6df4f478085be178a4cb829a4c7a52275234fb9cb314e5a6696563dc2594a283535bb31dde7882ad2477bd7299fa6da2bd08f0df02bcb1952dd22af75029bc45",
+      "download_url": "https://releases.blockbum.net/v0.2.0/blockbum_0.2.0_amd64.deb"
+    },
+    {
+      "platform": "macos-universal",
+      "format": "dmg",
+      "filename": "BlockBum-0.2.0.dmg",
+      "size_bytes": 65,
+      "sha256": "adbc0677c1ccefdbc4e7f9f5f1cb24cc432fad5a9faf5c87842a68a431bb69b5",
+      "ed25519_signature": "bd1b26c4e1eb36893b654d101467967a81864f8985e88b9f5fce1b757efbe84f7dc54fa2d1de280b5bd1ad5e6f075662c731f880bba7ddf3c84212e71610af43",
+      "download_url": "https://releases.blockbum.net/v0.2.0/BlockBum-0.2.0.dmg"
+    },
+    {
+      "platform": "android-universal",
+      "format": "apk",
+      "filename": "blockbum-0.2.0.apk",
+      "size_bytes": 54,
+      "sha256": "4393e94912a49d4990eea0b4bc31d5958a687b2f5721e1c1ea5c8253d0376c0b",
+      "ed25519_signature": "5c2ca2a2e915a74b842db67f225bbaedac20e68b73239623f109b9d80b50ac275d3a4d680cd3942d15ba6f66c206902cee81361cdf76dc8639dcda30a8e2ffcc",
+      "download_url": "https://releases.blockbum.net/v0.2.0/blockbum-0.2.0.apk"
+    },
+    {
+      "platform": "ios-archive",
+      "format": "ipa",
+      "filename": "blockbum-0.2.0.ipa",
+      "size_bytes": 57,
+      "sha256": "4da090fed74ea4f6cd0680bc50e93cd88ff5d4646d427b7ada5133f26520b840",
+      "ed25519_signature": "bdd373c183c8e66a17d2ea5adb6de3dee1f7f68b791959651c8bcdc91a4d8a06a171985e10599c24d6a91b863bf295dd3d870df2f020c041dfe809089da66ed1",
+      "download_url": "https://releases.blockbum.net/v0.2.0/blockbum-0.2.0.ipa"
+    }
+  ]
+}

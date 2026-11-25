@@ -8,6 +8,7 @@ export interface NodeStatus {
   mempool_tx_count: number;
   consensus_mode: string;
   avg_latency_ms: number;
+  client_mode: "full_node" | "light_client";
 }
 
 export interface WalletIdentity {
@@ -17,6 +18,8 @@ export interface WalletIdentity {
   balance_bum: number;
   nonce: number;
   recovery_phrase: string;
+  created_at?: string;
+  is_hardware?: boolean;
 }
 
 export interface TransactionRecord {
@@ -27,6 +30,7 @@ export interface TransactionRecord {
   fee_bum: number;
   timestamp: string;
   status: "confirmed" | "pending";
+  block_height?: number;
 }
 
 export interface GovernanceProposal {
@@ -89,4 +93,47 @@ export interface SharedFileItem {
   chunks_count: number;
   encryption_status: "AES-256-GCM / SHA-256 Verified";
   isPublic: boolean;
+}
+
+// ============================================================================
+// Phase 20: Global Application Ecosystem Types
+// ============================================================================
+
+export type ClientExecutionMode = "full_node" | "light_client";
+
+export interface DeviceSession {
+  device_id: string;
+  device_name: string;
+  platform: "windows" | "linux" | "macos" | "android" | "ios" | "web";
+  paired_at: string;
+  last_active: string;
+  is_current: boolean;
+  auth_public_key: string;
+  status: "authorized" | "pending" | "revoked";
+}
+
+export type SupportedLocale = "en" | "es" | "zh" | "de" | "fr" | "hi" | "ja";
+
+export interface AccessibilitySettings {
+  high_contrast: boolean;
+  font_scale: "normal" | "large" | "extra-large";
+  reduced_motion: boolean;
+  screen_reader_hints: boolean;
+}
+
+export interface VaultState {
+  is_locked: boolean;
+  has_vault: boolean;
+  auto_lock_minutes: number;
+  last_unlocked: string | null;
+}
+
+export interface AppUpdateInfo {
+  version: string;
+  release_date: string;
+  download_url: string;
+  sha256_hash: string;
+  signature: string;
+  is_critical: boolean;
+  changelog: string[];
 }

@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "BlockBum",
+    "slug": "blockbum-mobile",
+    "version": "0.2.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#090d16"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "network.blockbum.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "BlockBum uses your camera to scan payment and device pairing QR codes.",
+        "NSFaceIDUsageDescription": "BlockBum uses Face ID to securely unlock your cryptographic wallet vault."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#090d16"
+      },
+      "package": "network.blockbum.mobile",
+      "permissions": [
+        "CAMERA",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "INTERNET"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-barcode-scanner",
+        {
+          "cameraPermission": "Allow BlockBum to access your camera to scan addresses and pairing codes."
+        }
+      ]
+    ]
+  }
+}

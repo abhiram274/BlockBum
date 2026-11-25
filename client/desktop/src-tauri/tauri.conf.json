@@ -7,16 +7,43 @@
   },
   "package": {
     "productName": "BlockBum",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "tauri": {
     "bundle": {
       "active": true,
-      "targets": "all",
+      "targets": ["msi", "nsis", "deb", "appimage", "dmg", "app"],
       "identifier": "network.blockbum.app",
       "icon": [
         "icons/icon.png"
-      ]
+      ],
+      "windows": {
+        "certificateThumbprint": null,
+        "digestAlgorithm": "sha256",
+        "timestampUrl": ""
+      },
+      "macOS": {
+        "frameworks": [],
+        "minimumSystemVersion": "10.15",
+        "exceptionDomain": "",
+        "signingIdentity": null,
+        "entitlements": null
+      },
+      "linux": {
+        "deb": {
+          "depends": ["libwebkit2gtk-4.0-37", "libssl3"]
+        },
+        "appimage": {
+          "bundleMediaFramework": false
+        }
+      }
+    },
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://releases.blockbum.net/updates/{{target}}/{{current_version}}"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNBRkJBRDMwMUMyQjVFNzgKUlZRbTFmNDlE..."
     },
     "security": {
       "csp": "default-src 'self' http: https: ws: wss:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
@@ -24,10 +51,12 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 800,
+        "height": 860,
         "resizable": true,
         "title": "BlockBum Network",
-        "width": 1200
+        "width": 1280,
+        "minHeight": 700,
+        "minWidth": 1024
       }
     ]
   }
