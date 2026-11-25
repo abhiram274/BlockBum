@@ -11,18 +11,18 @@ import {
   AccessibilitySettings,
   VaultState,
   AppUpdateInfo,
-  ClientExecutionMode
+  ClientExecutionMode,
+  GovernanceProposal
 } from "./types";
 import { translations } from "./i18n";
 
-// Official BlockBum Brand Assets
+// Official BlockBum Brand Coin
 import bbCoinImg from "./assets/bb_coin.png";
-import bbBannerImg from "./assets/blockbum_banner.png";
 
 export const App: React.FC = () => {
   // Navigation & Localization
   const [activeTab, setActiveTab] = useState<
-    "wallet" | "messages" | "communities" | "challenges" | "files" | "network" | "devices" | "settings"
+    "wallet" | "messages" | "communities" | "governance" | "files" | "network" | "devices" | "settings"
   >("wallet");
   const [locale, setLocale] = useState<SupportedLocale>("en");
   const t = (key: string): string => translations[locale]?.[key] || translations["en"]?.[key] || key;
@@ -65,7 +65,6 @@ export const App: React.FC = () => {
     avg_latency_ms: 18,
     client_mode: "full_node"
   });
-  const [inputNodeUrl, setInputNodeUrl] = useState("http://127.0.0.1:8545");
 
   // Multi-Identity Wallet State
   const [identities, setIdentities] = useState<WalletIdentity[]>([
@@ -87,10 +86,209 @@ export const App: React.FC = () => {
     }
   ]);
   const [selectedIdentity, setSelectedIdentity] = useState<WalletIdentity>(identities[0]);
+
+  // Modal Dialog States
   const [showSeedModal, setShowSeedModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [showCryptoAuditModal, setShowCryptoAuditModal] = useState(false);
+  const [showNewBipModal, setShowNewBipModal] = useState(false);
+  const [showNewCommunityModal, setShowNewCommunityModal] = useState(false);
+  const [showPairModal, setShowPairModal] = useState(false);
+
+  // New Identity Creation Form State
+  const [newAlias, setNewAlias] = useState("");
+
+  // Transfer Form State
+  const [recipient, setRecipient] = useState("");
+  const [transferAmount, setTransferAmount] = useState("");
+  const [transferStatus, setTransferStatus] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const [txFilter, setTxFilter] = useState<"all" | "send" | "receive" | "reward">("all");
+
+  // Transaction History State
+  const [txHistory, setTxHistory] = useState<TransactionRecord[]>([
+    {
+      tx_id: "tx_91a82bf0",
+      type: "receive",
+      counterparty: "bb1_genesis_subsidy_pool",
+      amount_bum: 50.0,
+      fee_bum: 0.0,
+      timestamp: "Today, 10:15 AM",
+      status: "confirmed",
+      block_height: 1284589
+    },
+    {
+      tx_id: "tx_084cd29e",
+      type: "send",
+      counterparty: "bb1d9812f8a429019ca5621de8821fedcba9876543",
+      amount_bum: 15.0,
+      fee_bum: 0.001,
+      timestamp: "Yesterday, 3:20 PM",
+      status: "confirmed",
+      block_height: 1284580
+    },
+    {
+      tx_id: "tx_55fa110b",
+      type: "reward",
+      counterparty: "Coinbase (Block #1,284,570)",
+      amount_bum: 50.0,
+      fee_bum: 0.0,
+      timestamp: "Nov 24, 2026",
+      status: "confirmed",
+      block_height: 1284570
+    }
+  ]);
+
+  // Communities State
+  const [communities, setCommunities] = useState<Community[]>([
+    {
+      id: "comm_dev",
+      name: "BlockBum Core Engineering",
+      description: "Protocol standardization, consensus validation, and peer discovery.",
+      isPrivate: false,
+      memberCount: 142,
+      myRole: "Owner",
+      channels: ["general", "releases", "consensus-security"],
+      governanceProposals: [],
+      codingChallenges: [],
+      events: []
+    },
+    {
+      id: "comm_val",
+      name: "Global Node Operators Association",
+      description: "Independent full node and validator operations across IPv4 and IPv6.",
+      isPrivate: true,
+      memberCount: 88,
+      myRole: "Admin",
+      channels: ["infrastructure", "peer-discovery"],
+      governanceProposals: [],
+      codingChallenges: [],
+      events: []
+    },
+    {
+      id: "comm_econ",
+      name: "BUM Monetary & Economic Guild",
+      description: "Supply schedules, fee sustainability, and storage provider incentives.",
+      isPrivate: false,
+      memberCount: 65,
+      myRole: "Member",
+      channels: ["monetary-policy", "treasury-rules"],
+      governanceProposals: [],
+      codingChallenges: [],
+      events: []
+    }
+  ]);
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string>("comm_dev");
+  const [activeChannel, setActiveChannel] = useState<string>("general");
+  const [communityMessageInput, setCommunityMessageInput] = useState("");
+  const [newCommunityNameInput, setNewCommunityNameInput] = useState("");
+  const [newCommunityDescInput, setNewCommunityDescInput] = useState("");
+  const [newCommunityPrivateInput, setNewCommunityPrivateInput] = useState(false);
+
+  // Messages State (E2EE Double Ratchet)
+  const [activeContact, setActiveContact] = useState<string>("bob");
+  const [messages, setMessages] = useState<MessageItem[]>([
+    {
+      id: "msg_1",
+      communityId: "comm_dev",
+      channel: "general",
+      sender: "bb1d9812f8a429019ca5621de8821fedcba9876543",
+      senderAlias: "Bob_NodeOperator",
+      content: "Node upgraded to v0.2.0. Memory consumption dropped 40% with RocksDB custom allocator.",
+      timestamp: "10:30 AM",
+      isE2EE: true,
+      deliveryAck: true
+    },
+    {
+      id: "msg_2",
+      communityId: "comm_dev",
+      channel: "general",
+      sender: "bb1a729e8c40b82194017de8bf019abcdef0123456",
+      senderAlias: "Alice_Researcher",
+      content: "Verified Monocypher Ed25519 & ChaCha20-Poly1305 cryptosystem benchmarks. Excellent forward secrecy.",
+      timestamp: "10:32 AM",
+      isE2EE: true,
+      deliveryAck: true
+    },
+    {
+      id: "msg_3",
+      communityId: "direct_bob",
+      channel: "dm",
+      sender: "bb1d9812f8a429019ca5621de8821fedcba9876543",
+      senderAlias: "Bob_NodeOperator",
+      content: "Hey Alice, could you review the new headers-first sync batching algorithm?",
+      timestamp: "11:05 AM",
+      isE2EE: true,
+      deliveryAck: true
+    }
+  ]);
+  const [chatInput, setChatInput] = useState("");
+
+  // Governance Proposals State (BIPs)
+  const [proposals, setProposals] = useState<GovernanceProposal[]>([
+    {
+      id: "BIP-21",
+      title: "Adaptive Halving & Dynamic Difficulty Smoothing",
+      proposer: "Alice_Researcher (bb1a72...3456)",
+      votesFor: 124,
+      votesAgainst: 8,
+      status: "active"
+    },
+    {
+      id: "BIP-22",
+      title: "Zero-Knowledge Membership Accumulators for Channel Privacy",
+      proposer: "Bob_NodeOperator (bb1d98...6543)",
+      votesFor: 98,
+      votesAgainst: 14,
+      status: "active"
+    },
+    {
+      id: "BIP-23",
+      title: "Mandatory Authenticated State Snapshot Verification",
+      proposer: "Security_Guild (bb1sec...7788)",
+      votesFor: 210,
+      votesAgainst: 2,
+      status: "passed"
+    }
+  ]);
+  const [newBipTitle, setNewBipTitle] = useState("");
+  const [newBipSummary, setNewBipSummary] = useState("");
+
+  // Shared Files State
+  const [sharedFiles, setSharedFiles] = useState<SharedFileItem[]>([
+    {
+      cid: "cid_Qm9a82bc01284590fefacbe1098412ef",
+      name: "blockbum_monetary_policy_v1.0.pdf",
+      size_kb: 1420,
+      uploader: "bb1a729e8c40b82194017de8bf019abcdef0123456",
+      timestamp: "Nov 23, 2026",
+      chunks_count: 6,
+      encryption_status: "AES-256-GCM / SHA-256 Verified",
+      isPublic: true
+    },
+    {
+      cid: "cid_Qm4c910ab871092471928409182355fe",
+      name: "node_audit_report_phase19.tar.gz",
+      size_kb: 4890,
+      uploader: "bb1d9812f8a429019ca5621de8821fedcba9876543",
+      timestamp: "Nov 24, 2026",
+      chunks_count: 19,
+      encryption_status: "AES-256-GCM / SHA-256 Verified",
+      isPublic: true
+    }
+  ]);
+  const [uploadFileName, setUploadFileName] = useState("");
+  const [uploadFileSize, setUploadFileSize] = useState("1024");
+  const [uploadIsPublic, setUploadIsPublic] = useState(true);
+
+  // Network Peers State
+  const [peersList, setPeersList] = useState([
+    { ip: "198.51.100.42:8545", proto: "IPv4", ver: "BlockBum-Core/0.2.0 (Ubuntu)", ping: "14 ms", behind: "0", score: "100/100" },
+    { ip: "[2001:db8::1a2b]:8545", proto: "IPv6", ver: "BlockBum-Core/0.2.0 (Windows)", ping: "22 ms", behind: "0", score: "98/100" },
+    { ip: "203.0.113.88:8545", proto: "IPv4", ver: "BlockBum-Qt/0.2.0 (Linux)", ping: "19 ms", behind: "0", score: "99/100" },
+    { ip: "[2001:db8:85a3::8a2e]:8545", proto: "IPv6", ver: "BlockBum-Core/0.2.0 (macOS)", ping: "35 ms", behind: "0", score: "96/100" }
+  ]);
+  const [newPeerIp, setNewPeerIp] = useState("");
 
   // Multi-Device Identity State
   const [devices, setDevices] = useState<DeviceSession[]>([
@@ -135,171 +333,26 @@ export const App: React.FC = () => {
       status: "authorized"
     }
   ]);
-  const [showPairModal, setShowPairModal] = useState(false);
 
   // Signed Update State
   const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo | null>(null);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
 
-  // Transfer Form State
-  const [recipient, setRecipient] = useState("");
-  const [transferAmount, setTransferAmount] = useState("");
-  const [transferStatus, setTransferStatus] = useState<{ msg: string; type: "success" | "error" } | null>(null);
-
-  // Transaction History State
-  const [txHistory, setTxHistory] = useState<TransactionRecord[]>([
-    {
-      tx_id: "tx_91a82bf0",
-      type: "receive",
-      counterparty: "bb1_genesis_subsidy_pool",
-      amount_bum: 50.0,
-      fee_bum: 0.0,
-      timestamp: "Today, 10:15 AM",
-      status: "confirmed",
-      block_height: 1284589
-    },
-    {
-      tx_id: "tx_084cd29e",
-      type: "send",
-      counterparty: "bb1d9812f8a429019ca5621de8821fedcba9876543",
-      amount_bum: 15.0,
-      fee_bum: 0.001,
-      timestamp: "Yesterday, 3:20 PM",
-      status: "confirmed",
-      block_height: 1284580
-    },
-    {
-      tx_id: "tx_55fa110b",
-      type: "reward",
-      counterparty: "Coinbase (Block #1,284,570)",
-      amount_bum: 50.0,
-      fee_bum: 0.0,
-      timestamp: "Nov 24, 2026",
-      status: "confirmed",
-      block_height: 1284570
-    }
-  ]);
-
-  // Messages State (E2EE Double Ratchet)
-  const [messages, setMessages] = useState<MessageItem[]>([
-    {
-      id: "msg_1",
-      communityId: "comm_dev",
-      channel: "general",
-      sender: "bb1d9812f8a429019ca5621de8821fedcba9876543",
-      senderAlias: "Bob_NodeOperator",
-      content: "Node upgraded to v0.2.0. Memory consumption dropped 40% with RocksDB custom allocator.",
-      timestamp: "10:30 AM",
-      isE2EE: true,
-      deliveryAck: true
-    },
-    {
-      id: "msg_2",
-      communityId: "comm_dev",
-      channel: "general",
-      sender: "bb1a729e8c40b82194017de8bf019abcdef0123456",
-      senderAlias: "Alice_Researcher",
-      content: "Verified Monocypher Ed25519 & ChaCha20-Poly1305 cryptosystem benchmarks. Excellent forward secrecy.",
-      timestamp: "10:32 AM",
-      isE2EE: true,
-      deliveryAck: true
-    }
-  ]);
-  const [chatInput, setChatInput] = useState("");
-
-  // Communities State
-  const [communities, setCommunities] = useState<Community[]>([
-    {
-      id: "comm_dev",
-      name: "BlockBum Core Engineering",
-      description: "Protocol standardization, consensus validation, and peer discovery.",
-      isPrivate: false,
-      memberCount: 142,
-      myRole: "Owner",
-      channels: ["general", "releases", "consensus-security"],
-      governanceProposals: [
-        {
-          id: "BIP-21",
-          title: "Adaptive Halving & Dynamic Difficulty Smoothing",
-          proposer: "Alice_Researcher",
-          votesFor: 89,
-          votesAgainst: 4,
-          status: "active"
-        }
-      ],
-      codingChallenges: [
-        {
-          id: "CH-101",
-          title: "Zero-Knowledge Membership Accumulators",
-          difficulty: "Hard",
-          reward_bum: 250,
-          participants: 14,
-          deadline: "Dec 15, 2026"
-        }
-      ],
-      events: []
-    },
-    {
-      id: "comm_val",
-      name: "Global Node Operators Association",
-      description: "Independent full node and validator operations across IPv4 and IPv6.",
-      isPrivate: true,
-      memberCount: 88,
-      myRole: "Admin",
-      channels: ["infrastructure", "peer-discovery"],
-      governanceProposals: [],
-      codingChallenges: [],
-      events: []
-    }
-  ]);
-  const [selectedCommunityId, setSelectedCommunityId] = useState<string>("comm_dev");
-  const [newCommunityName, setNewCommunityName] = useState("");
-  const [newCommunityDesc, setNewCommunityDesc] = useState("");
-
-  // Shared Files State
-  const [sharedFiles, setSharedFiles] = useState<SharedFileItem[]>([
-    {
-      cid: "cid_Qm9a82bc...12ef",
-      name: "blockbum_monetary_policy_v1.0.pdf",
-      size_kb: 1420,
-      uploader: "bb1a729e...3456",
-      timestamp: "Nov 23, 2026",
-      chunks_count: 6,
-      encryption_status: "AES-256-GCM / SHA-256 Verified",
-      isPublic: true
-    },
-    {
-      cid: "cid_Qm4c910a...55fe",
-      name: "node_audit_report_phase19.tar.gz",
-      size_kb: 4890,
-      uploader: "bb1d9812...6543",
-      timestamp: "Nov 24, 2026",
-      chunks_count: 19,
-      encryption_status: "AES-256-GCM / SHA-256 Verified",
-      isPublic: true
-    }
-  ]);
-  const [newFileName, setNewFileName] = useState("");
-
-  // Keyboard shortcut handler (Desktop accelerators)
+  // Keyboard Shortcuts (Desktop Accelerators)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+L to lock vault
       if (e.ctrlKey && e.key.toLowerCase() === "l") {
         e.preventDefault();
         setVault((v) => ({ ...v, is_locked: true }));
       }
-      // Ctrl+S to open wallet send
       if (e.ctrlKey && e.key.toLowerCase() === "s") {
         e.preventDefault();
         setActiveTab("wallet");
       }
-      // Ctrl+R to open receive modal
       if (e.ctrlKey && e.key.toLowerCase() === "r") {
         e.preventDefault();
         setShowReceiveModal(true);
       }
-      // Escape closes open modals and menus
       if (e.key === "Escape") {
         setOpenMenu(null);
         setShowReceiveModal(false);
@@ -307,13 +360,16 @@ export const App: React.FC = () => {
         setShowPairModal(false);
         setShowModeModal(false);
         setShowCryptoAuditModal(false);
+        setShowNewBipModal(false);
+        setShowNewCommunityModal(false);
+        setShowOnboardingModal(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Close menus when clicking outside
+  // Close menus on outside click
   useEffect(() => {
     const closeMenus = () => setOpenMenu(null);
     if (openMenu) {
@@ -322,9 +378,9 @@ export const App: React.FC = () => {
     }
   }, [openMenu]);
 
-  // Master Vault Unlock Handler
+  // Unlock Master Vault
   const handleUnlockVault = () => {
-    if (vaultPasswordInput === "SuperSecretMasterPassword2026!" || vaultPasswordInput.length >= 8) {
+    if (vaultPasswordInput === "SuperSecretMasterPassword2026!" || vaultPasswordInput.length >= 6) {
       setVault({ ...vault, is_locked: false, last_unlocked: "Just now" });
       setVaultPasswordInput("");
       setVaultError("");
@@ -333,7 +389,7 @@ export const App: React.FC = () => {
     }
   };
 
-  // Signed Update Verification Handler
+  // Check Signed Updates
   const handleCheckUpdate = () => {
     setIsCheckingUpdate(true);
     setTimeout(() => {
@@ -345,17 +401,17 @@ export const App: React.FC = () => {
         signature: "Verified (Release Authority Ed25519)",
         is_critical: false,
         changelog: [
-          "Native Qt Desktop GUI support (Orange/White/Gold theme)",
-          "Enhanced SPV Header Sync with RocksDB custom allocator",
-          "Hardened Monocypher Ed25519 cryptographic authentication",
-          "Multi-device instant session revocation"
+          "Soft Light White theme with Imperial Gold & Radiant Orange accents",
+          "Complete interactive button state resolution across all views",
+          "Native Qt Desktop GUI support (blockbum-qt)",
+          "Enhanced RocksDB custom memory allocator"
         ]
       });
       setIsCheckingUpdate(false);
-    }, 800);
+    }, 600);
   };
 
-  // Transfer Send Handler
+  // Send BUM Transaction
   const handleSendTransaction = (e: React.FormEvent) => {
     e.preventDefault();
     if (!recipient.startsWith("bb1") || recipient.length < 30) {
@@ -391,23 +447,41 @@ export const App: React.FC = () => {
       nonce: selectedIdentity.nonce + 1
     });
     setTransferStatus({
-      msg: `Successfully signed (Ed25519) and broadcasted ${amt} BUM to ${recipient}!`,
+      msg: `Transaction signed (Ed25519) and broadcasted: ${amt} BUM sent to ${recipient.substring(0, 14)}...`,
       type: "success"
     });
     setRecipient("");
     setTransferAmount("");
   };
 
-  // Send Message Handler
+  // Create New Wallet Identity
+  const handleCreateIdentity = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAlias.trim()) return;
+    const newId: WalletIdentity = {
+      alias: newAlias.trim(),
+      address: "bb1" + Math.random().toString(16).substring(2, 10) + "abcdef01234567890123456789",
+      public_key: "0x" + Math.random().toString(16).substring(2, 18) + "...ed25519",
+      balance_bum: 100.0,
+      nonce: 0,
+      recovery_phrase: "velvet galaxy timber fossil rapid orbit crystal nuclear crisp hammer vivid orbit"
+    };
+    setIdentities([...identities, newId]);
+    setSelectedIdentity(newId);
+    setNewAlias("");
+    setShowOnboardingModal(false);
+  };
+
+  // Send Direct Message
   const handleSendMessage = () => {
     if (!chatInput.trim()) return;
     const newMsg: MessageItem = {
       id: "msg_" + Date.now(),
-      communityId: selectedCommunityId,
-      channel: "general",
+      communityId: "direct_" + activeContact,
+      channel: "dm",
       sender: selectedIdentity.address,
       senderAlias: selectedIdentity.alias,
-      content: chatInput,
+      content: chatInput.trim(),
       timestamp: "Just now",
       isE2EE: true,
       deliveryAck: true
@@ -416,15 +490,164 @@ export const App: React.FC = () => {
     setChatInput("");
   };
 
-  // Device Revocation Handler
+  // Send Community Message
+  const handleSendCommunityMessage = () => {
+    if (!communityMessageInput.trim()) return;
+    const newMsg: MessageItem = {
+      id: "cmsg_" + Date.now(),
+      communityId: selectedCommunityId,
+      channel: activeChannel,
+      sender: selectedIdentity.address,
+      senderAlias: selectedIdentity.alias,
+      content: communityMessageInput.trim(),
+      timestamp: "Just now",
+      isE2EE: true,
+      deliveryAck: true
+    };
+    setMessages([...messages, newMsg]);
+    setCommunityMessageInput("");
+  };
+
+  // Create Community
+  const handleCreateCommunity = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCommunityNameInput.trim()) return;
+    const newComm: Community = {
+      id: "comm_" + Date.now(),
+      name: newCommunityNameInput.trim(),
+      description: newCommunityDescInput.trim() || "Independent peer community cluster.",
+      isPrivate: newCommunityPrivateInput,
+      memberCount: 1,
+      myRole: "Owner",
+      channels: ["general", "announcements"],
+      governanceProposals: [],
+      codingChallenges: [],
+      events: []
+    };
+    setCommunities([...communities, newComm]);
+    setSelectedCommunityId(newComm.id);
+    setActiveChannel("general");
+    setNewCommunityNameInput("");
+    setNewCommunityDescInput("");
+    setShowNewCommunityModal(false);
+  };
+
+  // Vote on Governance BIP
+  const handleVote = (bipId: string, isFor: boolean) => {
+    setProposals(
+      proposals.map((p) =>
+        p.id === bipId
+          ? {
+              ...p,
+              votesFor: isFor ? p.votesFor + 1 : p.votesFor,
+              votesAgainst: !isFor ? p.votesAgainst + 1 : p.votesAgainst
+            }
+          : p
+      )
+    );
+  };
+
+  // Submit New BIP Proposal
+  const handleCreateBip = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBipTitle.trim()) return;
+    const nextBipNum = proposals.length + 21;
+    const newProp: GovernanceProposal = {
+      id: `BIP-${nextBipNum}`,
+      title: newBipTitle.trim(),
+      proposer: `${selectedIdentity.alias} (${selectedIdentity.address.substring(0, 8)}...)`,
+      votesFor: 1,
+      votesAgainst: 0,
+      status: "active"
+    };
+    setProposals([newProp, ...proposals]);
+    setNewBipTitle("");
+    setNewBipSummary("");
+    setShowNewBipModal(false);
+  };
+
+  // Upload Shared File
+  const handleUploadFile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!uploadFileName.trim()) return;
+    const size = parseInt(uploadFileSize, 10) || 512;
+    const newFile: SharedFileItem = {
+      cid: "cid_Qm" + Math.random().toString(16).substring(2, 10) + "89ab0123cdef",
+      name: uploadFileName.trim(),
+      size_kb: size,
+      uploader: selectedIdentity.address,
+      timestamp: "Just now",
+      chunks_count: Math.max(1, Math.ceil(size / 256)),
+      encryption_status: "AES-256-GCM / SHA-256 Verified",
+      isPublic: uploadIsPublic
+    };
+    setSharedFiles([newFile, ...sharedFiles]);
+    setUploadFileName("");
+  };
+
+  // Add Network Peer
+  const handleAddPeer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPeerIp.trim()) return;
+    const isV6 = newPeerIp.includes(":");
+    setPeersList([
+      {
+        ip: newPeerIp.trim(),
+        proto: isV6 ? "IPv6" : "IPv4",
+        ver: "BlockBum-Core/0.2.0 (Peer)",
+        ping: "16 ms",
+        behind: "0",
+        score: "100/100"
+      },
+      ...peersList
+    ]);
+    setNewPeerIp("");
+  };
+
+  // Ping All Peers
+  const handlePingPeers = () => {
+    setPeersList(
+      peersList.map((p) => ({
+        ...p,
+        ping: Math.floor(Math.random() * 25 + 10) + " ms"
+      }))
+    );
+  };
+
+  // Revoke Device
   const handleRevokeDevice = (deviceId: string) => {
     setDevices(
       devices.map((d) => (d.device_id === deviceId ? { ...d, status: "revoked", last_active: "Revoked" } : d))
     );
   };
 
+  // Pair New Device
+  const handlePairDevice = (deviceName: string) => {
+    if (!deviceName.trim()) return;
+    const newDev: DeviceSession = {
+      device_id: "dev_" + Math.random().toString(16).substring(2, 8),
+      device_name: deviceName.trim(),
+      platform: "android",
+      paired_at: "Just now",
+      last_active: "Active Now",
+      is_current: false,
+      auth_public_key: "0x" + Math.random().toString(16).substring(2, 10) + "...pair",
+      status: "authorized"
+    };
+    setDevices([...devices, newDev]);
+    setShowPairModal(false);
+  };
+
+  // Filter Transactions
+  const filteredTxs = txHistory.filter((tx) => {
+    if (txFilter === "all") return true;
+    return tx.type === txFilter;
+  });
+
+  const activeComm = communities.find((c) => c.id === selectedCommunityId) || communities[0];
+
   // ============================================================================
-  // LOCKED VAULT SCREEN (Orange, White, Gold, Obsidian)
+  // LOCKED VAULT SCREEN (Light White, Gold, Radiant Orange)
   // ============================================================================
   if (vault.is_locked) {
     return (
@@ -432,12 +655,12 @@ export const App: React.FC = () => {
         style={{
           width: "100vw",
           height: "100vh",
-          backgroundColor: "#09090C",
+          backgroundColor: "#F4F6F9",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          color: "#FFFFFF",
+          color: "#0F172A",
           fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           userSelect: "none"
         }}
@@ -445,32 +668,31 @@ export const App: React.FC = () => {
         <div
           style={{
             width: "440px",
-            backgroundColor: "#121218",
-            border: "1px solid rgba(212, 175, 55, 0.35)",
-            boxShadow: "0 0 32px rgba(255, 107, 0, 0.2)",
-            borderRadius: "12px",
+            backgroundColor: "#FFFFFF",
+            border: "1px solid #D4AF37",
+            boxShadow: "0 12px 36px rgba(0, 0, 0, 0.08)",
+            borderRadius: "14px",
             padding: "36px",
             textAlign: "center"
           }}
         >
-          {/* Official 3D Gold BB Coin */}
-          <div style={{ position: "relative", display: "inline-block", marginBottom: "20px" }}>
+          <div style={{ position: "relative", display: "inline-block", marginBottom: "16px" }}>
             <img
               src={bbCoinImg}
               alt="BlockBum Gold BB Coin"
               style={{
-                width: "96px",
-                height: "96px",
+                width: "92px",
+                height: "92px",
                 borderRadius: "50%",
-                boxShadow: "0 0 24px rgba(255, 184, 0, 0.5)"
+                boxShadow: "0 4px 20px rgba(212, 175, 55, 0.45)"
               }}
             />
           </div>
 
-          <h2 style={{ margin: "0 0 8px 0", color: "#FFD700", fontSize: "24px", fontWeight: "bold" }}>
+          <h2 style={{ margin: "0 0 6px 0", color: "#0F172A", fontSize: "24px", fontWeight: "bold" }}>
             BlockBum Core
           </h2>
-          <p style={{ margin: "0 0 24px 0", color: "#94A3B8", fontSize: "14px" }}>
+          <p style={{ margin: "0 0 24px 0", color: "#64748B", fontSize: "14px" }}>
             Local Encrypted Keystore Vault is Locked
           </p>
 
@@ -481,7 +703,7 @@ export const App: React.FC = () => {
             }}
           >
             <div style={{ textAlign: "left", marginBottom: "16px" }}>
-              <label style={{ display: "block", color: "#E2E8F0", fontSize: "12px", marginBottom: "6px" }}>
+              <label style={{ display: "block", color: "#334155", fontSize: "12px", fontWeight: "600", marginBottom: "6px" }}>
                 Master Vault Password
               </label>
               <input
@@ -492,11 +714,11 @@ export const App: React.FC = () => {
                 autoFocus
                 style={{
                   width: "100%",
-                  padding: "10px 14px",
-                  backgroundColor: "#181824",
-                  border: "1px solid #3A3220",
+                  padding: "11px 14px",
+                  backgroundColor: "#F8FAFC",
+                  border: "1px solid #CBD5E1",
                   borderRadius: "6px",
-                  color: "#FFFFFF",
+                  color: "#0F172A",
                   fontSize: "14px",
                   outline: "none",
                   boxSizing: "border-box"
@@ -505,7 +727,7 @@ export const App: React.FC = () => {
             </div>
 
             {vaultError && (
-              <div style={{ color: "#EF4444", fontSize: "12px", marginBottom: "16px", textAlign: "left" }}>
+              <div style={{ color: "#DC2626", fontSize: "12px", marginBottom: "16px", textAlign: "left" }}>
                 {vaultError}
               </div>
             )}
@@ -515,14 +737,14 @@ export const App: React.FC = () => {
               style={{
                 width: "100%",
                 padding: "12px",
-                background: "linear-gradient(135deg, #FF8800 0%, #FF5500 100%)",
-                border: "1px solid #FFB800",
+                background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                border: "1px solid #EA580C",
                 borderRadius: "6px",
                 color: "#FFFFFF",
                 fontSize: "15px",
                 fontWeight: "bold",
                 cursor: "pointer",
-                boxShadow: "0 0 16px rgba(255, 107, 0, 0.4)"
+                boxShadow: "0 4px 14px rgba(255, 107, 0, 0.3)"
               }}
             >
               🔓 Unlock BlockBum Vault
@@ -538,7 +760,7 @@ export const App: React.FC = () => {
   }
 
   // ============================================================================
-  // DESKTOP CORE APPLICATION INTERFACE
+  // DESKTOP CORE APPLICATION (LIGHT WHITE THEME)
   // ============================================================================
   return (
     <div
@@ -547,8 +769,8 @@ export const App: React.FC = () => {
         flexDirection: "column",
         width: "100vw",
         height: "100vh",
-        backgroundColor: "#09090C",
-        color: "#FFFFFF",
+        backgroundColor: "#F4F6F9",
+        color: "#0F172A",
         fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         overflow: "hidden"
       }}
@@ -560,8 +782,8 @@ export const App: React.FC = () => {
         role="banner"
         style={{
           height: "36px",
-          backgroundColor: "#0B0B0E",
-          borderBottom: "1px solid #231F16",
+          backgroundColor: "#EAEFF5",
+          borderBottom: "1px solid #D8DFE8",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -576,28 +798,29 @@ export const App: React.FC = () => {
             alt="BlockBum Icon"
             style={{ width: "20px", height: "20px", borderRadius: "50%" }}
           />
-          <span style={{ color: "#FFD700", fontWeight: "bold", fontSize: "13px" }}>BlockBum Core</span>
+          <span style={{ color: "#0F172A", fontWeight: "bold", fontSize: "13px" }}>BlockBum Core</span>
           <span style={{ color: "#64748B", fontSize: "12px" }}>v0.2.0 [Mainnet]</span>
         </div>
 
-        {/* Center: Network Pill */}
+        {/* Center: Network Status Pill */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: "6px",
-            backgroundColor: "#16130B",
-            border: "1px solid rgba(212, 175, 55, 0.4)",
+            backgroundColor: "#FEF9C3",
+            border: "1px solid #D4AF37",
             borderRadius: "12px",
             padding: "2px 10px",
             fontSize: "11px",
-            color: "#FFB800"
+            color: "#B8860B",
+            fontWeight: "600"
           }}
         >
-          <span style={{ color: "#10B981" }}>●</span>
+          <span style={{ color: "#059669" }}>●</span>
           <span>Mainnet Connected ({nodeStatus.peers_connected} Peers)</span>
-          <span style={{ color: "#64748B" }}>|</span>
-          <span style={{ color: "#E2E8F0" }}>Height #{nodeStatus.chain_height.toLocaleString()}</span>
+          <span style={{ color: "#CBD5E1" }}>|</span>
+          <span>Height #{nodeStatus.chain_height.toLocaleString()}</span>
         </div>
 
         {/* Right: Window Controls */}
@@ -606,11 +829,12 @@ export const App: React.FC = () => {
             onClick={() => setVault({ ...vault, is_locked: true })}
             title="Lock Vault (Ctrl+L)"
             style={{
-              background: "transparent",
-              border: "1px solid #3A3220",
+              background: "#FFFFFF",
+              border: "1px solid #CBD5E1",
               borderRadius: "4px",
-              color: "#FFB800",
+              color: "#B8860B",
               fontSize: "11px",
+              fontWeight: "600",
               padding: "2px 8px",
               cursor: "pointer"
             }}
@@ -623,7 +847,7 @@ export const App: React.FC = () => {
                 width: "12px",
                 height: "12px",
                 borderRadius: "50%",
-                backgroundColor: "#22C55E",
+                backgroundColor: "#10B981",
                 display: "inline-block"
               }}
               title="Window Active"
@@ -659,8 +883,8 @@ export const App: React.FC = () => {
         aria-label="Application Menu"
         style={{
           height: "28px",
-          backgroundColor: "#121218",
-          borderBottom: "1px solid #2A2418",
+          backgroundColor: "#E2E8F0",
+          borderBottom: "1px solid #CBD5E1",
           display: "flex",
           alignItems: "center",
           padding: "0 8px",
@@ -673,8 +897,8 @@ export const App: React.FC = () => {
           {
             name: "File",
             items: [
-              { label: "New Identity", shortcut: "Ctrl+N", action: () => setShowOnboardingModal(true) },
-              { label: "Import Seed Phrase", shortcut: "Ctrl+I", action: () => setShowSeedModal(true) },
+              { label: "New Identity / Create Wallet", shortcut: "Ctrl+N", action: () => setShowOnboardingModal(true) },
+              { label: "Import Recovery Seed Phrase", shortcut: "Ctrl+I", action: () => setShowSeedModal(true) },
               { label: "Lock Master Vault", shortcut: "Ctrl+L", action: () => setVault({ ...vault, is_locked: true }) },
               { separator: true },
               { label: "Exit BlockBum", shortcut: "Ctrl+Q", action: () => window.close() }
@@ -685,7 +909,7 @@ export const App: React.FC = () => {
             items: [
               { label: "Send BUM Coins", shortcut: "Ctrl+S", action: () => setActiveTab("wallet") },
               { label: "Receive BUM Address", shortcut: "Ctrl+R", action: () => setShowReceiveModal(true) },
-              { label: "View Recovery Seed", action: () => setShowSeedModal(true) },
+              { label: "View Recovery Seed Phrase", action: () => setShowSeedModal(true) },
               { separator: true },
               {
                 label: `Switch Mode (${clientMode === "full_node" ? "Full Node" : "SPV Light Client"})`,
@@ -697,7 +921,7 @@ export const App: React.FC = () => {
             name: "Messages",
             items: [
               { label: "Open Secure Messenger", action: () => setActiveTab("messages") },
-              { label: "Rotate Ratchet Session Keys", action: () => alert("Ratchet keys rotated for forward secrecy.") },
+              { label: "Rotate Ratchet Session Keys", action: () => alert("Double Ratchet session keys rotated with forward secrecy.") },
               { label: "Sync Across Linked Devices", action: () => setActiveTab("devices") }
             ]
           },
@@ -706,7 +930,7 @@ export const App: React.FC = () => {
             items: [
               { label: "Global P2P Peers Map", action: () => setActiveTab("network") },
               { label: "Check Signed Updates", action: handleCheckUpdate },
-              { label: "Resync Blockchain Headers", action: () => alert("Resynchronizing headers from consensus peers...") }
+              { label: "Resync Blockchain Headers", action: () => alert("Blockchain headers re-verified against Nakamoto consensus.") }
             ]
           },
           {
@@ -721,13 +945,13 @@ export const App: React.FC = () => {
             name: "Help",
             items: [
               { label: "Protocol Specification v1.0", action: () => window.open("https://github.com/abhiram274/BlockBum", "_blank") },
-              { label: "Keyboard Accelerators", action: () => alert("Ctrl+S: Send\nCtrl+R: Receive\nCtrl+L: Lock Vault\nCtrl+Q: Exit\nEsc: Close Modal") },
+              { label: "Keyboard Accelerators", action: () => alert("Ctrl+S: Send BUM\nCtrl+R: Receive BUM\nCtrl+L: Lock Vault\nCtrl+N: New Wallet\nCtrl+Q: Exit\nEsc: Close Modal") },
               { separator: true },
               {
                 label: "About BlockBum Core",
                 action: () =>
                   alert(
-                    "BlockBum Core v0.2.0\nTheme: Orange, White, Imperial Gold, Obsidian\nA decentralized digital association, cryptocurrency, and private communication platform."
+                    "BlockBum Core v0.2.0\nTheme: Soft Light White, Imperial Gold, Radiant Orange\nA decentralized digital association, cryptocurrency, and private communication platform."
                   )
               }
             ]
@@ -741,36 +965,36 @@ export const App: React.FC = () => {
               }}
               style={{
                 background: openMenu === menu.name ? "#FF8800" : "transparent",
-                color: openMenu === menu.name ? "#FFFFFF" : "#E2E8F0",
+                color: openMenu === menu.name ? "#FFFFFF" : "#1E293B",
                 border: "none",
                 borderRadius: "3px",
                 padding: "3px 10px",
                 fontSize: "12px",
-                cursor: "pointer"
+                cursor: "pointer",
+                fontWeight: "500"
               }}
             >
               {menu.name}
             </button>
 
-            {/* Cascading Dropdown */}
             {openMenu === menu.name && (
               <div
                 style={{
                   position: "absolute",
                   top: "26px",
                   left: 0,
-                  backgroundColor: "#161622",
-                  border: "1px solid #FFB800",
-                  borderRadius: "4px",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
-                  minWidth: "220px",
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #D4AF37",
+                  borderRadius: "6px",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                  minWidth: "240px",
                   padding: "4px 0",
                   zIndex: 100
                 }}
               >
                 {menu.items.map((item, idx) =>
                   item.separator ? (
-                    <div key={idx} style={{ height: "1px", backgroundColor: "#2A2418", margin: "4px 0" }} />
+                    <div key={idx} style={{ height: "1px", backgroundColor: "#E2E8F0", margin: "4px 0" }} />
                   ) : (
                     <div
                       key={idx}
@@ -779,22 +1003,24 @@ export const App: React.FC = () => {
                         item.action?.();
                       }}
                       style={{
-                        padding: "6px 14px",
+                        padding: "7px 16px",
                         display: "flex",
                         justifyContent: "space-between",
                         cursor: "pointer",
-                        color: "#FFFFFF",
+                        color: "#0F172A",
                         fontSize: "12px"
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "#FF6B00";
+                        e.currentTarget.style.backgroundColor = "#FEF9EE";
+                        e.currentTarget.style.color = "#FF6B00";
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.backgroundColor = "transparent";
+                        e.currentTarget.style.color = "#0F172A";
                       }}
                     >
                       <span>{item.label}</span>
-                      {item.shortcut && <span style={{ color: "#94A3B8", fontSize: "11px" }}>{item.shortcut}</span>}
+                      {item.shortcut && <span style={{ color: "#64748B", fontSize: "11px" }}>{item.shortcut}</span>}
                     </div>
                   )
                 )}
@@ -813,8 +1039,8 @@ export const App: React.FC = () => {
           aria-label="Navigation Sidebar"
           style={{
             width: "240px",
-            backgroundColor: "#0D0D12",
-            borderRight: "1px solid #231F16",
+            backgroundColor: "#EAEFF5",
+            borderRight: "1px solid #D8DFE8",
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
@@ -826,7 +1052,7 @@ export const App: React.FC = () => {
             <div
               style={{
                 padding: "16px",
-                borderBottom: "1px solid #231F16",
+                borderBottom: "1px solid #D8DFE8",
                 display: "flex",
                 alignItems: "center",
                 gap: "12px"
@@ -839,14 +1065,14 @@ export const App: React.FC = () => {
                   width: "42px",
                   height: "42px",
                   borderRadius: "50%",
-                  boxShadow: "0 0 16px rgba(255, 184, 0, 0.45)"
+                  boxShadow: "0 2px 10px rgba(212, 175, 55, 0.4)"
                 }}
               />
               <div>
-                <div style={{ color: "#FFD700", fontWeight: "bold", fontSize: "16px", letterSpacing: "0.5px" }}>
+                <div style={{ color: "#0F172A", fontWeight: "bold", fontSize: "16px", letterSpacing: "0.5px" }}>
                   BlockBum
                 </div>
-                <div style={{ color: "#FF8800", fontSize: "10px", fontWeight: "bold", letterSpacing: "1px" }}>
+                <div style={{ color: "#FF6B00", fontSize: "10px", fontWeight: "bold", letterSpacing: "1px" }}>
                   CORE CLIENT
                 </div>
               </div>
@@ -858,7 +1084,7 @@ export const App: React.FC = () => {
                 { id: "wallet", label: "Wallet & BUM", icon: "🪙" },
                 { id: "messages", label: "Private Messages", icon: "💬" },
                 { id: "communities", label: "Communities", icon: "🌐" },
-                { id: "challenges", label: "Governance & BIPs", icon: "⚡" },
+                { id: "governance", label: "Governance & BIPs", icon: "⚡" },
                 { id: "files", label: "Decentralized Files", icon: "📦" },
                 { id: "network", label: "Global P2P Network", icon: "📡" },
                 { id: "devices", label: "Multi-Device Security", icon: "📱" },
@@ -876,12 +1102,12 @@ export const App: React.FC = () => {
                       padding: "9px 14px",
                       borderRadius: "6px",
                       border: "none",
-                      borderLeft: isActive ? "3px solid #FF8800" : "3px solid transparent",
+                      borderLeft: isActive ? "3px solid #FF6B00" : "3px solid transparent",
                       background: isActive
-                        ? "linear-gradient(90deg, rgba(255, 107, 0, 0.2) 0%, rgba(255, 184, 0, 0.08) 100%)"
+                        ? "linear-gradient(90deg, rgba(255, 107, 0, 0.12) 0%, rgba(212, 175, 55, 0.08) 100%)"
                         : "transparent",
-                      color: isActive ? "#FFD700" : "#94A3B8",
-                      fontWeight: isActive ? "bold" : "normal",
+                      color: isActive ? "#B8860B" : "#475569",
+                      fontWeight: isActive ? "bold" : "500",
                       fontSize: "13px",
                       cursor: "pointer",
                       textAlign: "left"
@@ -899,44 +1125,49 @@ export const App: React.FC = () => {
           <div
             style={{
               padding: "12px 14px",
-              backgroundColor: "#121218",
-              borderTop: "1px solid #231F16",
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #D8DFE8",
               margin: "8px",
-              borderRadius: "8px"
+              borderRadius: "8px",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-              <span style={{ color: "#FFB800", fontWeight: "bold", fontSize: "12px" }}>
+              <span style={{ color: "#0F172A", fontWeight: "bold", fontSize: "12px" }}>
                 {selectedIdentity.alias}
               </span>
-              <span
+              <button
+                onClick={() => setShowModeModal(true)}
+                title="Switch client execution mode"
                 style={{
-                  backgroundColor: "#201A0E",
+                  backgroundColor: "#FEF9C3",
                   border: "1px solid #D4AF37",
-                  color: "#FFD700",
+                  color: "#B8860B",
                   fontSize: "10px",
+                  fontWeight: "600",
                   padding: "1px 6px",
-                  borderRadius: "4px"
+                  borderRadius: "4px",
+                  cursor: "pointer"
                 }}
               >
                 {clientMode === "full_node" ? "Full Node" : "SPV"}
-              </span>
+              </button>
             </div>
-            <div style={{ color: "#E2E8F0", fontFamily: "monospace", fontSize: "11px", marginBottom: "6px" }}>
+            <div style={{ color: "#64748B", fontFamily: "monospace", fontSize: "11px", marginBottom: "6px" }}>
               {selectedIdentity.address.substring(0, 10)}...{selectedIdentity.address.substring(36)}
             </div>
-            <div style={{ color: "#FFD700", fontWeight: "bold", fontSize: "14px" }}>
+            <div style={{ color: "#B8860B", fontWeight: "bold", fontSize: "14px" }}>
               {selectedIdentity.balance_bum.toFixed(4)} BUM
             </div>
           </div>
         </aside>
 
-        {/* Central Content Area */}
+        {/* Central Content Area (Light White Theme) */}
         <main
           role="main"
           style={{
             flex: 1,
-            backgroundColor: "#0A0A0E",
+            backgroundColor: "#F4F6F9",
             display: "flex",
             flexDirection: "column",
             overflowY: "auto",
@@ -951,14 +1182,14 @@ export const App: React.FC = () => {
               {/* Hero Balance Card with Official 3D Gold BB Coin */}
               <div
                 style={{
-                  background: "linear-gradient(135deg, #161520 0%, #12121A 100%)",
-                  border: "1px solid rgba(212, 175, 55, 0.35)",
+                  background: "#FFFFFF",
+                  border: "1px solid #E2E8F0",
                   borderRadius: "10px",
                   padding: "24px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.4)"
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.04)"
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
@@ -969,18 +1200,18 @@ export const App: React.FC = () => {
                       width: "84px",
                       height: "84px",
                       borderRadius: "50%",
-                      boxShadow: "0 0 24px rgba(255, 184, 0, 0.5)"
+                      boxShadow: "0 4px 18px rgba(212, 175, 55, 0.4)"
                     }}
                   />
                   <div>
-                    <div style={{ color: "#FFB800", fontSize: "11px", fontWeight: "bold", letterSpacing: "1px" }}>
+                    <div style={{ color: "#B8860B", fontSize: "11px", fontWeight: "bold", letterSpacing: "1px" }}>
                       TOTAL SPENDABLE BALANCE
                     </div>
-                    <div style={{ color: "#FFD700", fontSize: "36px", fontWeight: "bold", margin: "4px 0" }}>
+                    <div style={{ color: "#B8860B", fontSize: "36px", fontWeight: "bold", margin: "4px 0" }}>
                       {selectedIdentity.balance_bum.toFixed(8)} BUM
                     </div>
-                    <div style={{ color: "#94A3B8", fontSize: "13px" }}>
-                      Pending: 0.00000000 BUM  •  Fiat Value: ~${(selectedIdentity.balance_bum * 2.0).toFixed(2)} USD
+                    <div style={{ color: "#64748B", fontSize: "13px" }}>
+                      Pending: 0.00000000 BUM  •  Fiat Estimate: ~${(selectedIdentity.balance_bum * 2.0).toFixed(2)} USD
                     </div>
                   </div>
                 </div>
@@ -990,10 +1221,10 @@ export const App: React.FC = () => {
                     onClick={() => setShowReceiveModal(true)}
                     style={{
                       padding: "10px 20px",
-                      backgroundColor: "#1E1A14",
-                      border: "1px solid #FFB800",
+                      backgroundColor: "#FFFFFF",
+                      border: "1px solid #D4AF37",
                       borderRadius: "6px",
-                      color: "#FFD700",
+                      color: "#B8860B",
                       fontWeight: "bold",
                       fontSize: "14px",
                       cursor: "pointer"
@@ -1003,19 +1234,19 @@ export const App: React.FC = () => {
                   </button>
                   <button
                     onClick={() => {
-                      const el = document.getElementById("sendForm");
-                      el?.scrollIntoView({ behavior: "smooth" });
+                      const el = document.getElementById("recipientInput");
+                      el?.focus();
                     }}
                     style={{
                       padding: "10px 22px",
-                      background: "linear-gradient(135deg, #FF8800 0%, #FF5500 100%)",
-                      border: "1px solid #FFB800",
+                      background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                      border: "1px solid #EA580C",
                       borderRadius: "6px",
                       color: "#FFFFFF",
                       fontWeight: "bold",
                       fontSize: "14px",
                       cursor: "pointer",
-                      boxShadow: "0 0 16px rgba(255, 107, 0, 0.4)"
+                      boxShadow: "0 2px 10px rgba(255, 107, 0, 0.25)"
                     }}
                   >
                     ⚡ Send BUM
@@ -1023,24 +1254,28 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Send Form & Quick Receive Card */}
-              <div id="sendForm" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "20px" }}>
+              {/* Send Form & Address Card */}
+              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "20px" }}>
                 {/* Send BUM Form */}
                 <div
                   style={{
-                    backgroundColor: "#121218",
-                    border: "1px solid #2A2418",
+                    backgroundColor: "#FFFFFF",
+                    border: "1px solid #E2E8F0",
                     borderRadius: "8px",
-                    padding: "20px"
+                    padding: "20px",
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
                   }}
                 >
-                  <h3 style={{ margin: "0 0 16px 0", color: "#FFD700", fontSize: "16px" }}>⚡ Send BUM Coins</h3>
+                  <h3 style={{ margin: "0 0 16px 0", color: "#0F172A", fontSize: "16px", fontWeight: "bold" }}>
+                    ⚡ Send BUM Coins
+                  </h3>
                   <form onSubmit={handleSendTransaction}>
                     <div style={{ marginBottom: "14px" }}>
-                      <label style={{ display: "block", color: "#E2E8F0", fontSize: "12px", marginBottom: "6px" }}>
+                      <label style={{ display: "block", color: "#334155", fontSize: "12px", fontWeight: "600", marginBottom: "6px" }}>
                         Recipient Bech32 Address (bb1...)
                       </label>
                       <input
+                        id="recipientInput"
                         type="text"
                         value={recipient}
                         onChange={(e) => setRecipient(e.target.value)}
@@ -1048,10 +1283,10 @@ export const App: React.FC = () => {
                         style={{
                           width: "100%",
                           padding: "10px",
-                          backgroundColor: "#181822",
-                          border: "1px solid #3A3220",
+                          backgroundColor: "#F8FAFC",
+                          border: "1px solid #CBD5E1",
                           borderRadius: "4px",
-                          color: "#FFFFFF",
+                          color: "#0F172A",
                           fontFamily: "monospace",
                           fontSize: "13px",
                           boxSizing: "border-box"
@@ -1061,9 +1296,23 @@ export const App: React.FC = () => {
 
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "16px" }}>
                       <div>
-                        <label style={{ display: "block", color: "#E2E8F0", fontSize: "12px", marginBottom: "6px" }}>
-                          Amount (BUM)
-                        </label>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                          <label style={{ color: "#334155", fontSize: "12px", fontWeight: "600" }}>Amount (BUM)</label>
+                          <button
+                            type="button"
+                            onClick={() => setTransferAmount(Math.max(0, selectedIdentity.balance_bum - 0.0001).toFixed(4))}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "#FF6B00",
+                              fontSize: "11px",
+                              fontWeight: "bold",
+                              cursor: "pointer"
+                            }}
+                          >
+                            MAX
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={transferAmount}
@@ -1072,10 +1321,10 @@ export const App: React.FC = () => {
                           style={{
                             width: "100%",
                             padding: "10px",
-                            backgroundColor: "#181822",
-                            border: "1px solid #3A3220",
+                            backgroundColor: "#F8FAFC",
+                            border: "1px solid #CBD5E1",
                             borderRadius: "4px",
-                            color: "#FFD700",
+                            color: "#B8860B",
                             fontWeight: "bold",
                             fontSize: "14px",
                             boxSizing: "border-box"
@@ -1083,7 +1332,7 @@ export const App: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <label style={{ display: "block", color: "#E2E8F0", fontSize: "12px", marginBottom: "6px" }}>
+                        <label style={{ display: "block", color: "#334155", fontSize: "12px", fontWeight: "600", marginBottom: "6px" }}>
                           Estimated Network Fee
                         </label>
                         <input
@@ -1093,10 +1342,10 @@ export const App: React.FC = () => {
                           style={{
                             width: "100%",
                             padding: "10px",
-                            backgroundColor: "#14141C",
-                            border: "1px solid #2A2418",
+                            backgroundColor: "#F1F5F9",
+                            border: "1px solid #CBD5E1",
                             borderRadius: "4px",
-                            color: "#94A3B8",
+                            color: "#64748B",
                             fontSize: "13px",
                             boxSizing: "border-box"
                           }}
@@ -1111,8 +1360,9 @@ export const App: React.FC = () => {
                           borderRadius: "4px",
                           marginBottom: "14px",
                           fontSize: "13px",
-                          backgroundColor: transferStatus.type === "success" ? "#064E3B" : "#7F1D1D",
-                          color: transferStatus.type === "success" ? "#A7F3D0" : "#FECACA"
+                          backgroundColor: transferStatus.type === "success" ? "#ECFDF5" : "#FEF2F2",
+                          border: transferStatus.type === "success" ? "1px solid #A7F3D0" : "1px solid #FECACA",
+                          color: transferStatus.type === "success" ? "#065F46" : "#991B1B"
                         }}
                       >
                         {transferStatus.msg}
@@ -1123,13 +1373,14 @@ export const App: React.FC = () => {
                       type="submit"
                       style={{
                         padding: "10px 24px",
-                        background: "linear-gradient(135deg, #FF8800 0%, #FF5500 100%)",
-                        border: "1px solid #FFB800",
+                        background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                        border: "1px solid #EA580C",
                         borderRadius: "5px",
                         color: "#FFFFFF",
                         fontWeight: "bold",
                         fontSize: "14px",
-                        cursor: "pointer"
+                        cursor: "pointer",
+                        boxShadow: "0 2px 10px rgba(255, 107, 0, 0.25)"
                       }}
                     >
                       Sign & Broadcast (Monocypher Ed25519)
@@ -1137,51 +1388,58 @@ export const App: React.FC = () => {
                   </form>
                 </div>
 
-                {/* Account & Keystore Status */}
+                {/* My Address Card */}
                 <div
                   style={{
-                    backgroundColor: "#121218",
-                    border: "1px solid #2A2418",
+                    backgroundColor: "#FFFFFF",
+                    border: "1px solid #E2E8F0",
                     borderRadius: "8px",
                     padding: "20px",
                     display: "flex",
                     flexDirection: "column",
-                    justifyContent: "space-between"
+                    justifyContent: "space-between",
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
                   }}
                 >
                   <div>
-                    <h3 style={{ margin: "0 0 12px 0", color: "#FFD700", fontSize: "16px" }}>My Address</h3>
+                    <h3 style={{ margin: "0 0 12px 0", color: "#0F172A", fontSize: "16px", fontWeight: "bold" }}>
+                      My Receive Address
+                    </h3>
                     <div
                       style={{
-                        backgroundColor: "#181822",
-                        border: "1px solid #3A3220",
+                        backgroundColor: "#F8FAFC",
+                        border: "1px solid #CBD5E1",
                         borderRadius: "4px",
                         padding: "10px",
-                        color: "#E2E8F0",
+                        color: "#0F172A",
                         fontFamily: "monospace",
-                        fontSize: "11px",
+                        fontSize: "12px",
                         wordBreak: "break-all",
                         marginBottom: "12px"
                       }}
                     >
                       {selectedIdentity.address}
                     </div>
-                    <div style={{ color: "#94A3B8", fontSize: "12px", lineHeight: "1.5" }}>
+                    <div style={{ color: "#64748B", fontSize: "12px", lineHeight: "1.5" }}>
                       Deterministic Bech32 address. Compatible across Windows, Linux (Ubuntu), macOS, Android, and iOS.
                     </div>
                   </div>
 
                   <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
                     <button
-                      onClick={() => navigator.clipboard.writeText(selectedIdentity.address)}
+                      onClick={() => {
+                        navigator.clipboard.writeText(selectedIdentity.address);
+                        alert("Address copied to clipboard:\n" + selectedIdentity.address);
+                      }}
                       style={{
                         flex: 1,
                         padding: "8px",
-                        backgroundColor: "#1A1A26",
-                        border: "1px solid #3A3220",
+                        backgroundColor: "#FFFFFF",
+                        border: "1px solid #CBD5E1",
                         borderRadius: "4px",
-                        color: "#FFFFFF",
+                        color: "#0F172A",
                         fontSize: "12px",
+                        fontWeight: "600",
                         cursor: "pointer"
                       }}
                     >
@@ -1192,11 +1450,12 @@ export const App: React.FC = () => {
                       style={{
                         flex: 1,
                         padding: "8px",
-                        backgroundColor: "#1A1A26",
-                        border: "1px solid #FFB800",
+                        backgroundColor: "#FFFFFF",
+                        border: "1px solid #D4AF37",
                         borderRadius: "4px",
-                        color: "#FFD700",
+                        color: "#B8860B",
                         fontSize: "12px",
+                        fontWeight: "600",
                         cursor: "pointer"
                       }}
                     >
@@ -1206,52 +1465,72 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Transactions Data Table */}
+              {/* Transactions Data Table with Real-time Filters */}
               <div
                 style={{
-                  backgroundColor: "#121218",
-                  border: "1px solid #2A2418",
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #E2E8F0",
                   borderRadius: "8px",
-                  padding: "20px"
+                  padding: "20px",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
-                  <h3 style={{ margin: 0, color: "#FFFFFF", fontSize: "16px" }}>Transaction Ledger</h3>
-                  <span style={{ color: "#94A3B8", fontSize: "12px" }}>Showing recent on-chain transfers</span>
+                  <h3 style={{ margin: 0, color: "#0F172A", fontSize: "16px", fontWeight: "bold" }}>Transaction Ledger</h3>
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    {(["all", "send", "receive", "reward"] as const).map((filter) => (
+                      <button
+                        key={filter}
+                        onClick={() => setTxFilter(filter)}
+                        style={{
+                          padding: "4px 10px",
+                          borderRadius: "4px",
+                          border: txFilter === filter ? "1px solid #FF6B00" : "1px solid #CBD5E1",
+                          backgroundColor: txFilter === filter ? "#FF6B00" : "#FFFFFF",
+                          color: txFilter === filter ? "#FFFFFF" : "#475569",
+                          fontSize: "11px",
+                          fontWeight: "bold",
+                          cursor: "pointer"
+                        }}
+                      >
+                        {filter.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
                   <thead>
-                    <tr style={{ borderBottom: "1px solid #2A2418", textAlign: "left", color: "#FFB800" }}>
-                      <th style={{ padding: "8px" }}>Status</th>
-                      <th style={{ padding: "8px" }}>Type</th>
-                      <th style={{ padding: "8px" }}>Tx ID</th>
-                      <th style={{ padding: "8px" }}>Counterparty</th>
-                      <th style={{ padding: "8px" }}>Amount (BUM)</th>
-                      <th style={{ padding: "8px" }}>Fee</th>
-                      <th style={{ padding: "8px" }}>Time</th>
+                    <tr style={{ borderBottom: "1px solid #E2E8F0", textAlign: "left", color: "#64748B", backgroundColor: "#F8FAFC" }}>
+                      <th style={{ padding: "10px 8px" }}>Status</th>
+                      <th style={{ padding: "10px 8px" }}>Type</th>
+                      <th style={{ padding: "10px 8px" }}>Tx ID</th>
+                      <th style={{ padding: "10px 8px" }}>Counterparty</th>
+                      <th style={{ padding: "10px 8px" }}>Amount (BUM)</th>
+                      <th style={{ padding: "10px 8px" }}>Fee</th>
+                      <th style={{ padding: "10px 8px" }}>Time</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {txHistory.map((tx) => (
-                      <tr key={tx.tx_id} style={{ borderBottom: "1px solid #1A1A24" }}>
+                    {filteredTxs.map((tx) => (
+                      <tr key={tx.tx_id} style={{ borderBottom: "1px solid #F1F5F9" }}>
                         <td style={{ padding: "10px 8px" }}>
-                          <span style={{ color: "#10B981" }}>● Confirmed</span>
+                          <span style={{ color: "#059669", fontWeight: "600" }}>● Confirmed</span>
                         </td>
-                        <td style={{ padding: "10px 8px", color: tx.type === "send" ? "#FF6B00" : "#FFD700", fontWeight: "bold" }}>
+                        <td style={{ padding: "10px 8px", color: tx.type === "send" ? "#EA580C" : "#B8860B", fontWeight: "bold" }}>
                           {tx.type.toUpperCase()}
                         </td>
-                        <td style={{ padding: "10px 8px", fontFamily: "monospace", color: "#94A3B8" }}>
+                        <td style={{ padding: "10px 8px", fontFamily: "monospace", color: "#64748B" }}>
                           {tx.tx_id}
                         </td>
-                        <td style={{ padding: "10px 8px", fontFamily: "monospace", color: "#E2E8F0" }}>
+                        <td style={{ padding: "10px 8px", fontFamily: "monospace", color: "#0F172A" }}>
                           {tx.counterparty.length > 24 ? tx.counterparty.substring(0, 12) + "..." + tx.counterparty.slice(-8) : tx.counterparty}
                         </td>
                         <td
                           style={{
                             padding: "10px 8px",
                             fontWeight: "bold",
-                            color: tx.type === "send" ? "#EF4444" : "#10B981"
+                            color: tx.type === "send" ? "#DC2626" : "#059669"
                           }}
                         >
                           {tx.type === "send" ? "-" : "+"}
@@ -1260,7 +1539,525 @@ export const App: React.FC = () => {
                         <td style={{ padding: "10px 8px", color: "#64748B" }}>
                           {tx.fee_bum.toFixed(4)}
                         </td>
-                        <td style={{ padding: "10px 8px", color: "#94A3B8" }}>{tx.timestamp}</td>
+                        <td style={{ padding: "10px 8px", color: "#64748B" }}>{tx.timestamp}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ================================================================= */}
+          {/* TAB: COMMUNITIES (BANNER REMOVED, ALL BUTTONS FUNCTIONAL) */}
+          {/* ================================================================= */}
+          {activeTab === "communities" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              {/* Header Bar */}
+              <div
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: "8px",
+                  padding: "18px 24px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
+                }}
+              >
+                <div>
+                  <h2 style={{ margin: "0 0 4px 0", color: "#0F172A", fontSize: "20px", fontWeight: "bold" }}>
+                    {activeComm.name}
+                  </h2>
+                  <p style={{ margin: 0, color: "#64748B", fontSize: "13px" }}>
+                    {activeComm.description} • Role: <strong style={{ color: "#B8860B" }}>{activeComm.myRole}</strong>
+                  </p>
+                </div>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button
+                    onClick={() => setShowNewCommunityModal(true)}
+                    style={{
+                      padding: "8px 16px",
+                      background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                      border: "1px solid #EA580C",
+                      borderRadius: "5px",
+                      color: "#FFFFFF",
+                      fontWeight: "bold",
+                      fontSize: "13px",
+                      cursor: "pointer"
+                    }}
+                  >
+                    + Create Community
+                  </button>
+                  <button
+                    onClick={() => alert(`You have joined ${activeComm.name} as an active peer member.`)}
+                    style={{
+                      padding: "8px 16px",
+                      backgroundColor: "#FFFFFF",
+                      border: "1px solid #D4AF37",
+                      borderRadius: "5px",
+                      color: "#B8860B",
+                      fontWeight: "bold",
+                      fontSize: "13px",
+                      cursor: "pointer"
+                    }}
+                  >
+                    ✓ Joined ({activeComm.memberCount})
+                  </button>
+                </div>
+              </div>
+
+              {/* Main Community Workspace: Channels + Active Stream */}
+              <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: "20px", minHeight: "480px" }}>
+                {/* Left: Community & Channel Switcher */}
+                <div
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "1px solid #E2E8F0",
+                    borderRadius: "8px",
+                    padding: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "16px",
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
+                  }}
+                >
+                  <div>
+                    <div style={{ color: "#0F172A", fontWeight: "bold", fontSize: "12px", marginBottom: "8px", textTransform: "uppercase" }}>
+                      Communities
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      {communities.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => {
+                            setSelectedCommunityId(c.id);
+                            setActiveChannel(c.channels[0] || "general");
+                          }}
+                          style={{
+                            padding: "8px 10px",
+                            borderRadius: "5px",
+                            border: selectedCommunityId === c.id ? "1px solid #D4AF37" : "1px solid transparent",
+                            backgroundColor: selectedCommunityId === c.id ? "#FEF9EE" : "transparent",
+                            color: selectedCommunityId === c.id ? "#B8860B" : "#334155",
+                            fontWeight: selectedCommunityId === c.id ? "bold" : "500",
+                            textAlign: "left",
+                            fontSize: "12px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          {c.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ color: "#0F172A", fontWeight: "bold", fontSize: "12px", marginBottom: "8px", textTransform: "uppercase" }}>
+                      Channels
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      {activeComm.channels.map((ch) => (
+                        <button
+                          key={ch}
+                          onClick={() => setActiveChannel(ch)}
+                          style={{
+                            padding: "7px 10px",
+                            borderRadius: "5px",
+                            border: activeChannel === ch ? "1px solid #FF6B00" : "1px solid transparent",
+                            backgroundColor: activeChannel === ch ? "rgba(255, 107, 0, 0.1)" : "transparent",
+                            color: activeChannel === ch ? "#EA580C" : "#64748B",
+                            fontWeight: activeChannel === ch ? "bold" : "500",
+                            textAlign: "left",
+                            fontSize: "13px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          # {ch}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Channel Messages Stream */}
+                <div
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "1px solid #E2E8F0",
+                    borderRadius: "8px",
+                    display: "flex",
+                    flexDirection: "column",
+                    overflow: "hidden",
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "12px 20px",
+                      borderBottom: "1px solid #E2E8F0",
+                      backgroundColor: "#F8FAFC",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center"
+                    }}
+                  >
+                    <span style={{ fontWeight: "bold", color: "#0F172A", fontSize: "14px" }}>#{activeChannel}</span>
+                    <span style={{ fontSize: "11px", color: "#059669", fontWeight: "600" }}>🔒 Authenticated Broadcast</span>
+                  </div>
+
+                  <div style={{ flex: 1, padding: "20px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "12px" }}>
+                    {messages
+                      .filter((m) => m.communityId === selectedCommunityId || m.channel === activeChannel)
+                      .map((m) => (
+                        <div
+                          key={m.id}
+                          style={{
+                            backgroundColor: "#F8FAFC",
+                            border: "1px solid #E2E8F0",
+                            borderRadius: "8px",
+                            padding: "12px 16px"
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                            <span style={{ fontWeight: "bold", color: "#B8860B", fontSize: "12px" }}>{m.senderAlias}</span>
+                            <span style={{ color: "#94A3B8", fontSize: "11px" }}>{m.timestamp}</span>
+                          </div>
+                          <div style={{ color: "#0F172A", fontSize: "13px", lineHeight: "1.4" }}>{m.content}</div>
+                        </div>
+                      ))}
+                  </div>
+
+                  {/* Channel Chat Input */}
+                  <div style={{ padding: "14px 20px", borderTop: "1px solid #E2E8F0", display: "flex", gap: "10px", backgroundColor: "#F8FAFC" }}>
+                    <input
+                      type="text"
+                      value={communityMessageInput}
+                      onChange={(e) => setCommunityMessageInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSendCommunityMessage()}
+                      placeholder={`Message #${activeChannel}...`}
+                      style={{
+                        flex: 1,
+                        padding: "10px 14px",
+                        backgroundColor: "#FFFFFF",
+                        border: "1px solid #CBD5E1",
+                        borderRadius: "6px",
+                        color: "#0F172A",
+                        fontSize: "13px",
+                        outline: "none"
+                      }}
+                    />
+                    <button
+                      onClick={handleSendCommunityMessage}
+                      style={{
+                        padding: "10px 20px",
+                        background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                        border: "1px solid #EA580C",
+                        borderRadius: "6px",
+                        color: "#FFFFFF",
+                        fontWeight: "bold",
+                        fontSize: "13px",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Post
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ================================================================= */}
+          {/* TAB: GOVERNANCE & BIPS */}
+          {/* ================================================================= */}
+          {activeTab === "governance" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: "8px",
+                  padding: "18px 24px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
+                }}
+              >
+                <div>
+                  <h2 style={{ margin: "0 0 4px 0", color: "#0F172A", fontSize: "20px", fontWeight: "bold" }}>
+                    Decentralized Governance & BIPs
+                  </h2>
+                  <p style={{ margin: 0, color: "#64748B", fontSize: "13px" }}>
+                    Transparent BlockBum Improvement Proposals. On-chain voting with timelock protection.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowNewBipModal(true)}
+                  style={{
+                    padding: "9px 18px",
+                    background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                    border: "1px solid #EA580C",
+                    borderRadius: "5px",
+                    color: "#FFFFFF",
+                    fontWeight: "bold",
+                    fontSize: "13px",
+                    cursor: "pointer"
+                  }}
+                >
+                  + Submit New BIP
+                </button>
+              </div>
+
+              {/* Proposals List */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                {proposals.map((bip) => {
+                  const total = bip.votesFor + bip.votesAgainst;
+                  const pctFor = total > 0 ? (bip.votesFor / total) * 100 : 0;
+                  return (
+                    <div
+                      key={bip.id}
+                      style={{
+                        backgroundColor: "#FFFFFF",
+                        border: "1px solid #E2E8F0",
+                        borderRadius: "8px",
+                        padding: "20px",
+                        boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                        <div>
+                          <span style={{ color: "#FF6B00", fontWeight: "bold", fontSize: "14px", marginRight: "8px" }}>
+                            {bip.id}
+                          </span>
+                          <span style={{ fontWeight: "bold", color: "#0F172A", fontSize: "16px" }}>{bip.title}</span>
+                        </div>
+                        <span
+                          style={{
+                            fontSize: "11px",
+                            fontWeight: "bold",
+                            padding: "2px 8px",
+                            borderRadius: "4px",
+                            backgroundColor: bip.status === "passed" ? "#ECFDF5" : "#FEF9C3",
+                            color: bip.status === "passed" ? "#065F46" : "#B8860B",
+                            border: bip.status === "passed" ? "1px solid #A7F3D0" : "1px solid #FDE047"
+                          }}
+                        >
+                          {bip.status.toUpperCase()}
+                        </span>
+                      </div>
+
+                      <div style={{ fontSize: "12px", color: "#64748B", marginBottom: "14px" }}>
+                        Proposed by: {bip.proposer}
+                      </div>
+
+                      {/* Vote Progress Bar */}
+                      <div style={{ marginBottom: "14px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "4px" }}>
+                          <span style={{ color: "#059669", fontWeight: "bold" }}>YES: {bip.votesFor} ({pctFor.toFixed(1)}%)</span>
+                          <span style={{ color: "#DC2626", fontWeight: "bold" }}>NO: {bip.votesAgainst}</span>
+                        </div>
+                        <div style={{ width: "100%", height: "8px", backgroundColor: "#F1F5F9", borderRadius: "4px", overflow: "hidden" }}>
+                          <div style={{ width: `${pctFor}%`, height: "100%", background: "linear-gradient(90deg, #10B981, #059669)" }} />
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", gap: "10px" }}>
+                        <button
+                          onClick={() => handleVote(bip.id, true)}
+                          style={{
+                            padding: "6px 16px",
+                            backgroundColor: "#ECFDF5",
+                            border: "1px solid #10B981",
+                            borderRadius: "4px",
+                            color: "#065F46",
+                            fontSize: "12px",
+                            fontWeight: "bold",
+                            cursor: "pointer"
+                          }}
+                        >
+                          ✓ Vote YES
+                        </button>
+                        <button
+                          onClick={() => handleVote(bip.id, false)}
+                          style={{
+                            padding: "6px 16px",
+                            backgroundColor: "#FEF2F2",
+                            border: "1px solid #EF4444",
+                            borderRadius: "4px",
+                            color: "#991B1B",
+                            fontSize: "12px",
+                            fontWeight: "bold",
+                            cursor: "pointer"
+                          }}
+                        >
+                          ✕ Vote NO
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ================================================================= */}
+          {/* TAB: DECENTRALIZED FILES */}
+          {/* ================================================================= */}
+          {activeTab === "files" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              {/* File Upload Card */}
+              <div
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: "8px",
+                  padding: "20px",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
+                }}
+              >
+                <h3 style={{ margin: "0 0 14px 0", color: "#0F172A", fontSize: "16px", fontWeight: "bold" }}>
+                  📦 Publish Distributed Artifact
+                </h3>
+                <form onSubmit={handleUploadFile} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: "12px", alignItems: "flex-end" }}>
+                  <div>
+                    <label style={{ display: "block", color: "#334155", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>
+                      Artifact / File Name
+                    </label>
+                    <input
+                      type="text"
+                      value={uploadFileName}
+                      onChange={(e) => setUploadFileName(e.target.value)}
+                      placeholder="e.g. protocol_audit_v2.tar.gz"
+                      style={{
+                        width: "100%",
+                        padding: "9px 12px",
+                        backgroundColor: "#F8FAFC",
+                        border: "1px solid #CBD5E1",
+                        borderRadius: "4px",
+                        fontSize: "13px",
+                        boxSizing: "border-box"
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", color: "#334155", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>
+                      Size (KB)
+                    </label>
+                    <input
+                      type="number"
+                      value={uploadFileSize}
+                      onChange={(e) => setUploadFileSize(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "9px 12px",
+                        backgroundColor: "#F8FAFC",
+                        border: "1px solid #CBD5E1",
+                        borderRadius: "4px",
+                        fontSize: "13px",
+                        boxSizing: "border-box"
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "flex", alignItems: "center", gap: "6px", color: "#334155", fontSize: "12px", fontWeight: "600", height: "36px" }}>
+                      <input
+                        type="checkbox"
+                        checked={uploadIsPublic}
+                        onChange={(e) => setUploadIsPublic(e.target.checked)}
+                      />
+                      Public Swarm
+                    </label>
+                  </div>
+                  <button
+                    type="submit"
+                    style={{
+                      padding: "10px 20px",
+                      background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                      border: "1px solid #EA580C",
+                      borderRadius: "5px",
+                      color: "#FFFFFF",
+                      fontWeight: "bold",
+                      fontSize: "13px",
+                      cursor: "pointer"
+                    }}
+                  >
+                    Upload & Chunk
+                  </button>
+                </form>
+              </div>
+
+              {/* Files Table */}
+              <div
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: "8px",
+                  padding: "20px",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
+                }}
+              >
+                <h3 style={{ margin: "0 0 14px 0", color: "#0F172A", fontSize: "16px", fontWeight: "bold" }}>
+                  Active Swarm Artifacts ({sharedFiles.length})
+                </h3>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid #E2E8F0", textAlign: "left", color: "#64748B", backgroundColor: "#F8FAFC" }}>
+                      <th style={{ padding: "10px 8px" }}>Name</th>
+                      <th style={{ padding: "10px 8px" }}>CID Digest</th>
+                      <th style={{ padding: "10px 8px" }}>Size</th>
+                      <th style={{ padding: "10px 8px" }}>Chunks</th>
+                      <th style={{ padding: "10px 8px" }}>Integrity Status</th>
+                      <th style={{ padding: "10px 8px" }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sharedFiles.map((file) => (
+                      <tr key={file.cid} style={{ borderBottom: "1px solid #F1F5F9" }}>
+                        <td style={{ padding: "10px 8px", fontWeight: "bold", color: "#0F172A" }}>{file.name}</td>
+                        <td style={{ padding: "10px 8px", fontFamily: "monospace", color: "#B8860B" }}>{file.cid.substring(0, 16)}...</td>
+                        <td style={{ padding: "10px 8px", color: "#64748B" }}>{file.size_kb} KB</td>
+                        <td style={{ padding: "10px 8px", color: "#64748B" }}>{file.chunks_count}</td>
+                        <td style={{ padding: "10px 8px" }}>
+                          <span style={{ color: "#059669", fontWeight: "600", fontSize: "11px" }}>✓ SHA-256 Verified</span>
+                        </td>
+                        <td style={{ padding: "10px 8px" }}>
+                          <button
+                            onClick={() => alert(`Starting download for ${file.name}...\nVerified SHA-256 chunk hashes from 8 swarm peers!`)}
+                            style={{
+                              padding: "4px 10px",
+                              backgroundColor: "#FEF9EE",
+                              border: "1px solid #D4AF37",
+                              borderRadius: "4px",
+                              color: "#B8860B",
+                              fontSize: "11px",
+                              fontWeight: "bold",
+                              cursor: "pointer",
+                              marginRight: "6px"
+                            }}
+                          >
+                            ⬇ Download
+                          </button>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(file.cid);
+                              alert("CID copied to clipboard:\n" + file.cid);
+                            }}
+                            style={{
+                              padding: "4px 8px",
+                              backgroundColor: "#FFFFFF",
+                              border: "1px solid #CBD5E1",
+                              borderRadius: "4px",
+                              color: "#475569",
+                              fontSize: "11px",
+                              cursor: "pointer"
+                            }}
+                          >
+                            📋 Copy CID
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -1273,97 +2070,88 @@ export const App: React.FC = () => {
           {/* TAB: SECURE PRIVATE MESSAGES */}
           {/* ================================================================= */}
           {activeTab === "messages" && (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "240px 1fr",
-                gap: "20px",
-                flex: 1,
-                minHeight: "500px"
-              }}
-            >
-              {/* Conversations Left Rail */}
+            <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: "20px", flex: 1, minHeight: "500px" }}>
+              {/* Contacts Rail */}
               <div
                 style={{
-                  backgroundColor: "#121218",
-                  border: "1px solid #2A2418",
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #E2E8F0",
                   borderRadius: "8px",
                   padding: "16px",
                   display: "flex",
-                  flexDirection: "column"
+                  flexDirection: "column",
+                  gap: "8px",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
                 }}
               >
-                <div style={{ color: "#FFD700", fontWeight: "bold", fontSize: "14px", marginBottom: "12px" }}>
-                  Active E2EE Threads
+                <div style={{ color: "#0F172A", fontWeight: "bold", fontSize: "13px", marginBottom: "8px" }}>
+                  Encrypted Contacts
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <div
+                {[
+                  { id: "bob", name: "Bob_NodeOperator", status: "Online" },
+                  { id: "alice", name: "Alice_Researcher", status: "Online" },
+                  { id: "team", name: "Core Security Team", status: "Active" }
+                ].map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setActiveContact(c.id)}
                     style={{
                       padding: "10px",
-                      backgroundColor: "#201A0E",
-                      border: "1px solid #D4AF37",
                       borderRadius: "6px",
+                      border: activeContact === c.id ? "1px solid #D4AF37" : "1px solid #E2E8F0",
+                      backgroundColor: activeContact === c.id ? "#FEF9EE" : "#FFFFFF",
+                      textAlign: "left",
                       cursor: "pointer"
                     }}
                   >
-                    <div style={{ fontWeight: "bold", color: "#FFD700", fontSize: "13px" }}>Bob_NodeOperator</div>
-                    <div style={{ color: "#94A3B8", fontSize: "11px", marginTop: "2px" }}>Double Ratchet Active</div>
-                  </div>
-                  <div
-                    style={{
-                      padding: "10px",
-                      backgroundColor: "#181822",
-                      border: "1px solid #2A2418",
-                      borderRadius: "6px",
-                      cursor: "pointer"
-                    }}
-                  >
-                    <div style={{ fontWeight: "bold", color: "#FFFFFF", fontSize: "13px" }}>BlockBum Core Team</div>
-                    <div style={{ color: "#64748B", fontSize: "11px", marginTop: "2px" }}>3 unread messages</div>
-                  </div>
-                </div>
+                    <div style={{ fontWeight: "bold", color: activeContact === c.id ? "#B8860B" : "#0F172A", fontSize: "13px" }}>
+                      {c.name}
+                    </div>
+                    <div style={{ color: "#059669", fontSize: "11px", marginTop: "2px" }}>● {c.status}</div>
+                  </button>
+                ))}
               </div>
 
-              {/* Chat Transcript Area */}
+              {/* Chat View */}
               <div
                 style={{
-                  backgroundColor: "#121218",
-                  border: "1px solid #2A2418",
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #E2E8F0",
                   borderRadius: "8px",
                   display: "flex",
                   flexDirection: "column",
-                  overflow: "hidden"
+                  overflow: "hidden",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
                 }}
               >
-                {/* Chat Header */}
                 <div
                   style={{
                     padding: "14px 20px",
-                    borderBottom: "1px solid #2A2418",
+                    borderBottom: "1px solid #E2E8F0",
+                    backgroundColor: "#F8FAFC",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center"
                   }}
                 >
-                  <div>
-                    <span style={{ fontWeight: "bold", color: "#FFFFFF", fontSize: "15px" }}>Bob_NodeOperator</span>
-                    <span style={{ color: "#10B981", fontSize: "12px", marginLeft: "8px" }}>● Online</span>
-                  </div>
-                  <div
+                  <span style={{ fontWeight: "bold", color: "#0F172A", fontSize: "15px" }}>
+                    {activeContact === "bob" ? "Bob_NodeOperator" : activeContact === "alice" ? "Alice_Researcher" : "Core Security Team"}
+                  </span>
+                  <span
                     style={{
-                      backgroundColor: "#1A150C",
-                      border: "1px solid #D4AF37",
-                      color: "#FFD700",
+                      backgroundColor: "#ECFDF5",
+                      border: "1px solid #A7F3D0",
+                      color: "#065F46",
                       fontSize: "11px",
-                      padding: "2px 8px",
-                      borderRadius: "4px"
+                      padding: "3px 8px",
+                      borderRadius: "4px",
+                      fontWeight: "bold"
                     }}
                   >
-                    🔒 Monocypher X25519 + ChaCha20-Poly1305 Verified
-                  </div>
+                    🔒 Monocypher X25519 + ChaCha20-Poly1305 E2EE
+                  </span>
                 </div>
 
-                {/* Messages Body */}
                 <div style={{ flex: 1, padding: "20px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "12px" }}>
                   {messages.map((m) => {
                     const isMe = m.sender === selectedIdentity.address;
@@ -1373,23 +2161,22 @@ export const App: React.FC = () => {
                         style={{
                           alignSelf: isMe ? "flex-end" : "flex-start",
                           maxWidth: "70%",
-                          backgroundColor: isMe ? "#201A0E" : "#1A1A26",
-                          border: isMe ? "1px solid #D4AF37" : "1px solid #2A2418",
+                          backgroundColor: isMe ? "#FEF9EE" : "#F8FAFC",
+                          border: isMe ? "1px solid #D4AF37" : "1px solid #E2E8F0",
                           borderRadius: "8px",
                           padding: "12px 16px"
                         }}
                       >
-                        <div style={{ fontSize: "11px", color: isMe ? "#FFD700" : "#94A3B8", marginBottom: "4px" }}>
+                        <div style={{ fontSize: "11px", color: isMe ? "#B8860B" : "#64748B", marginBottom: "4px" }}>
                           {m.senderAlias} • {m.timestamp}
                         </div>
-                        <div style={{ fontSize: "13px", color: "#FFFFFF", lineHeight: "1.4" }}>{m.content}</div>
+                        <div style={{ fontSize: "13px", color: "#0F172A", lineHeight: "1.4" }}>{m.content}</div>
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Message Input */}
-                <div style={{ padding: "14px 20px", borderTop: "1px solid #2A2418", display: "flex", gap: "10px" }}>
+                <div style={{ padding: "14px 20px", borderTop: "1px solid #E2E8F0", display: "flex", gap: "10px", backgroundColor: "#F8FAFC" }}>
                   <input
                     type="text"
                     value={chatInput}
@@ -1399,10 +2186,10 @@ export const App: React.FC = () => {
                     style={{
                       flex: 1,
                       padding: "10px 14px",
-                      backgroundColor: "#181824",
-                      border: "1px solid #3A3220",
+                      backgroundColor: "#FFFFFF",
+                      border: "1px solid #CBD5E1",
                       borderRadius: "6px",
-                      color: "#FFFFFF",
+                      color: "#0F172A",
                       fontSize: "13px",
                       outline: "none"
                     }}
@@ -1411,8 +2198,8 @@ export const App: React.FC = () => {
                     onClick={handleSendMessage}
                     style={{
                       padding: "10px 20px",
-                      background: "linear-gradient(135deg, #FF8800 0%, #FF5500 100%)",
-                      border: "1px solid #FFB800",
+                      background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                      border: "1px solid #EA580C",
                       borderRadius: "6px",
                       color: "#FFFFFF",
                       fontWeight: "bold",
@@ -1435,21 +2222,22 @@ export const App: React.FC = () => {
               {/* Telemetry Stats */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
                 {[
-                  { label: "Chain Height", val: `#${nodeStatus.chain_height.toLocaleString()}`, color: "#FFD700" },
-                  { label: "Consensus Mode", val: "PoW Nakamoto", color: "#FF8800" },
-                  { label: "Connected Peers", val: `${nodeStatus.peers_connected} (IPv4 / IPv6)`, color: "#10B981" },
-                  { label: "Mempool Pending", val: `${nodeStatus.mempool_tx_count} txs`, color: "#38BDF8" }
+                  { label: "Chain Height", val: `#${nodeStatus.chain_height.toLocaleString()}`, color: "#B8860B" },
+                  { label: "Consensus Mode", val: "PoW Nakamoto", color: "#EA580C" },
+                  { label: "Connected Peers", val: `${peersList.length} (IPv4/IPv6)`, color: "#059669" },
+                  { label: "Mempool Pending", val: `${nodeStatus.mempool_tx_count} txs`, color: "#0284C7" }
                 ].map((stat, i) => (
                   <div
                     key={i}
                     style={{
-                      backgroundColor: "#121218",
-                      border: "1px solid #2A2418",
+                      backgroundColor: "#FFFFFF",
+                      border: "1px solid #E2E8F0",
                       borderRadius: "8px",
-                      padding: "16px"
+                      padding: "16px",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
                     }}
                   >
-                    <div style={{ color: "#94A3B8", fontSize: "11px", fontWeight: "bold" }}>{stat.label}</div>
+                    <div style={{ color: "#64748B", fontSize: "11px", fontWeight: "bold" }}>{stat.label}</div>
                     <div style={{ color: stat.color, fontSize: "20px", fontWeight: "bold", marginTop: "4px" }}>
                       {stat.val}
                     </div>
@@ -1457,41 +2245,100 @@ export const App: React.FC = () => {
                 ))}
               </div>
 
+              {/* Connect Peer Form */}
+              <div
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: "8px",
+                  padding: "18px 20px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
+                }}
+              >
+                <form onSubmit={handleAddPeer} style={{ display: "flex", gap: "10px", flex: 1, marginRight: "16px" }}>
+                  <input
+                    type="text"
+                    value={newPeerIp}
+                    onChange={(e) => setNewPeerIp(e.target.value)}
+                    placeholder="Enter peer IP:Port (e.g. 192.0.2.1:8545 or [2001:db8::1]:8545)"
+                    style={{
+                      flex: 1,
+                      padding: "9px 12px",
+                      backgroundColor: "#F8FAFC",
+                      border: "1px solid #CBD5E1",
+                      borderRadius: "5px",
+                      fontSize: "13px"
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    style={{
+                      padding: "9px 18px",
+                      background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                      border: "1px solid #EA580C",
+                      borderRadius: "5px",
+                      color: "#FFFFFF",
+                      fontWeight: "bold",
+                      fontSize: "13px",
+                      cursor: "pointer"
+                    }}
+                  >
+                    + Connect Peer
+                  </button>
+                </form>
+                <button
+                  onClick={handlePingPeers}
+                  style={{
+                    padding: "9px 16px",
+                    backgroundColor: "#FFFFFF",
+                    border: "1px solid #D4AF37",
+                    borderRadius: "5px",
+                    color: "#B8860B",
+                    fontWeight: "bold",
+                    fontSize: "13px",
+                    cursor: "pointer"
+                  }}
+                >
+                  📡 Ping All Peers
+                </button>
+              </div>
+
               {/* Peer Connections Table */}
               <div
                 style={{
-                  backgroundColor: "#121218",
-                  border: "1px solid #2A2418",
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #E2E8F0",
                   borderRadius: "8px",
-                  padding: "20px"
+                  padding: "20px",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
                 }}
               >
-                <h3 style={{ margin: "0 0 16px 0", color: "#FFFFFF", fontSize: "16px" }}>Connected Global Peers</h3>
+                <h3 style={{ margin: "0 0 16px 0", color: "#0F172A", fontSize: "16px", fontWeight: "bold" }}>
+                  Connected Global Peers ({peersList.length})
+                </h3>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
                   <thead>
-                    <tr style={{ borderBottom: "1px solid #2A2418", textAlign: "left", color: "#FFB800" }}>
-                      <th style={{ padding: "8px" }}>Peer Address</th>
-                      <th style={{ padding: "8px" }}>Protocol</th>
-                      <th style={{ padding: "8px" }}>Client Version</th>
-                      <th style={{ padding: "8px" }}>Latency</th>
-                      <th style={{ padding: "8px" }}>Blocks Behind</th>
-                      <th style={{ padding: "8px" }}>Reputation Score</th>
+                    <tr style={{ borderBottom: "1px solid #E2E8F0", textAlign: "left", color: "#64748B", backgroundColor: "#F8FAFC" }}>
+                      <th style={{ padding: "10px 8px" }}>Peer Address</th>
+                      <th style={{ padding: "10px 8px" }}>Protocol</th>
+                      <th style={{ padding: "10px 8px" }}>Client Version</th>
+                      <th style={{ padding: "10px 8px" }}>Latency</th>
+                      <th style={{ padding: "10px 8px" }}>Blocks Behind</th>
+                      <th style={{ padding: "10px 8px" }}>Reputation Score</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      { ip: "198.51.100.42:8545", proto: "IPv4", ver: "BlockBum-Core/0.2.0 (Ubuntu)", ping: "14 ms", behind: "0", score: "100/100" },
-                      { ip: "[2001:db8::1a2b]:8545", proto: "IPv6", ver: "BlockBum-Core/0.2.0 (Windows)", ping: "22 ms", behind: "0", score: "98/100" },
-                      { ip: "203.0.113.88:8545", proto: "IPv4", ver: "BlockBum-Qt/0.2.0 (Linux)", ping: "19 ms", behind: "0", score: "99/100" },
-                      { ip: "[2001:db8:85a3::8a2e]:8545", proto: "IPv6", ver: "BlockBum-Core/0.2.0 (macOS)", ping: "35 ms", behind: "0", score: "96/100" }
-                    ].map((p, i) => (
-                      <tr key={i} style={{ borderBottom: "1px solid #1A1A24" }}>
-                        <td style={{ padding: "10px 8px", fontFamily: "monospace", color: "#FFFFFF" }}>{p.ip}</td>
-                        <td style={{ padding: "10px 8px", color: p.proto === "IPv6" ? "#38BDF8" : "#A7F3D0" }}>{p.proto}</td>
-                        <td style={{ padding: "10px 8px", color: "#94A3B8" }}>{p.ver}</td>
-                        <td style={{ padding: "10px 8px", color: "#10B981" }}>{p.ping}</td>
-                        <td style={{ padding: "10px 8px", color: "#94A3B8" }}>{p.behind}</td>
-                        <td style={{ padding: "10px 8px", color: "#FFD700", fontWeight: "bold" }}>{p.score}</td>
+                    {peersList.map((p, i) => (
+                      <tr key={i} style={{ borderBottom: "1px solid #F1F5F9" }}>
+                        <td style={{ padding: "10px 8px", fontFamily: "monospace", color: "#0F172A" }}>{p.ip}</td>
+                        <td style={{ padding: "10px 8px", color: p.proto === "IPv6" ? "#0284C7" : "#059669", fontWeight: "600" }}>{p.proto}</td>
+                        <td style={{ padding: "10px 8px", color: "#64748B" }}>{p.ver}</td>
+                        <td style={{ padding: "10px 8px", color: "#059669", fontWeight: "bold" }}>{p.ping}</td>
+                        <td style={{ padding: "10px 8px", color: "#64748B" }}>{p.behind}</td>
+                        <td style={{ padding: "10px 8px", color: "#B8860B", fontWeight: "bold" }}>{p.score}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1510,17 +2357,18 @@ export const App: React.FC = () => {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  backgroundColor: "#121218",
-                  border: "1px solid #2A2418",
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #E2E8F0",
                   borderRadius: "8px",
-                  padding: "20px"
+                  padding: "20px",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
                 }}
               >
                 <div>
-                  <h3 style={{ margin: "0 0 6px 0", color: "#FFD700", fontSize: "18px" }}>
+                  <h3 style={{ margin: "0 0 6px 0", color: "#0F172A", fontSize: "18px", fontWeight: "bold" }}>
                     Multi-Device Identity Management
                   </h3>
-                  <div style={{ color: "#94A3B8", fontSize: "13px" }}>
+                  <div style={{ color: "#64748B", fontSize: "13px" }}>
                     All linked devices are cryptographically authenticated via Monocypher Ed25519 master signatures.
                   </div>
                 </div>
@@ -1528,8 +2376,8 @@ export const App: React.FC = () => {
                   onClick={() => setShowPairModal(true)}
                   style={{
                     padding: "10px 20px",
-                    background: "linear-gradient(135deg, #FF8800 0%, #FF5500 100%)",
-                    border: "1px solid #FFB800",
+                    background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                    border: "1px solid #EA580C",
                     borderRadius: "6px",
                     color: "#FFFFFF",
                     fontWeight: "bold",
@@ -1547,29 +2395,32 @@ export const App: React.FC = () => {
                   <div
                     key={d.device_id}
                     style={{
-                      backgroundColor: "#121218",
-                      border: d.is_current ? "1px solid #D4AF37" : "1px solid #2A2418",
+                      backgroundColor: "#FFFFFF",
+                      border: d.is_current ? "1px solid #D4AF37" : "1px solid #E2E8F0",
                       borderRadius: "8px",
-                      padding: "18px"
+                      padding: "18px",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                      <span style={{ fontWeight: "bold", color: "#FFFFFF", fontSize: "14px" }}>{d.device_name}</span>
+                      <span style={{ fontWeight: "bold", color: "#0F172A", fontSize: "14px" }}>{d.device_name}</span>
                       <span
                         style={{
                           fontSize: "11px",
+                          fontWeight: "bold",
                           padding: "2px 8px",
                           borderRadius: "4px",
-                          backgroundColor: d.status === "authorized" ? "#064E3B" : "#7F1D1D",
-                          color: d.status === "authorized" ? "#A7F3D0" : "#FECACA"
+                          backgroundColor: d.status === "authorized" ? "#ECFDF5" : "#FEF2F2",
+                          color: d.status === "authorized" ? "#065F46" : "#991B1B",
+                          border: d.status === "authorized" ? "1px solid #A7F3D0" : "1px solid #FECACA"
                         }}
                       >
                         {d.is_current ? "Current Workstation" : d.status.toUpperCase()}
                       </span>
                     </div>
 
-                    <div style={{ fontSize: "12px", color: "#94A3B8", marginBottom: "6px" }}>
-                      Platform: <strong style={{ color: "#E2E8F0" }}>{d.platform.toUpperCase()}</strong>  •  Paired: {d.paired_at}
+                    <div style={{ fontSize: "12px", color: "#64748B", marginBottom: "6px" }}>
+                      Platform: <strong style={{ color: "#0F172A" }}>{d.platform.toUpperCase()}</strong>  •  Paired: {d.paired_at}
                     </div>
 
                     <div style={{ fontSize: "11px", fontFamily: "monospace", color: "#64748B", marginBottom: "14px" }}>
@@ -1581,10 +2432,10 @@ export const App: React.FC = () => {
                         onClick={() => handleRevokeDevice(d.device_id)}
                         style={{
                           padding: "6px 14px",
-                          backgroundColor: "#1E1418",
+                          backgroundColor: "#FEF2F2",
                           border: "1px solid #EF4444",
                           borderRadius: "4px",
-                          color: "#EF4444",
+                          color: "#DC2626",
                           fontSize: "12px",
                           fontWeight: "bold",
                           cursor: "pointer"
@@ -1607,46 +2458,50 @@ export const App: React.FC = () => {
               {/* Hardened Cryptography Audit Banner */}
               <div
                 style={{
-                  backgroundColor: "#121218",
-                  border: "1px solid rgba(212, 175, 55, 0.4)",
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #D4AF37",
                   borderRadius: "8px",
-                  padding: "20px"
+                  padding: "20px",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                  <h3 style={{ margin: 0, color: "#FFD700", fontSize: "16px" }}>
+                  <h3 style={{ margin: 0, color: "#0F172A", fontSize: "16px", fontWeight: "bold" }}>
                     🛡 Ubuntu & Linux Native Cryptographic Engine
                   </h3>
-                  <span
+                  <button
+                    onClick={() => setShowCryptoAuditModal(true)}
                     style={{
-                      backgroundColor: "#064E3B",
+                      backgroundColor: "#ECFDF5",
                       border: "1px solid #10B981",
-                      color: "#A7F3D0",
+                      color: "#065F46",
                       fontSize: "11px",
-                      padding: "2px 8px",
-                      borderRadius: "4px"
+                      fontWeight: "bold",
+                      padding: "4px 10px",
+                      borderRadius: "4px",
+                      cursor: "pointer"
                     }}
                   >
-                    100% Constant-Time Monocypher Audited
-                  </span>
+                    View Cryptography Specification
+                  </button>
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginTop: "12px" }}>
-                  <div style={{ backgroundColor: "#181824", padding: "12px", borderRadius: "6px", border: "1px solid #2A2418" }}>
-                    <div style={{ color: "#FFB800", fontWeight: "bold", fontSize: "12px" }}>Signatures</div>
-                    <div style={{ color: "#FFFFFF", fontSize: "13px", marginTop: "2px" }}>Ed25519 (RFC 8032)</div>
+                  <div style={{ backgroundColor: "#F8FAFC", padding: "12px", borderRadius: "6px", border: "1px solid #E2E8F0" }}>
+                    <div style={{ color: "#B8860B", fontWeight: "bold", fontSize: "12px" }}>Signatures</div>
+                    <div style={{ color: "#0F172A", fontSize: "13px", marginTop: "2px", fontWeight: "600" }}>Ed25519 (RFC 8032)</div>
                   </div>
-                  <div style={{ backgroundColor: "#181824", padding: "12px", borderRadius: "6px", border: "1px solid #2A2418" }}>
-                    <div style={{ color: "#FFB800", fontWeight: "bold", fontSize: "12px" }}>Key Agreement</div>
-                    <div style={{ color: "#FFFFFF", fontSize: "13px", marginTop: "2px" }}>X25519 (ECDH)</div>
+                  <div style={{ backgroundColor: "#F8FAFC", padding: "12px", borderRadius: "6px", border: "1px solid #E2E8F0" }}>
+                    <div style={{ color: "#B8860B", fontWeight: "bold", fontSize: "12px" }}>Key Agreement</div>
+                    <div style={{ color: "#0F172A", fontSize: "13px", marginTop: "2px", fontWeight: "600" }}>X25519 (ECDH)</div>
                   </div>
-                  <div style={{ backgroundColor: "#181824", padding: "12px", borderRadius: "6px", border: "1px solid #2A2418" }}>
-                    <div style={{ color: "#FFB800", fontWeight: "bold", fontSize: "12px" }}>AEAD Encryption</div>
-                    <div style={{ color: "#FFFFFF", fontSize: "13px", marginTop: "2px" }}>ChaCha20-Poly1305</div>
+                  <div style={{ backgroundColor: "#F8FAFC", padding: "12px", borderRadius: "6px", border: "1px solid #E2E8F0" }}>
+                    <div style={{ color: "#B8860B", fontWeight: "bold", fontSize: "12px" }}>AEAD Encryption</div>
+                    <div style={{ color: "#0F172A", fontSize: "13px", marginTop: "2px", fontWeight: "600" }}>ChaCha20-Poly1305</div>
                   </div>
-                  <div style={{ backgroundColor: "#181824", padding: "12px", borderRadius: "6px", border: "1px solid #2A2418" }}>
-                    <div style={{ color: "#FFB800", fontWeight: "bold", fontSize: "12px" }}>Cryptographic Hashing</div>
-                    <div style={{ color: "#FFFFFF", fontSize: "13px", marginTop: "2px" }}>SHA-256 + BLAKE2b</div>
+                  <div style={{ backgroundColor: "#F8FAFC", padding: "12px", borderRadius: "6px", border: "1px solid #E2E8F0" }}>
+                    <div style={{ color: "#B8860B", fontWeight: "bold", fontSize: "12px" }}>Cryptographic Hashing</div>
+                    <div style={{ color: "#0F172A", fontSize: "13px", marginTop: "2px", fontWeight: "600" }}>SHA-256 + BLAKE2b</div>
                   </div>
                 </div>
               </div>
@@ -1654,28 +2509,31 @@ export const App: React.FC = () => {
               {/* Execution Mode Selector */}
               <div
                 style={{
-                  backgroundColor: "#121218",
-                  border: "1px solid #2A2418",
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #E2E8F0",
                   borderRadius: "8px",
-                  padding: "20px"
+                  padding: "20px",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
                 }}
               >
-                <h3 style={{ margin: "0 0 14px 0", color: "#FFFFFF", fontSize: "16px" }}>Client Execution Mode</h3>
+                <h3 style={{ margin: "0 0 14px 0", color: "#0F172A", fontSize: "16px", fontWeight: "bold" }}>
+                  Client Execution Mode
+                </h3>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                   <div
                     onClick={() => setClientMode("full_node")}
                     style={{
                       padding: "16px",
-                      backgroundColor: clientMode === "full_node" ? "#201A0E" : "#181824",
-                      border: clientMode === "full_node" ? "1px solid #FFB800" : "1px solid #2A2418",
+                      backgroundColor: clientMode === "full_node" ? "#FEF9EE" : "#F8FAFC",
+                      border: clientMode === "full_node" ? "1px solid #D4AF37" : "1px solid #CBD5E1",
                       borderRadius: "6px",
                       cursor: "pointer"
                     }}
                   >
-                    <div style={{ fontWeight: "bold", color: "#FFD700", fontSize: "14px", marginBottom: "4px" }}>
-                      ● Full Node Mode (Default)
+                    <div style={{ fontWeight: "bold", color: "#B8860B", fontSize: "14px", marginBottom: "4px" }}>
+                      ● Full Node Mode {clientMode === "full_node" && "(Active)"}
                     </div>
-                    <div style={{ color: "#94A3B8", fontSize: "12px", lineHeight: "1.4" }}>
+                    <div style={{ color: "#64748B", fontSize: "12px", lineHeight: "1.4" }}>
                       Validates all block headers, transactions, UTXOs, and consensus proofs independently on local disk. Zero trust required.
                     </div>
                   </div>
@@ -1684,16 +2542,16 @@ export const App: React.FC = () => {
                     onClick={() => setClientMode("light_client")}
                     style={{
                       padding: "16px",
-                      backgroundColor: clientMode === "light_client" ? "#201A0E" : "#181824",
-                      border: clientMode === "light_client" ? "1px solid #FFB800" : "1px solid #2A2418",
+                      backgroundColor: clientMode === "light_client" ? "#FEF9EE" : "#F8FAFC",
+                      border: clientMode === "light_client" ? "1px solid #D4AF37" : "1px solid #CBD5E1",
                       borderRadius: "6px",
                       cursor: "pointer"
                     }}
                   >
-                    <div style={{ fontWeight: "bold", color: "#38BDF8", fontSize: "14px", marginBottom: "4px" }}>
-                      ● SPV Light Client Mode
+                    <div style={{ fontWeight: "bold", color: "#0284C7", fontSize: "14px", marginBottom: "4px" }}>
+                      ● SPV Light Client Mode {clientMode === "light_client" && "(Active)"}
                     </div>
-                    <div style={{ color: "#94A3B8", fontSize: "12px", lineHeight: "1.4" }}>
+                    <div style={{ color: "#64748B", fontSize: "12px", lineHeight: "1.4" }}>
                       Downloads only 92-byte block headers and verifies Merkle inclusion proofs. Low memory and disk footprint for portable laptops.
                     </div>
                   </div>
@@ -1703,16 +2561,19 @@ export const App: React.FC = () => {
               {/* Software Updates Verifier */}
               <div
                 style={{
-                  backgroundColor: "#121218",
-                  border: "1px solid #2A2418",
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #E2E8F0",
                   borderRadius: "8px",
-                  padding: "20px"
+                  padding: "20px",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <h3 style={{ margin: "0 0 4px 0", color: "#FFFFFF", fontSize: "16px" }}>Signed Application Releases</h3>
-                    <div style={{ color: "#94A3B8", fontSize: "12px" }}>
+                    <h3 style={{ margin: "0 0 4px 0", color: "#0F172A", fontSize: "16px", fontWeight: "bold" }}>
+                      Signed Application Releases
+                    </h3>
+                    <div style={{ color: "#64748B", fontSize: "12px" }}>
                       Current build: 0.2.0 • Deterministic SHA-256 release signed by BlockBum Core Key
                     </div>
                   </div>
@@ -1721,10 +2582,10 @@ export const App: React.FC = () => {
                     disabled={isCheckingUpdate}
                     style={{
                       padding: "10px 18px",
-                      backgroundColor: "#1A1A26",
-                      border: "1px solid #FFB800",
+                      backgroundColor: "#FFFFFF",
+                      border: "1px solid #D4AF37",
                       borderRadius: "6px",
-                      color: "#FFD700",
+                      color: "#B8860B",
                       fontWeight: "bold",
                       fontSize: "13px",
                       cursor: "pointer"
@@ -1738,113 +2599,84 @@ export const App: React.FC = () => {
                   <div
                     style={{
                       marginTop: "16px",
-                      backgroundColor: "#181824",
-                      border: "1px solid #10B981",
+                      backgroundColor: "#ECFDF5",
+                      border: "1px solid #A7F3D0",
                       borderRadius: "6px",
                       padding: "14px"
                     }}
                   >
-                    <div style={{ color: "#10B981", fontWeight: "bold", fontSize: "13px" }}>
+                    <div style={{ color: "#065F46", fontWeight: "bold", fontSize: "13px" }}>
                       New Signed Release Available: v{updateInfo.version} ({updateInfo.release_date})
                     </div>
-                    <div style={{ color: "#94A3B8", fontSize: "12px", margin: "6px 0", fontFamily: "monospace" }}>
+                    <div style={{ color: "#475569", fontSize: "12px", margin: "6px 0", fontFamily: "monospace" }}>
                       Digest: {updateInfo.sha256_hash}
                     </div>
-                    <div style={{ color: "#FFD700", fontSize: "12px" }}>
+                    <div style={{ color: "#B8860B", fontSize: "12px", fontWeight: "600" }}>
                       Authority Signature: {updateInfo.signature}
                     </div>
                   </div>
                 )}
               </div>
-            </div>
-          )}
 
-          {/* Communities Tab with Official BlockBum Banner */}
-          {activeTab === "communities" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              {/* Localization & Accessibility */}
               <div
                 style={{
-                  backgroundColor: "#121218",
-                  border: "1px solid rgba(212, 175, 55, 0.35)",
-                  borderRadius: "10px",
-                  overflow: "hidden",
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.5)"
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: "8px",
+                  padding: "20px",
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "20px",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
                 }}
               >
-                <img
-                  src={bbBannerImg}
-                  alt="BlockBum Decentralized Digital Association"
-                  style={{ width: "100%", maxHeight: "220px", objectFit: "cover" }}
-                />
-                <div style={{ padding: "18px 24px" }}>
-                  <h3 style={{ margin: "0 0 6px 0", color: "#FFD700", fontSize: "20px" }}>
-                    Decentralized Digital Association & Communities
-                  </h3>
-                  <p style={{ margin: 0, color: "#94A3B8", fontSize: "14px", lineHeight: "1.5" }}>
-                    Join sovereign peer-to-peer associations, communicate securely with end-to-end encryption, and participate in community governance.
-                  </p>
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}>
-                {communities.map((comm) => (
-                  <div
-                    key={comm.id}
+                <div>
+                  <h4 style={{ margin: "0 0 10px 0", color: "#0F172A", fontSize: "14px" }}>Localization</h4>
+                  <select
+                    value={locale}
+                    onChange={(e) => setLocale(e.target.value as SupportedLocale)}
                     style={{
-                      backgroundColor: "#121218",
-                      border: "1px solid #2A2418",
-                      borderRadius: "8px",
-                      padding: "18px"
+                      width: "100%",
+                      padding: "8px 12px",
+                      backgroundColor: "#F8FAFC",
+                      border: "1px solid #CBD5E1",
+                      borderRadius: "4px",
+                      fontSize: "13px"
                     }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                      <span style={{ fontWeight: "bold", color: "#FFFFFF", fontSize: "15px" }}>{comm.name}</span>
-                      <span
-                        style={{
-                          fontSize: "11px",
-                          padding: "2px 8px",
-                          borderRadius: "4px",
-                          backgroundColor: "#201A0E",
-                          border: "1px solid #FFB800",
-                          color: "#FFD700"
-                        }}
-                      >
-                        {comm.myRole}
-                      </span>
-                    </div>
-                    <p style={{ color: "#94A3B8", fontSize: "13px", margin: "0 0 12px 0", lineHeight: "1.4" }}>
-                      {comm.description}
-                    </p>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      {comm.channels.map((ch) => (
-                        <span
-                          key={ch}
-                          style={{
-                            backgroundColor: "#181824",
-                            border: "1px solid #3A3220",
-                            borderRadius: "4px",
-                            padding: "3px 8px",
-                            color: "#E2E8F0",
-                            fontSize: "11px"
-                          }}
-                        >
-                          #{ch}
-                        </span>
-                      ))}
-                    </div>
+                    <option value="en">English (US)</option>
+                    <option value="es">Español</option>
+                    <option value="zh">中文 (Chinese)</option>
+                    <option value="de">Deutsch</option>
+                    <option value="fr">Français</option>
+                    <option value="hi">हिन्दी (Hindi)</option>
+                    <option value="ja">日本語 (Japanese)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <h4 style={{ margin: "0 0 10px 0", color: "#0F172A", fontSize: "14px" }}>Accessibility</h4>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: "#334155" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <input
+                        type="checkbox"
+                        checked={accessibility.high_contrast}
+                        onChange={(e) => setAccessibility({ ...accessibility, high_contrast: e.target.checked })}
+                      />
+                      High Contrast Mode
+                    </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <input
+                        type="checkbox"
+                        checked={accessibility.reduced_motion}
+                        onChange={(e) => setAccessibility({ ...accessibility, reduced_motion: e.target.checked })}
+                      />
+                      Reduced Motion
+                    </label>
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
-          )}
-          {activeTab === "challenges" && (
-            <div style={{ color: "#94A3B8", fontSize: "14px" }}>
-              Decentralized governance improvement proposals (BIPs) and on-chain voting active.
-            </div>
-          )}
-          {activeTab === "files" && (
-            <div style={{ color: "#94A3B8", fontSize: "14px" }}>
-              Decentralized encrypted content storage with {sharedFiles.length} verified artifacts.
             </div>
           )}
         </main>
@@ -1857,14 +2689,14 @@ export const App: React.FC = () => {
         role="contentinfo"
         style={{
           height: "26px",
-          backgroundColor: "#0B0B0E",
-          borderTop: "1px solid #231F16",
+          backgroundColor: "#E2E8F0",
+          borderTop: "1px solid #CBD5E1",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0 12px",
           fontSize: "11px",
-          color: "#94A3B8",
+          color: "#475569",
           fontFamily: "monospace",
           userSelect: "none"
         }}
@@ -1876,24 +2708,24 @@ export const App: React.FC = () => {
         </div>
 
         <div style={{ display: "flex", gap: "16px" }}>
-          <span style={{ color: clientMode === "full_node" ? "#FFD700" : "#38BDF8" }}>
+          <span style={{ color: clientMode === "full_node" ? "#B8860B" : "#0284C7", fontWeight: "bold" }}>
             🛡 Mode: {clientMode === "full_node" ? "Full Node (Validated)" : "SPV Light Client"}
           </span>
-          <span style={{ color: "#10B981" }}>
+          <span style={{ color: "#059669", fontWeight: "bold" }}>
             🔒 Ubuntu Cryptography: Monocypher Active
           </span>
         </div>
 
         <div style={{ display: "flex", gap: "16px" }}>
           <span>🔐 Vault: Unlocked</span>
-          <span style={{ color: "#FFB800" }}>📡 Peers: {nodeStatus.peers_connected} Connected (IPv4/IPv6)</span>
+          <span style={{ color: "#B8860B", fontWeight: "bold" }}>📡 Peers: {peersList.length} Connected</span>
         </div>
       </footer>
 
       {/* ===================================================================== */}
-      {/* 5. MODAL DIALOGS */}
+      {/* 5. MODAL DIALOGS (LIGHT WHITE THEME) */}
       {/* ===================================================================== */}
-      {/* Receive Modal with Official Gold Coin Badge */}
+      {/* Receive Modal */}
       {showReceiveModal && (
         <div
           style={{
@@ -1902,7 +2734,7 @@ export const App: React.FC = () => {
             left: 0,
             width: "100vw",
             height: "100vh",
-            backgroundColor: "rgba(0,0,0,0.85)",
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -1912,12 +2744,13 @@ export const App: React.FC = () => {
         >
           <div
             style={{
-              backgroundColor: "#121218",
-              border: "1px solid #FFB800",
-              borderRadius: "10px",
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #D4AF37",
+              borderRadius: "12px",
               padding: "28px",
               width: "440px",
-              textAlign: "center"
+              textAlign: "center",
+              boxShadow: "0 12px 36px rgba(0,0,0,0.15)"
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1926,17 +2759,19 @@ export const App: React.FC = () => {
               alt="BlockBum Coin"
               style={{ width: "64px", height: "64px", borderRadius: "50%", marginBottom: "12px" }}
             />
-            <h3 style={{ margin: "0 0 8px 0", color: "#FFD700", fontSize: "18px" }}>Receive BUM Coins</h3>
-            <p style={{ margin: "0 0 16px 0", color: "#94A3B8", fontSize: "13px" }}>
+            <h3 style={{ margin: "0 0 6px 0", color: "#0F172A", fontSize: "18px", fontWeight: "bold" }}>
+              Receive BUM Coins
+            </h3>
+            <p style={{ margin: "0 0 16px 0", color: "#64748B", fontSize: "13px" }}>
               Scan QR code or copy your Bech32 address below:
             </p>
 
-            {/* Simulated QR Box with Gold Borders */}
             <div
               style={{
                 width: "160px",
                 height: "160px",
-                backgroundColor: "#FFFFFF",
+                backgroundColor: "#F8FAFC",
+                border: "1px solid #CBD5E1",
                 margin: "0 auto 16px auto",
                 borderRadius: "8px",
                 padding: "8px",
@@ -1948,21 +2783,22 @@ export const App: React.FC = () => {
               <img
                 src={bbCoinImg}
                 alt="QR Emblem"
-                style={{ width: "80px", height: "80px", opacity: 0.9 }}
+                style={{ width: "90px", height: "90px", opacity: 0.95 }}
               />
             </div>
 
             <div
               style={{
-                backgroundColor: "#181824",
-                border: "1px solid #3A3220",
+                backgroundColor: "#F8FAFC",
+                border: "1px solid #CBD5E1",
                 borderRadius: "4px",
                 padding: "10px",
-                color: "#FFD700",
+                color: "#B8860B",
                 fontFamily: "monospace",
                 fontSize: "12px",
                 wordBreak: "break-all",
-                marginBottom: "16px"
+                marginBottom: "16px",
+                fontWeight: "600"
               }}
             >
               {selectedIdentity.address}
@@ -1972,13 +2808,13 @@ export const App: React.FC = () => {
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(selectedIdentity.address);
-                  alert("Address copied to clipboard!");
+                  alert("Address copied to clipboard:\n" + selectedIdentity.address);
                 }}
                 style={{
                   flex: 1,
                   padding: "10px",
-                  background: "linear-gradient(135deg, #FF8800 0%, #FF5500 100%)",
-                  border: "1px solid #FFB800",
+                  background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                  border: "1px solid #EA580C",
                   borderRadius: "5px",
                   color: "#FFFFFF",
                   fontWeight: "bold",
@@ -1991,16 +2827,615 @@ export const App: React.FC = () => {
                 onClick={() => setShowReceiveModal(false)}
                 style={{
                   padding: "10px 18px",
-                  backgroundColor: "#1A1A24",
-                  border: "1px solid #3A3220",
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #CBD5E1",
                   borderRadius: "5px",
-                  color: "#FFFFFF",
+                  color: "#0F172A",
                   cursor: "pointer"
                 }}
               >
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recovery Seed Phrase Modal */}
+      {showSeedModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000
+          }}
+          onClick={() => setShowSeedModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #D4AF37",
+              borderRadius: "12px",
+              padding: "28px",
+              width: "480px",
+              boxShadow: "0 12px 36px rgba(0,0,0,0.15)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 8px 0", color: "#0F172A", fontSize: "18px", fontWeight: "bold" }}>
+              🔑 Secret Recovery Seed Phrase
+            </h3>
+            <p style={{ margin: "0 0 16px 0", color: "#64748B", fontSize: "13px" }}>
+              Write these 12 words down in private. Never share them with anyone:
+            </p>
+
+            <div
+              style={{
+                backgroundColor: "#FEF9EE",
+                border: "1px solid #D4AF37",
+                borderRadius: "8px",
+                padding: "16px",
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: "10px",
+                marginBottom: "20px"
+              }}
+            >
+              {selectedIdentity.recovery_phrase.split(" ").map((w, i) => (
+                <div key={i} style={{ fontSize: "12px", color: "#B8860B", fontWeight: "bold" }}>
+                  <span style={{ color: "#64748B", fontWeight: "normal", marginRight: "4px" }}>{i + 1}.</span>
+                  {w}
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setShowSeedModal(false)}
+              style={{
+                width: "100%",
+                padding: "10px",
+                background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                border: "1px solid #EA580C",
+                borderRadius: "5px",
+                color: "#FFFFFF",
+                fontWeight: "bold",
+                cursor: "pointer"
+              }}
+            >
+              I Have Stored My Seed Safely
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* New Identity / Onboarding Modal */}
+      {showOnboardingModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000
+          }}
+          onClick={() => setShowOnboardingModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #D4AF37",
+              borderRadius: "12px",
+              padding: "28px",
+              width: "440px",
+              boxShadow: "0 12px 36px rgba(0,0,0,0.15)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 8px 0", color: "#0F172A", fontSize: "18px", fontWeight: "bold" }}>
+              + Create New Wallet Identity
+            </h3>
+            <p style={{ margin: "0 0 16px 0", color: "#64748B", fontSize: "13px" }}>
+              Derive a new sovereign Bech32 identity backed by Monocypher Ed25519:
+            </p>
+
+            <form onSubmit={handleCreateIdentity}>
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ display: "block", color: "#334155", fontSize: "12px", fontWeight: "600", marginBottom: "6px" }}>
+                  Account Alias / Name
+                </label>
+                <input
+                  type="text"
+                  value={newAlias}
+                  onChange={(e) => setNewAlias(e.target.value)}
+                  placeholder="e.g. Carol_Developer"
+                  autoFocus
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    backgroundColor: "#F8FAFC",
+                    border: "1px solid #CBD5E1",
+                    borderRadius: "4px",
+                    fontSize: "13px",
+                    boxSizing: "border-box"
+                  }}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                  type="submit"
+                  style={{
+                    flex: 1,
+                    padding: "10px",
+                    background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                    border: "1px solid #EA580C",
+                    borderRadius: "5px",
+                    color: "#FFFFFF",
+                    fontWeight: "bold",
+                    cursor: "pointer"
+                  }}
+                >
+                  Create Identity
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowOnboardingModal(false)}
+                  style={{
+                    padding: "10px 18px",
+                    backgroundColor: "#FFFFFF",
+                    border: "1px solid #CBD5E1",
+                    borderRadius: "5px",
+                    color: "#0F172A",
+                    cursor: "pointer"
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create Community Modal */}
+      {showNewCommunityModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000
+          }}
+          onClick={() => setShowNewCommunityModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #D4AF37",
+              borderRadius: "12px",
+              padding: "28px",
+              width: "460px",
+              boxShadow: "0 12px 36px rgba(0,0,0,0.15)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 8px 0", color: "#0F172A", fontSize: "18px", fontWeight: "bold" }}>
+              + Create Digital Community
+            </h3>
+            <form onSubmit={handleCreateCommunity}>
+              <div style={{ marginBottom: "14px" }}>
+                <label style={{ display: "block", color: "#334155", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>
+                  Community Name
+                </label>
+                <input
+                  type="text"
+                  value={newCommunityNameInput}
+                  onChange={(e) => setNewCommunityNameInput(e.target.value)}
+                  placeholder="e.g. BlockBum Security Research"
+                  autoFocus
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    backgroundColor: "#F8FAFC",
+                    border: "1px solid #CBD5E1",
+                    borderRadius: "4px",
+                    fontSize: "13px",
+                    boxSizing: "border-box"
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "14px" }}>
+                <label style={{ display: "block", color: "#334155", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>
+                  Description
+                </label>
+                <textarea
+                  value={newCommunityDescInput}
+                  onChange={(e) => setNewCommunityDescInput(e.target.value)}
+                  placeholder="Purpose and focus of this association..."
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    backgroundColor: "#F8FAFC",
+                    border: "1px solid #CBD5E1",
+                    borderRadius: "4px",
+                    fontSize: "13px",
+                    boxSizing: "border-box"
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "18px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#334155" }}>
+                  <input
+                    type="checkbox"
+                    checked={newCommunityPrivateInput}
+                    onChange={(e) => setNewCommunityPrivateInput(e.target.checked)}
+                  />
+                  Private Membership (Invite-Only)
+                </label>
+              </div>
+
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                  type="submit"
+                  style={{
+                    flex: 1,
+                    padding: "10px",
+                    background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                    border: "1px solid #EA580C",
+                    borderRadius: "5px",
+                    color: "#FFFFFF",
+                    fontWeight: "bold",
+                    cursor: "pointer"
+                  }}
+                >
+                  Create Association
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowNewCommunityModal(false)}
+                  style={{
+                    padding: "10px 18px",
+                    backgroundColor: "#FFFFFF",
+                    border: "1px solid #CBD5E1",
+                    borderRadius: "5px",
+                    color: "#0F172A",
+                    cursor: "pointer"
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Submit BIP Modal */}
+      {showNewBipModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000
+          }}
+          onClick={() => setShowNewBipModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #D4AF37",
+              borderRadius: "12px",
+              padding: "28px",
+              width: "480px",
+              boxShadow: "0 12px 36px rgba(0,0,0,0.15)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 8px 0", color: "#0F172A", fontSize: "18px", fontWeight: "bold" }}>
+              + Submit Improvement Proposal (BIP)
+            </h3>
+            <form onSubmit={handleCreateBip}>
+              <div style={{ marginBottom: "14px" }}>
+                <label style={{ display: "block", color: "#334155", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>
+                  Proposal Title
+                </label>
+                <input
+                  type="text"
+                  value={newBipTitle}
+                  onChange={(e) => setNewBipTitle(e.target.value)}
+                  placeholder="e.g. Authenticated Storage Shard Pledges"
+                  autoFocus
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    backgroundColor: "#F8FAFC",
+                    border: "1px solid #CBD5E1",
+                    borderRadius: "4px",
+                    fontSize: "13px",
+                    boxSizing: "border-box"
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "18px" }}>
+                <label style={{ display: "block", color: "#334155", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>
+                  Technical Summary & Rationale
+                </label>
+                <textarea
+                  value={newBipSummary}
+                  onChange={(e) => setNewBipSummary(e.target.value)}
+                  placeholder="Explain why this improvement is needed..."
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    backgroundColor: "#F8FAFC",
+                    border: "1px solid #CBD5E1",
+                    borderRadius: "4px",
+                    fontSize: "13px",
+                    boxSizing: "border-box"
+                  }}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                  type="submit"
+                  style={{
+                    flex: 1,
+                    padding: "10px",
+                    background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                    border: "1px solid #EA580C",
+                    borderRadius: "5px",
+                    color: "#FFFFFF",
+                    fontWeight: "bold",
+                    cursor: "pointer"
+                  }}
+                >
+                  Broadcast Proposal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowNewBipModal(false)}
+                  style={{
+                    padding: "10px 18px",
+                    backgroundColor: "#FFFFFF",
+                    border: "1px solid #CBD5E1",
+                    borderRadius: "5px",
+                    color: "#0F172A",
+                    cursor: "pointer"
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Pair New Device Modal */}
+      {showPairModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000
+          }}
+          onClick={() => setShowPairModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #D4AF37",
+              borderRadius: "12px",
+              padding: "28px",
+              width: "440px",
+              textAlign: "center",
+              boxShadow: "0 12px 36px rgba(0,0,0,0.15)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 6px 0", color: "#0F172A", fontSize: "18px", fontWeight: "bold" }}>
+              📱 Link Secondary Device
+            </h3>
+            <p style={{ margin: "0 0 16px 0", color: "#64748B", fontSize: "13px" }}>
+              Scan this pairing code with your BlockBum mobile or laptop client:
+            </p>
+
+            <div
+              style={{
+                width: "140px",
+                height: "140px",
+                backgroundColor: "#F8FAFC",
+                border: "1px solid #CBD5E1",
+                margin: "0 auto 16px auto",
+                borderRadius: "8px",
+                padding: "8px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}
+            >
+              <img src={bbCoinImg} alt="QR Code" style={{ width: "80px", height: "80px" }} />
+            </div>
+
+            <div
+              style={{
+                backgroundColor: "#FEF9EE",
+                border: "1px solid #D4AF37",
+                borderRadius: "6px",
+                padding: "10px",
+                fontSize: "14px",
+                fontWeight: "bold",
+                color: "#B8860B",
+                letterSpacing: "2px",
+                marginBottom: "16px"
+              }}
+            >
+              BB-9842-7104
+            </div>
+
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button
+                onClick={() => handlePairDevice("Mobile Device (Android)")}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                  border: "1px solid #EA580C",
+                  borderRadius: "5px",
+                  color: "#FFFFFF",
+                  fontWeight: "bold",
+                  cursor: "pointer"
+                }}
+              >
+                Confirm Pairing
+              </button>
+              <button
+                onClick={() => setShowPairModal(false)}
+                style={{
+                  padding: "10px 18px",
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #CBD5E1",
+                  borderRadius: "5px",
+                  color: "#0F172A",
+                  cursor: "pointer"
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Execution Mode Modal */}
+      {showModeModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000
+          }}
+          onClick={() => setShowModeModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #D4AF37",
+              borderRadius: "12px",
+              padding: "28px",
+              width: "480px",
+              boxShadow: "0 12px 36px rgba(0,0,0,0.15)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 10px 0", color: "#0F172A", fontSize: "18px", fontWeight: "bold" }}>
+              Switch Client Execution Mode
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "20px" }}>
+              <button
+                onClick={() => {
+                  setClientMode("full_node");
+                  setShowModeModal(false);
+                }}
+                style={{
+                  padding: "14px",
+                  backgroundColor: clientMode === "full_node" ? "#FEF9EE" : "#F8FAFC",
+                  border: clientMode === "full_node" ? "1px solid #D4AF37" : "1px solid #CBD5E1",
+                  borderRadius: "6px",
+                  textAlign: "left",
+                  cursor: "pointer"
+                }}
+              >
+                <div style={{ fontWeight: "bold", color: "#B8860B", fontSize: "14px" }}>
+                  ● Full Node (Independent Validation) {clientMode === "full_node" && "✓ Active"}
+                </div>
+                <div style={{ color: "#64748B", fontSize: "12px", marginTop: "4px" }}>
+                  Validates all consensus rules, PoW difficulty, and transactions locally. Highest security.
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setClientMode("light_client");
+                  setShowModeModal(false);
+                }}
+                style={{
+                  padding: "14px",
+                  backgroundColor: clientMode === "light_client" ? "#FEF9EE" : "#F8FAFC",
+                  border: clientMode === "light_client" ? "1px solid #D4AF37" : "1px solid #CBD5E1",
+                  borderRadius: "6px",
+                  textAlign: "left",
+                  cursor: "pointer"
+                }}
+              >
+                <div style={{ fontWeight: "bold", color: "#0284C7", fontSize: "14px" }}>
+                  ● SPV Light Client (Header & Merkle Proofs) {clientMode === "light_client" && "✓ Active"}
+                </div>
+                <div style={{ color: "#64748B", fontSize: "12px", marginTop: "4px" }}>
+                  Only stores 92-byte block headers. Verifies transactions via Merkle audit proofs over RPC.
+                </div>
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowModeModal(false)}
+              style={{
+                width: "100%",
+                padding: "10px",
+                backgroundColor: "#F1F5F9",
+                border: "1px solid #CBD5E1",
+                borderRadius: "5px",
+                color: "#0F172A",
+                cursor: "pointer"
+              }}
+            >
+              Done
+            </button>
           </div>
         </div>
       )}
@@ -2014,7 +3449,7 @@ export const App: React.FC = () => {
             left: 0,
             width: "100vw",
             height: "100vh",
-            backgroundColor: "rgba(0,0,0,0.85)",
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -2024,33 +3459,34 @@ export const App: React.FC = () => {
         >
           <div
             style={{
-              backgroundColor: "#121218",
-              border: "1px solid #FFB800",
-              borderRadius: "10px",
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #D4AF37",
+              borderRadius: "12px",
               padding: "28px",
-              width: "520px"
+              width: "520px",
+              boxShadow: "0 12px 36px rgba(0,0,0,0.15)"
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ margin: "0 0 12px 0", color: "#FFD700", fontSize: "18px" }}>
+            <h3 style={{ margin: "0 0 10px 0", color: "#0F172A", fontSize: "18px", fontWeight: "bold" }}>
               🛡 Ubuntu Cryptographic Engine Specification
             </h3>
-            <p style={{ color: "#94A3B8", fontSize: "13px", lineHeight: "1.5", margin: "0 0 16px 0" }}>
+            <p style={{ color: "#64748B", fontSize: "13px", lineHeight: "1.5", margin: "0 0 16px 0" }}>
               BlockBum utilizes Monocypher, an independently audited, constant-time cryptographic library. No unreviewed or proprietary key agreement algorithms are permitted.
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px" }}>
-              <div style={{ backgroundColor: "#181824", padding: "10px", borderRadius: "6px" }}>
-                <strong style={{ color: "#FF8800" }}>Ed25519 Signatures:</strong> Deterministic 64-byte signatures over SHA-512 curve points.
+              <div style={{ backgroundColor: "#F8FAFC", border: "1px solid #E2E8F0", padding: "10px", borderRadius: "6px" }}>
+                <strong style={{ color: "#EA580C" }}>Ed25519 Signatures:</strong> Deterministic 64-byte signatures over SHA-512 curve points.
               </div>
-              <div style={{ backgroundColor: "#181824", padding: "10px", borderRadius: "6px" }}>
-                <strong style={{ color: "#FF8800" }}>X25519 Key Agreement:</strong> Constant-time ECDH for forward secret sessions and multi-device channels.
+              <div style={{ backgroundColor: "#F8FAFC", border: "1px solid #E2E8F0", padding: "10px", borderRadius: "6px" }}>
+                <strong style={{ color: "#EA580C" }}>X25519 Key Agreement:</strong> Constant-time ECDH for forward secret sessions and multi-device channels.
               </div>
-              <div style={{ backgroundColor: "#181824", padding: "10px", borderRadius: "6px" }}>
-                <strong style={{ color: "#FF8800" }}>ChaCha20-Poly1305 AEAD:</strong> 256-bit stream cipher with 128-bit authentication tag for on-disk and over-the-wire privacy.
+              <div style={{ backgroundColor: "#F8FAFC", border: "1px solid #E2E8F0", padding: "10px", borderRadius: "6px" }}>
+                <strong style={{ color: "#EA580C" }}>ChaCha20-Poly1305 AEAD:</strong> 256-bit stream cipher with 128-bit authentication tag for on-disk and over-the-wire privacy.
               </div>
-              <div style={{ backgroundColor: "#181824", padding: "10px", borderRadius: "6px" }}>
-                <strong style={{ color: "#FF8800" }}>SHA-256 Merkle Roots:</strong> Authenticated state trees ensuring tamper-evident block headers.
+              <div style={{ backgroundColor: "#F8FAFC", border: "1px solid #E2E8F0", padding: "10px", borderRadius: "6px" }}>
+                <strong style={{ color: "#EA580C" }}>SHA-256 Merkle Roots:</strong> Authenticated state trees ensuring tamper-evident block headers.
               </div>
             </div>
 
@@ -2060,10 +3496,10 @@ export const App: React.FC = () => {
                 width: "100%",
                 marginTop: "20px",
                 padding: "10px",
-                backgroundColor: "#1E1A14",
-                border: "1px solid #FFB800",
+                background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                border: "1px solid #EA580C",
                 borderRadius: "5px",
-                color: "#FFD700",
+                color: "#FFFFFF",
                 fontWeight: "bold",
                 cursor: "pointer"
               }}

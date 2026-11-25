@@ -14,7 +14,7 @@ function createWindow() {
     minWidth: 1024,
     minHeight: 700,
     title: "BlockBum Core — Decentralized Client & Platform",
-    backgroundColor: '#09090c',
+    backgroundColor: '#f4f6f9',
     icon: fs.existsSync(iconPath) ? iconPath : undefined,
     autoHideMenuBar: false,
     show: false,
