@@ -10,7 +10,10 @@ import subprocess
 
 def run_step(cmd, cwd=None):
     print(f"\n[BUILD] Running: {' '.join(cmd) if isinstance(cmd, list) else cmd}")
-    res = subprocess.run(cmd, cwd=cwd, shell=True)
+    env = os.environ.copy()
+    if sys.platform == "win32" and "C:\\Program Files\\nodejs" not in env.get("PATH", ""):
+        env["PATH"] = "C:\\Program Files\\nodejs;" + env.get("PATH", "")
+    res = subprocess.run(cmd, cwd=cwd, shell=True, env=env)
     if res.returncode != 0:
         print(f"[ERROR] Step failed with exit code {res.returncode}")
         return False

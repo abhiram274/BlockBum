@@ -7,13 +7,15 @@ app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('allow-file-access-from-files');
 
 function createWindow() {
+  const iconPath = path.join(__dirname, 'public', 'icon.ico');
   const win = new BrowserWindow({
     width: 1280,
     height: 860,
     minWidth: 1024,
     minHeight: 700,
-    title: "BlockBum Core - Decentralized Client & Platform",
-    backgroundColor: '#090d16',
+    title: "BlockBum Core — Decentralized Client & Platform",
+    backgroundColor: '#09090c',
+    icon: fs.existsSync(iconPath) ? iconPath : undefined,
     autoHideMenuBar: false,
     show: false,
     webPreferences: {

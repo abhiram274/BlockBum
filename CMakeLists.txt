@@ -61,6 +61,8 @@ if(BLOCKBUM_BUILD_NODE)
     add_subdirectory(src/node)
 endif()
 
+add_subdirectory(src/qt)
+
 if(BLOCKBUM_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
