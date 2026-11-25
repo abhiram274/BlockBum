@@ -12,7 +12,6 @@ import {
   VaultState,
   AppUpdateInfo,
   ClientExecutionMode,
-  GovernanceProposal
 } from "./types";
 import { translations } from "./i18n";
 
@@ -22,7 +21,7 @@ import bbCoinImg from "./assets/bb_coin.png";
 export const App: React.FC = () => {
   // Navigation & Localization
   const [activeTab, setActiveTab] = useState<
-    "wallet" | "messages" | "communities" | "governance" | "files" | "network" | "devices" | "settings"
+    "wallet" | "messages" | "communities" | "files" | "network" | "devices" | "settings"
   >("wallet");
   const [locale, setLocale] = useState<SupportedLocale>("en");
   const t = (key: string): string => translations[locale]?.[key] || translations["en"]?.[key] || key;
@@ -61,16 +60,16 @@ export const App: React.FC = () => {
     network: "BlockBum Mainnet v1.0",
     tip_hash: "0x89fbc0120ab718c99de021a8bf92ca43018274ef9012bcda4819aa018290bc",
     mempool_tx_count: 12,
-    consensus_mode: "PoW Nakamoto (Dynamic Difficulty)",
+    consensus_mode: "BlockBum Dynamic Difficulty PoW",
     avg_latency_ms: 18,
     client_mode: "full_node"
   });
 
-  // Multi-Identity Wallet State
+  // Multi-Identity Wallet State (Founder: Abhiram)
   const [identities, setIdentities] = useState<WalletIdentity[]>([
     {
-      alias: "Alice_Researcher",
-      address: "bb1a729e8c40b82194017de8bf019abcdef0123456",
+      alias: "Abhiram (Founder)",
+      address: "bb1abhiram729e8c40b82194017de8bf019abcdef0123",
       public_key: "0x4a91b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef12345678",
       balance_bum: 520.45,
       nonce: 5,
@@ -92,7 +91,6 @@ export const App: React.FC = () => {
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [showCryptoAuditModal, setShowCryptoAuditModal] = useState(false);
-  const [showNewBipModal, setShowNewBipModal] = useState(false);
   const [showNewCommunityModal, setShowNewCommunityModal] = useState(false);
   const [showPairModal, setShowPairModal] = useState(false);
 
@@ -224,36 +222,6 @@ export const App: React.FC = () => {
   ]);
   const [chatInput, setChatInput] = useState("");
 
-  // Governance Proposals State (BIPs)
-  const [proposals, setProposals] = useState<GovernanceProposal[]>([
-    {
-      id: "BIP-21",
-      title: "Adaptive Halving & Dynamic Difficulty Smoothing",
-      proposer: "Alice_Researcher (bb1a72...3456)",
-      votesFor: 124,
-      votesAgainst: 8,
-      status: "active"
-    },
-    {
-      id: "BIP-22",
-      title: "Zero-Knowledge Membership Accumulators for Channel Privacy",
-      proposer: "Bob_NodeOperator (bb1d98...6543)",
-      votesFor: 98,
-      votesAgainst: 14,
-      status: "active"
-    },
-    {
-      id: "BIP-23",
-      title: "Mandatory Authenticated State Snapshot Verification",
-      proposer: "Security_Guild (bb1sec...7788)",
-      votesFor: 210,
-      votesAgainst: 2,
-      status: "passed"
-    }
-  ]);
-  const [newBipTitle, setNewBipTitle] = useState("");
-  const [newBipSummary, setNewBipSummary] = useState("");
-
   // Shared Files State
   const [sharedFiles, setSharedFiles] = useState<SharedFileItem[]>([
     {
@@ -360,7 +328,6 @@ export const App: React.FC = () => {
         setShowPairModal(false);
         setShowModeModal(false);
         setShowCryptoAuditModal(false);
-        setShowNewBipModal(false);
         setShowNewCommunityModal(false);
         setShowOnboardingModal(false);
       }
@@ -530,40 +497,6 @@ export const App: React.FC = () => {
     setNewCommunityNameInput("");
     setNewCommunityDescInput("");
     setShowNewCommunityModal(false);
-  };
-
-  // Vote on Governance BIP
-  const handleVote = (bipId: string, isFor: boolean) => {
-    setProposals(
-      proposals.map((p) =>
-        p.id === bipId
-          ? {
-              ...p,
-              votesFor: isFor ? p.votesFor + 1 : p.votesFor,
-              votesAgainst: !isFor ? p.votesAgainst + 1 : p.votesAgainst
-            }
-          : p
-      )
-    );
-  };
-
-  // Submit New BIP Proposal
-  const handleCreateBip = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBipTitle.trim()) return;
-    const nextBipNum = proposals.length + 21;
-    const newProp: GovernanceProposal = {
-      id: `BIP-${nextBipNum}`,
-      title: newBipTitle.trim(),
-      proposer: `${selectedIdentity.alias} (${selectedIdentity.address.substring(0, 8)}...)`,
-      votesFor: 1,
-      votesAgainst: 0,
-      status: "active"
-    };
-    setProposals([newProp, ...proposals]);
-    setNewBipTitle("");
-    setNewBipSummary("");
-    setShowNewBipModal(false);
   };
 
   // Upload Shared File
@@ -930,7 +863,7 @@ export const App: React.FC = () => {
             items: [
               { label: "Global P2P Peers Map", action: () => setActiveTab("network") },
               { label: "Check Signed Updates", action: handleCheckUpdate },
-              { label: "Resync Blockchain Headers", action: () => alert("Blockchain headers re-verified against Nakamoto consensus.") }
+              { label: "Resync Blockchain Headers", action: () => alert("Blockchain headers re-verified against BlockBum consensus protocol.") }
             ]
           },
           {
@@ -1084,7 +1017,6 @@ export const App: React.FC = () => {
                 { id: "wallet", label: "Wallet & BUM", icon: "🪙" },
                 { id: "messages", label: "Private Messages", icon: "💬" },
                 { id: "communities", label: "Communities", icon: "🌐" },
-                { id: "governance", label: "Governance & BIPs", icon: "⚡" },
                 { id: "files", label: "Decentralized Files", icon: "📦" },
                 { id: "network", label: "Global P2P Network", icon: "📡" },
                 { id: "devices", label: "Multi-Device Security", icon: "📱" },
@@ -1770,140 +1702,6 @@ export const App: React.FC = () => {
           )}
 
           {/* ================================================================= */}
-          {/* TAB: GOVERNANCE & BIPS */}
-          {/* ================================================================= */}
-          {activeTab === "governance" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-              <div
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  border: "1px solid #E2E8F0",
-                  borderRadius: "8px",
-                  padding: "18px 24px",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
-                }}
-              >
-                <div>
-                  <h2 style={{ margin: "0 0 4px 0", color: "#0F172A", fontSize: "20px", fontWeight: "bold" }}>
-                    Decentralized Governance & BIPs
-                  </h2>
-                  <p style={{ margin: 0, color: "#64748B", fontSize: "13px" }}>
-                    Transparent BlockBum Improvement Proposals. On-chain voting with timelock protection.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowNewBipModal(true)}
-                  style={{
-                    padding: "9px 18px",
-                    background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
-                    border: "1px solid #EA580C",
-                    borderRadius: "5px",
-                    color: "#FFFFFF",
-                    fontWeight: "bold",
-                    fontSize: "13px",
-                    cursor: "pointer"
-                  }}
-                >
-                  + Submit New BIP
-                </button>
-              </div>
-
-              {/* Proposals List */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                {proposals.map((bip) => {
-                  const total = bip.votesFor + bip.votesAgainst;
-                  const pctFor = total > 0 ? (bip.votesFor / total) * 100 : 0;
-                  return (
-                    <div
-                      key={bip.id}
-                      style={{
-                        backgroundColor: "#FFFFFF",
-                        border: "1px solid #E2E8F0",
-                        borderRadius: "8px",
-                        padding: "20px",
-                        boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                        <div>
-                          <span style={{ color: "#FF6B00", fontWeight: "bold", fontSize: "14px", marginRight: "8px" }}>
-                            {bip.id}
-                          </span>
-                          <span style={{ fontWeight: "bold", color: "#0F172A", fontSize: "16px" }}>{bip.title}</span>
-                        </div>
-                        <span
-                          style={{
-                            fontSize: "11px",
-                            fontWeight: "bold",
-                            padding: "2px 8px",
-                            borderRadius: "4px",
-                            backgroundColor: bip.status === "passed" ? "#ECFDF5" : "#FEF9C3",
-                            color: bip.status === "passed" ? "#065F46" : "#B8860B",
-                            border: bip.status === "passed" ? "1px solid #A7F3D0" : "1px solid #FDE047"
-                          }}
-                        >
-                          {bip.status.toUpperCase()}
-                        </span>
-                      </div>
-
-                      <div style={{ fontSize: "12px", color: "#64748B", marginBottom: "14px" }}>
-                        Proposed by: {bip.proposer}
-                      </div>
-
-                      {/* Vote Progress Bar */}
-                      <div style={{ marginBottom: "14px" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "4px" }}>
-                          <span style={{ color: "#059669", fontWeight: "bold" }}>YES: {bip.votesFor} ({pctFor.toFixed(1)}%)</span>
-                          <span style={{ color: "#DC2626", fontWeight: "bold" }}>NO: {bip.votesAgainst}</span>
-                        </div>
-                        <div style={{ width: "100%", height: "8px", backgroundColor: "#F1F5F9", borderRadius: "4px", overflow: "hidden" }}>
-                          <div style={{ width: `${pctFor}%`, height: "100%", background: "linear-gradient(90deg, #10B981, #059669)" }} />
-                        </div>
-                      </div>
-
-                      <div style={{ display: "flex", gap: "10px" }}>
-                        <button
-                          onClick={() => handleVote(bip.id, true)}
-                          style={{
-                            padding: "6px 16px",
-                            backgroundColor: "#ECFDF5",
-                            border: "1px solid #10B981",
-                            borderRadius: "4px",
-                            color: "#065F46",
-                            fontSize: "12px",
-                            fontWeight: "bold",
-                            cursor: "pointer"
-                          }}
-                        >
-                          ✓ Vote YES
-                        </button>
-                        <button
-                          onClick={() => handleVote(bip.id, false)}
-                          style={{
-                            padding: "6px 16px",
-                            backgroundColor: "#FEF2F2",
-                            border: "1px solid #EF4444",
-                            borderRadius: "4px",
-                            color: "#991B1B",
-                            fontSize: "12px",
-                            fontWeight: "bold",
-                            cursor: "pointer"
-                          }}
-                        >
-                          ✕ Vote NO
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ================================================================= */}
           {/* TAB: DECENTRALIZED FILES */}
           {/* ================================================================= */}
           {activeTab === "files" && (
@@ -2223,7 +2021,7 @@ export const App: React.FC = () => {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
                 {[
                   { label: "Chain Height", val: `#${nodeStatus.chain_height.toLocaleString()}`, color: "#B8860B" },
-                  { label: "Consensus Mode", val: "PoW Nakamoto", color: "#EA580C" },
+                  { label: "Consensus Mode", val: "BlockBum PoW", color: "#EA580C" },
                   { label: "Connected Peers", val: `${peersList.length} (IPv4/IPv6)`, color: "#059669" },
                   { label: "Mempool Pending", val: `${nodeStatus.mempool_tx_count} txs`, color: "#0284C7" }
                 ].map((stat, i) => (
@@ -3114,117 +2912,6 @@ export const App: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowNewCommunityModal(false)}
-                  style={{
-                    padding: "10px 18px",
-                    backgroundColor: "#FFFFFF",
-                    border: "1px solid #CBD5E1",
-                    borderRadius: "5px",
-                    color: "#0F172A",
-                    cursor: "pointer"
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Submit BIP Modal */}
-      {showNewBipModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            backgroundColor: "rgba(15, 23, 42, 0.65)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000
-          }}
-          onClick={() => setShowNewBipModal(false)}
-        >
-          <div
-            style={{
-              backgroundColor: "#FFFFFF",
-              border: "1px solid #D4AF37",
-              borderRadius: "12px",
-              padding: "28px",
-              width: "480px",
-              boxShadow: "0 12px 36px rgba(0,0,0,0.15)"
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ margin: "0 0 8px 0", color: "#0F172A", fontSize: "18px", fontWeight: "bold" }}>
-              + Submit Improvement Proposal (BIP)
-            </h3>
-            <form onSubmit={handleCreateBip}>
-              <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", color: "#334155", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>
-                  Proposal Title
-                </label>
-                <input
-                  type="text"
-                  value={newBipTitle}
-                  onChange={(e) => setNewBipTitle(e.target.value)}
-                  placeholder="e.g. Authenticated Storage Shard Pledges"
-                  autoFocus
-                  style={{
-                    width: "100%",
-                    padding: "9px 12px",
-                    backgroundColor: "#F8FAFC",
-                    border: "1px solid #CBD5E1",
-                    borderRadius: "4px",
-                    fontSize: "13px",
-                    boxSizing: "border-box"
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: "18px" }}>
-                <label style={{ display: "block", color: "#334155", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>
-                  Technical Summary & Rationale
-                </label>
-                <textarea
-                  value={newBipSummary}
-                  onChange={(e) => setNewBipSummary(e.target.value)}
-                  placeholder="Explain why this improvement is needed..."
-                  rows={3}
-                  style={{
-                    width: "100%",
-                    padding: "9px 12px",
-                    backgroundColor: "#F8FAFC",
-                    border: "1px solid #CBD5E1",
-                    borderRadius: "4px",
-                    fontSize: "13px",
-                    boxSizing: "border-box"
-                  }}
-                />
-              </div>
-
-              <div style={{ display: "flex", gap: "10px" }}>
-                <button
-                  type="submit"
-                  style={{
-                    flex: 1,
-                    padding: "10px",
-                    background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
-                    border: "1px solid #EA580C",
-                    borderRadius: "5px",
-                    color: "#FFFFFF",
-                    fontWeight: "bold",
-                    cursor: "pointer"
-                  }}
-                >
-                  Broadcast Proposal
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowNewBipModal(false)}
                   style={{
                     padding: "10px 18px",
                     backgroundColor: "#FFFFFF",
