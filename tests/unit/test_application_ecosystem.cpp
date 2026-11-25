@@ -118,7 +118,8 @@ TEST_F(ApplicationEcosystemTest, MultiDeviceAuthorizationAndRevocation) {
 
     EXPECT_TRUE(device_mgr.register_device(alice_address, rec_desktop.device_id,
                                            rec_desktop.device_pubkey, rec_desktop.device_dh_pubkey,
-                                           desktop_sig, alice_primary.public_key, *crypto_));
+                                           desktop_sig, alice_primary.public_key, *crypto_,
+                                           rec_desktop.registered_at));
 
     // 2. Authorize Mobile Device
     messaging::DeviceRecord rec_mobile;
@@ -132,7 +133,8 @@ TEST_F(ApplicationEcosystemTest, MultiDeviceAuthorizationAndRevocation) {
 
     EXPECT_TRUE(device_mgr.register_device(alice_address, rec_mobile.device_id,
                                            rec_mobile.device_pubkey, rec_mobile.device_dh_pubkey,
-                                           mobile_sig, alice_primary.public_key, *crypto_));
+                                           mobile_sig, alice_primary.public_key, *crypto_,
+                                           rec_mobile.registered_at));
 
     // Verify both are authorized and active
     EXPECT_TRUE(device_mgr.is_device_active(alice_address, "device_desktop_win"));
