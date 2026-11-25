@@ -134,9 +134,9 @@ TEST_F(ApplicationEcosystemTest, MultiDeviceAuthorizationAndRevocation) {
                                            rec_mobile.device_pubkey, rec_mobile.device_dh_pubkey,
                                            mobile_sig, alice_primary.public_key, *crypto_));
 
-    // Verify both are authorized
-    EXPECT_TRUE(device_mgr.is_device_authorized(alice_address, "device_desktop_win"));
-    EXPECT_TRUE(device_mgr.is_device_authorized(alice_address, "device_mobile_android"));
+    // Verify both are authorized and active
+    EXPECT_TRUE(device_mgr.is_device_active(alice_address, "device_desktop_win"));
+    EXPECT_TRUE(device_mgr.is_device_active(alice_address, "device_mobile_android"));
     EXPECT_EQ(device_mgr.get_active_devices(alice_address).size(), 2);
 
     // 3. Forged Authorization Signature (Attacker attempting unauthorized link)
@@ -147,11 +147,15 @@ TEST_F(ApplicationEcosystemTest, MultiDeviceAuthorizationAndRevocation) {
                                             forged_sig, alice_primary.public_key, *crypto_));
 
     // 4. Revocation of Mobile Device
-    EXPECT_TRUE(device_mgr.revoke_device(alice_address, "device_mobile_android",
-                                         alice_primary.public_key, alice_primary.secret_key, *crypto_));
+    std::string revoke_tag = "BLOCKBUM_DEVICE_REVOKE:" + alice_address + ":device_mobile_android";
+    std::span<const uint8_t> revoke_span(reinterpret_cast<const uint8_t*>(revoke_tag.data()), revoke_tag.size());
+    auto revoke_sig = crypto_->sign(revoke_span, alice_primary.secret_key);
 
-    EXPECT_FALSE(device_mgr.is_device_authorized(alice_address, "device_mobile_android"));
-    EXPECT_TRUE(device_mgr.is_device_authorized(alice_address, "device_desktop_win"));
+    EXPECT_TRUE(device_mgr.revoke_device(alice_address, "device_mobile_android",
+                                         revoke_sig, alice_primary.public_key, *crypto_));
+
+    EXPECT_FALSE(device_mgr.is_device_active(alice_address, "device_mobile_android"));
+    EXPECT_TRUE(device_mgr.is_device_active(alice_address, "device_desktop_win"));
     EXPECT_EQ(device_mgr.get_active_devices(alice_address).size(), 1);
 }
 
