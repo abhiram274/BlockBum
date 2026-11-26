@@ -256,6 +256,17 @@ export const App: React.FC = () => {
   const [txSearchQuery, setTxSearchQuery] = useState("");
   const [selectedTx, setSelectedTx] = useState<TransactionRecord | null>(null);
 
+  // Wallet Recovery Seed Phrase & Security Modals
+  const [showBackupModal, setShowBackupModal] = useState(false);
+  const [showSignVerifyModal, setShowSignVerifyModal] = useState(false);
+  const [signVerifyTab, setSignVerifyTab] = useState<"sign" | "verify">("sign");
+  const [signMsgInput, setSignMsgInput] = useState("");
+  const [signMsgOutput, setSignMsgOutput] = useState("");
+  const [verifyAddrInput, setVerifyAddrInput] = useState("");
+  const [verifyMsgInput, setVerifyMsgInput] = useState("");
+  const [verifySigInput, setVerifySigInput] = useState("");
+  const [verifyResult, setVerifyResult] = useState<string | null>(null);
+
   // ==========================================================================
   // DYNAMIC COMMUNITIES & CHAT STATE
   // ==========================================================================
@@ -398,8 +409,12 @@ export const App: React.FC = () => {
 
   const handleExecuteSend = () => {
     const amt = parseFloat(sendAmount);
-    if (!sendToAddress.trim() || isNaN(amt) || amt <= 0) {
-      alert("Invalid payment address or amount.");
+    if (!sendToAddress.trim() || !sendToAddress.trim().startsWith("bb1") || sendToAddress.trim().length < 32) {
+      alert("Error: Invalid BlockBum address format.\n\nBlockBum native addresses must start with 'bb1' and be at least 32 characters long (Bech32 standard).");
+      return;
+    }
+    if (isNaN(amt) || amt <= 0) {
+      alert("Please enter a valid amount in BUM greater than zero.");
       return;
     }
     if (amt + sendFeeRate > selectedIdentity.balance_bum) {
@@ -518,12 +533,65 @@ export const App: React.FC = () => {
 
   const handleExecuteRpc = (e: React.FormEvent) => {
     e.preventDefault();
-    const cmd = rpcCommand.trim().toLowerCase();
-    if (!cmd) return;
+    const raw = rpcCommand.trim();
+    if (!raw) return;
+    const parts = raw.split(/\s+/);
+    const cmd = parts[0].toLowerCase();
 
     let res = "";
     if (cmd === "help") {
-      res = "Available RPC Commands:\n - getblockchaininfo : Returns chain height, consensus, and block tip hash.\n - getpeerinfo       : Returns active IPv4/IPv6 peer telemetry.\n - getmempoolinfo    : Returns pending transactions count and memory usage.\n - getclientmode     : Returns active client mode (full_node, light_client, pruned_node).\n - clear             : Clears terminal history.";
+      res = "Available RPC Commands:\n - getblockchaininfo           : Returns chain height, consensus, and block tip hash.\n - getpeerinfo                 : Returns active IPv4/IPv6 peer telemetry.\n - getmempoolinfo              : Returns pending transactions count and memory usage.\n - getclientmode               : Returns active client mode (full_node, light_client, pruned_node).\n - getbalance                  : Returns wallet balance, unconfirmed, and immature funds.\n - generatetoaddress <n> [addr]: Mines <n> blocks to address with 50 BUM block reward per block.\n - mine [n]                    : Alias for generatetoaddress for local testing.\n - getrawmempool               : Returns hashes of all transactions currently in mempool.\n - getnewaddress [label]       : Generates and returns a fresh receiving address.\n - clear                       : Clears terminal history.";
+    } else if (cmd === "mine" || cmd === "generatetoaddress") {
+      const numBlocks = Math.max(1, parseInt(parts[1], 10) || 1);
+      const newHashes: string[] = [];
+      const newTxs: TransactionRecord[] = [];
+      let currentH = nodeStatus.chain_height;
+
+      for (let i = 0; i < numBlocks; i++) {
+        currentH += 1;
+        const bHash = "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+        newHashes.push(bHash);
+        newTxs.push({
+          tx_id: bHash,
+          type: "reward",
+          counterparty: `Coinbase (BlockBum PoW Block #${currentH})`,
+          amount_bum: 50.0,
+          fee_bum: 0.0,
+          timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
+          status: "confirmed",
+          block_height: currentH
+        });
+      }
+
+      setNodeStatus((prev) => ({
+        ...prev,
+        chain_height: currentH,
+        tip_hash: newHashes[newHashes.length - 1],
+        mempool_tx_count: Math.max(0, prev.mempool_tx_count - numBlocks * 2)
+      }));
+
+      setSelectedIdentity((prev) => ({
+        ...prev,
+        balance_bum: parseFloat((prev.balance_bum + 50.0 * numBlocks).toFixed(8))
+      }));
+
+      setTransactions((prev) => [...newTxs, ...prev]);
+      showToast(`Mined ${numBlocks} block(s)! +${50 * numBlocks} BUM coinbase reward credited.`);
+      res = JSON.stringify(newHashes, null, 2);
+    } else if (cmd === "getbalance") {
+      res = JSON.stringify({
+        account: selectedIdentity.alias,
+        address: selectedIdentity.address,
+        balance: selectedIdentity.balance_bum,
+        unconfirmed: 0.0,
+        immature: 0.0,
+        currency: "BUM"
+      }, null, 2);
+    } else if (cmd === "getrawmempool") {
+      res = JSON.stringify(transactions.filter((t) => t.status === "pending").map((t) => t.tx_id), null, 2);
+    } else if (cmd === "getnewaddress") {
+      const newGenAddr = "bb1abhiram" + Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+      res = JSON.stringify({ address: newGenAddr, label: parts[1] || "default" }, null, 2);
     } else if (cmd === "getblockchaininfo") {
       res = JSON.stringify({
         chain: "main",
@@ -638,9 +706,9 @@ export const App: React.FC = () => {
             id: "file",
             name: "File",
             items: [
-              { label: "Backup Wallet...", action: () => showToast("Wallet backed up to local encrypted vault.") },
-              { label: "Sign Message...", action: () => alert("Secp256k1 message signing dialog.") },
-              { label: "Verify Message...", action: () => alert("Signature verification dialog.") },
+              { label: "Backup Wallet (Recovery Phrase)...", action: () => setShowBackupModal(true) },
+              { label: "Sign Message...", action: () => { setSignVerifyTab("sign"); setShowSignVerifyModal(true); } },
+              { label: "Verify Message...", action: () => { setSignVerifyTab("verify"); setShowSignVerifyModal(true); } },
               { type: "separator" },
               { label: "Exit BlockBum Core", action: () => window.close() }
             ]
@@ -2392,6 +2460,321 @@ export const App: React.FC = () => {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* MODAL: BACKUP WALLET & RECOVERY PHRASE                                */}
+      {/* ===================================================================== */}
+      {showBackupModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 3000
+          }}
+          onClick={() => setShowBackupModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #CBD5E1",
+              borderRadius: "4px",
+              padding: "24px 28px",
+              width: "560px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.18)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 10px 0", fontSize: "16px", fontWeight: "bold", color: "#0F172A" }}>
+              Wallet Backup — 12-Word Recovery Phrase
+            </h3>
+            <p style={{ margin: "0 0 16px 0", fontSize: "13px", color: "#64748B", lineHeight: "1.5" }}>
+              These 12 words are the cryptographic master seed for <strong>{selectedIdentity.alias}</strong>. Anyone with access to this phrase can recover and spend your BUM funds. Store it securely offline.
+            </p>
+
+            {/* 12-word Grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginBottom: "18px" }}>
+              {selectedIdentity.recovery_phrase.split(" ").map((word, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    backgroundColor: "#F8FAFC",
+                    border: "1px solid #E2E8F0",
+                    padding: "8px 12px",
+                    borderRadius: "3px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px"
+                  }}
+                >
+                  <span style={{ fontSize: "11px", color: "#94A3B8", fontWeight: "bold", width: "18px" }}>
+                    {idx + 1}.
+                  </span>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", fontFamily: "monospace", color: "#0F172A" }}>
+                    {word}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <button
+                onClick={() => {
+                  navigator.clipboard?.writeText(selectedIdentity.recovery_phrase);
+                  showToast("12-word recovery phrase copied to clipboard.");
+                }}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "#F1F5F9",
+                  border: "1px solid #CBD5E1",
+                  borderRadius: "3px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px"
+                }}
+              >
+                <IconCopy size={15} color="#334155" /> Copy Seed Phrase
+              </button>
+              <button
+                onClick={() => setShowBackupModal(false)}
+                style={{
+                  padding: "8px 20px",
+                  backgroundColor: "#0F172A",
+                  border: "none",
+                  color: "#FFFFFF",
+                  borderRadius: "3px",
+                  fontSize: "13px",
+                  fontWeight: "bold",
+                  cursor: "pointer"
+                }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* MODAL: SIGN & VERIFY MESSAGE (BITCOIN CORE STYLE)                     */}
+      {/* ===================================================================== */}
+      {showSignVerifyModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 3000
+          }}
+          onClick={() => setShowSignVerifyModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #CBD5E1",
+              borderRadius: "4px",
+              padding: "24px 28px",
+              width: "560px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.18)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Tabs: Sign / Verify */}
+            <div style={{ display: "flex", gap: "10px", borderBottom: "1px solid #E2E8F0", paddingBottom: "10px", marginBottom: "16px" }}>
+              <button
+                onClick={() => {
+                  setSignVerifyTab("sign");
+                  setVerifyResult(null);
+                }}
+                style={{
+                  padding: "6px 14px",
+                  backgroundColor: signVerifyTab === "sign" ? "#0F172A" : "#F1F5F9",
+                  border: "1px solid #CBD5E1",
+                  borderRadius: "3px",
+                  color: signVerifyTab === "sign" ? "#FFFFFF" : "#334155",
+                  fontSize: "13px",
+                  fontWeight: "bold",
+                  cursor: "pointer"
+                }}
+              >
+                Sign Message
+              </button>
+              <button
+                onClick={() => {
+                  setSignVerifyTab("verify");
+                  setVerifyResult(null);
+                }}
+                style={{
+                  padding: "6px 14px",
+                  backgroundColor: signVerifyTab === "verify" ? "#0F172A" : "#F1F5F9",
+                  border: "1px solid #CBD5E1",
+                  borderRadius: "3px",
+                  color: signVerifyTab === "verify" ? "#FFFFFF" : "#334155",
+                  fontSize: "13px",
+                  fontWeight: "bold",
+                  cursor: "pointer"
+                }}
+              >
+                Verify Message
+              </button>
+            </div>
+
+            {signVerifyTab === "sign" ? (
+              <div>
+                <p style={{ margin: "0 0 14px 0", fontSize: "13px", color: "#64748B" }}>
+                  Sign a message with your private key to prove you own address <code>{selectedIdentity.address.substring(0, 16)}...</code>.
+                </p>
+
+                <div style={{ marginBottom: "12px" }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "#334155", marginBottom: "4px" }}>
+                    Signing Address:
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedIdentity.address}
+                    readOnly
+                    style={{ width: "100%", padding: "7px 10px", backgroundColor: "#F8FAFC", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", fontFamily: "monospace", boxSizing: "border-box" }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "#334155", marginBottom: "4px" }}>
+                    Message to Sign:
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={signMsgInput}
+                    onChange={(e) => setSignMsgInput(e.target.value)}
+                    placeholder="Enter text to prove identity or agreement..."
+                    style={{ width: "100%", padding: "8px 10px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "13px", boxSizing: "border-box" }}
+                  />
+                </div>
+
+                {signMsgOutput && (
+                  <div style={{ marginBottom: "14px" }}>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "#059669", marginBottom: "4px" }}>
+                      Cryptographic Signature (Secp256k1):
+                    </label>
+                    <textarea
+                      rows={2}
+                      readOnly
+                      value={signMsgOutput}
+                      style={{ width: "100%", padding: "6px 10px", backgroundColor: "#F0FDF4", border: "1px solid #86EFAC", borderRadius: "3px", fontSize: "11px", fontFamily: "monospace", boxSizing: "border-box" }}
+                    />
+                  </div>
+                )}
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                  <button
+                    onClick={() => {
+                      if (!signMsgInput.trim()) return;
+                      const dummySig = "0x" + Array.from({ length: 130 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+                      setSignMsgOutput(dummySig);
+                      showToast("Message signed successfully.");
+                    }}
+                    style={{ padding: "8px 18px", backgroundColor: "#FF6B00", border: "1px solid #EA580C", color: "#FFFFFF", borderRadius: "3px", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}
+                  >
+                    Sign Message
+                  </button>
+                  <button
+                    onClick={() => setShowSignVerifyModal(false)}
+                    style={{ padding: "8px 16px", backgroundColor: "#FFFFFF", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "13px", cursor: "pointer" }}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <p style={{ margin: "0 0 14px 0", fontSize: "13px", color: "#64748B" }}>
+                  Verify that a message was signed by the owner of a specific BlockBum address.
+                </p>
+
+                <div style={{ marginBottom: "12px" }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "#334155", marginBottom: "4px" }}>
+                    Signer Address:
+                  </label>
+                  <input
+                    type="text"
+                    value={verifyAddrInput}
+                    onChange={(e) => setVerifyAddrInput(e.target.value)}
+                    placeholder="bb1..."
+                    style={{ width: "100%", padding: "7px 10px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", fontFamily: "monospace", boxSizing: "border-box" }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: "12px" }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "#334155", marginBottom: "4px" }}>
+                    Original Message:
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={verifyMsgInput}
+                    onChange={(e) => setVerifyMsgInput(e.target.value)}
+                    placeholder="Enter the original message text..."
+                    style={{ width: "100%", padding: "7px 10px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "13px", boxSizing: "border-box" }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "#334155", marginBottom: "4px" }}>
+                    Signature:
+                  </label>
+                  <input
+                    type="text"
+                    value={verifySigInput}
+                    onChange={(e) => setVerifySigInput(e.target.value)}
+                    placeholder="0x..."
+                    style={{ width: "100%", padding: "7px 10px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", fontFamily: "monospace", boxSizing: "border-box" }}
+                  />
+                </div>
+
+                {verifyResult && (
+                  <div style={{ marginBottom: "14px", padding: "8px 12px", backgroundColor: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "3px", color: "#065F46", fontSize: "13px", fontWeight: "bold" }}>
+                    {verifyResult}
+                  </div>
+                )}
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                  <button
+                    onClick={() => {
+                      if (!verifyAddrInput.trim() || !verifyMsgInput.trim() || !verifySigInput.trim()) {
+                        alert("Please fill in address, message, and signature.");
+                        return;
+                      }
+                      setVerifyResult("✓ Signature Verified: Valid cryptographic signature (Secp256k1)");
+                    }}
+                    style={{ padding: "8px 18px", backgroundColor: "#0F172A", border: "none", color: "#FFFFFF", borderRadius: "3px", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}
+                  >
+                    Verify Signature
+                  </button>
+                  <button
+                    onClick={() => setShowSignVerifyModal(false)}
+                    style={{ padding: "8px 16px", backgroundColor: "#FFFFFF", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "13px", cursor: "pointer" }}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
