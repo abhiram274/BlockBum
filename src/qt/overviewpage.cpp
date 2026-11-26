@@ -36,7 +36,7 @@ void OverviewPage::setupUi() {
     unconfirmed_label_->setStyleSheet("color: #94A3B8; font-size: 12px;");
 
     auto* addr_box = new QHBoxLayout();
-    address_label_ = new QLabel("bb1a729e8c40b82194017de8bf019abcdef0123456", hero_card);
+    address_label_ = new QLabel("bb1abhiram729e8c40b82194017de8bf019abcdef0123", hero_card);
     address_label_->setStyleSheet("color: #E2E8F0; font-family: monospace; font-size: 12px;");
 
     auto* copy_btn = new QPushButton("Copy Address", hero_card);

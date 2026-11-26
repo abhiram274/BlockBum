@@ -3,18 +3,19 @@ import {
   NodeStatus,
   WalletIdentity,
   TransactionRecord,
+  Community,
   MessageItem,
   ClientExecutionMode
 } from "./types";
 import bbCoinImg from "./assets/bb_coin.png";
 
 export const App: React.FC = () => {
-  // Active Navigation Tab (Classic Desktop Top Toolbar: No website sidebar!)
+  // Navigation Tabs (Bitcoin Core Qt style: Overview, Send, Receive, Transactions, Communities, Node & Debug)
   const [activeTab, setActiveTab] = useState<
-    "overview" | "send" | "receive" | "transactions" | "chat" | "tools"
+    "overview" | "send" | "receive" | "transactions" | "communities" | "debug"
   >("overview");
 
-  // Client Execution Mode State
+  // Client Execution Mode (Full Node, SPV Light Mode, Pruned Node)
   const [clientMode, setClientMode] = useState<ClientExecutionMode>("full_node");
 
   // Node Telemetry & Network Status
@@ -31,7 +32,7 @@ export const App: React.FC = () => {
     client_mode: "full_node"
   });
 
-  // Multi-Identity Wallet State (Founder: Abhiram)
+  // Wallet Identities (Primary: Founder Abhiram)
   const [identities, setIdentities] = useState<WalletIdentity[]>([
     {
       alias: "Abhiram (Founder)",
@@ -43,7 +44,7 @@ export const App: React.FC = () => {
       created_at: "2026-11-01"
     },
     {
-      alias: "Mining & Staking Rig",
+      alias: "BlockBum Mining Pool",
       address: "bb1mining4892c0194819aa018290bc019abcdef4567",
       public_key: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
       balance_bum: 1450.8,
@@ -98,35 +99,104 @@ export const App: React.FC = () => {
     }
   ]);
 
-  // Send Form State
+  // Send Form State (Bitcoin Core exact layout)
   const [sendToAddress, setSendToAddress] = useState("");
   const [sendLabel, setSendLabel] = useState("");
   const [sendAmount, setSendAmount] = useState("");
+  const [feeRateOption, setFeeRateOption] = useState<"recommended" | "custom">("recommended");
   const [sendFeeRate, setSendFeeRate] = useState<number>(0.0005);
-  const [sendNotification, setSendNotification] = useState<string | null>(null);
+  const [showSendConfirmModal, setShowSendConfirmModal] = useState(false);
 
-  // Receive Form State
+  // Receive Form & Payment Requests (Bitcoin Core exact layout)
   const [receiveLabel, setReceiveLabel] = useState("");
   const [receiveAmount, setReceiveAmount] = useState("");
-  const [generatedUri, setGeneratedUri] = useState("");
-  const [receiveAddresses, setReceiveAddresses] = useState<string[]>([
-    "bb1abhiram729e8c40b82194017de8bf019abcdef0123",
-    "bb1abhiram88410294819aa018290bc019a778899aabb",
-    "bb1abhiram01938472619283746192837461928374611"
+  const [receiveMessage, setReceiveMessage] = useState("");
+  interface PaymentRequest {
+    id: string;
+    date: string;
+    label: string;
+    message: string;
+    amount: string;
+    address: string;
+  }
+  const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([
+    {
+      id: "req_1",
+      date: "2026-11-26 10:14",
+      label: "Dev Grant Contribution",
+      message: "Q4 Core Engineering Support",
+      amount: "25.00000000",
+      address: "bb1abhiram729e8c40b82194017de8bf019abcdef0123"
+    },
+    {
+      id: "req_2",
+      date: "2026-11-25 18:30",
+      label: "Node Shard Rent",
+      message: "Encrypted Storage Shard P2P",
+      amount: "10.50000000",
+      address: "bb1abhiram88410294819aa018290bc019a778899aabb"
+    }
   ]);
+  const [activeQrModal, setActiveQrModal] = useState<PaymentRequest | null>(null);
 
-  // Transaction Search & Filter State
-  const [txFilter, setTxFilter] = useState<"all" | "receive" | "send" | "reward">("all");
-  const [txSearch, setTxSearch] = useState("");
+  // Transactions Filter State
+  const [txDateFilter, setTxDateFilter] = useState("all");
+  const [txTypeFilter, setTxTypeFilter] = useState("all");
+  const [txMinAmount, setTxMinAmount] = useState("");
+  const [txSearchQuery, setTxSearchQuery] = useState("");
   const [selectedTx, setSelectedTx] = useState<TransactionRecord | null>(null);
 
-  // Community Chat State
+  // ==========================================================================
+  // DYNAMIC COMMUNITIES & CHAT STATE
+  // ==========================================================================
+  const [communities, setCommunities] = useState<Community[]>([
+    {
+      id: "comm_core",
+      name: "BlockBum Core Engineering",
+      description: "Protocol standardization, dynamic difficulty PoW, and P2P consensus.",
+      isPrivate: false,
+      memberCount: 142,
+      myRole: "Owner",
+      channels: ["general", "announcements", "consensus-security"],
+      governanceProposals: [],
+      codingChallenges: [],
+      events: []
+    },
+    {
+      id: "comm_nodes",
+      name: "Global Node Operators Guild",
+      description: "Sovereign full node operators and validator infrastructure over IPv4/IPv6.",
+      isPrivate: true,
+      memberCount: 88,
+      myRole: "Admin",
+      channels: ["infrastructure", "peer-discovery", "hardware-tuning"],
+      governanceProposals: [],
+      codingChallenges: [],
+      events: []
+    },
+    {
+      id: "comm_miners",
+      name: "BUM Miners & Stakers",
+      description: "SHA-256 hashrate coordination, energy efficiency, and reward sustainability.",
+      isPrivate: false,
+      memberCount: 65,
+      myRole: "Member",
+      channels: ["mining-rigs", "difficulty-smoothing"],
+      governanceProposals: [],
+      codingChallenges: [],
+      events: []
+    }
+  ]);
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string>("comm_core");
+  const activeCommunity = communities.find((c) => c.id === selectedCommunityId) || communities[0];
   const [activeChannel, setActiveChannel] = useState<string>("general");
   const [chatInput, setChatInput] = useState("");
-  const [chatMessages, setChatMessages] = useState<MessageItem[]>([
+
+  // Dynamic Chat Messages Store
+  const [messages, setMessages] = useState<MessageItem[]>([
     {
-      id: "msg_1",
-      communityId: "comm_main",
+      id: "m1",
+      communityId: "comm_core",
       channel: "general",
       sender: "bb1abhiram729e8c40b82194017de8bf019abcdef0123",
       senderAlias: "Abhiram (Founder)",
@@ -136,19 +206,19 @@ export const App: React.FC = () => {
       deliveryAck: true
     },
     {
-      id: "msg_2",
-      communityId: "comm_main",
+      id: "m2",
+      communityId: "comm_core",
       channel: "general",
       sender: "bb1nodeop98471928374619283746192837461928",
-      senderAlias: "Node_Validator_Frankfurt",
-      content: "Connected to 8 peers over IPv6. Block #124,890 verified in 14ms using Ubuntu OpenSSL cryptography.",
+      senderAlias: "Frankfurt_Node_01",
+      content: "Connected to 8 peers over IPv6. Block #124,890 verified locally in 14ms using Ubuntu OpenSSL cryptography.",
       timestamp: "12:34 PM",
       isE2EE: true,
       deliveryAck: true
     },
     {
-      id: "msg_3",
-      communityId: "comm_main",
+      id: "m3",
+      communityId: "comm_core",
       channel: "announcements",
       sender: "bb1abhiram729e8c40b82194017de8bf019abcdef0123",
       senderAlias: "Abhiram (Founder)",
@@ -158,31 +228,36 @@ export const App: React.FC = () => {
       deliveryAck: true
     },
     {
-      id: "msg_4",
-      communityId: "comm_main",
-      channel: "consensus-security",
-      sender: "bb1crypto91823746192837461928374619283746",
-      senderAlias: "Security_Audit_Bot",
-      content: "All SHA-256 Merkle proofs and Secp256k1 signature verifications passed 100% test coverage.",
-      timestamp: "11:00 AM",
+      id: "m4",
+      communityId: "comm_nodes",
+      channel: "infrastructure",
+      sender: "bb1nodeop98471928374619283746192837461928",
+      senderAlias: "Frankfurt_Node_01",
+      content: "Mempool memory pool is stable at 4.6 KB with 12 pending transactions.",
+      timestamp: "11:20 AM",
       isE2EE: true,
       deliveryAck: true
     }
   ]);
 
-  // Tools & Console State
+  // Modal Dialogs for Community
+  const [showCreateCommunityModal, setShowCreateCommunityModal] = useState(false);
+  const [newCommName, setNewCommName] = useState("");
+  const [newCommDesc, setNewCommDesc] = useState("");
+  const [newCommIsPrivate, setNewCommIsPrivate] = useState(false);
+  const [newCommChannels, setNewCommChannels] = useState("general, announcements");
+
+  const [showAddChannelModal, setShowAddChannelModal] = useState(false);
+  const [newChannelName, setNewChannelName] = useState("");
+
+  // Debug Window / RPC Console State
+  const [debugSubTab, setDebugSubTab] = useState<"info" | "console" | "network" | "modes">("info");
   const [rpcCommand, setRpcCommand] = useState("");
   const [consoleOutput, setConsoleOutput] = useState<string[]>([
-    "BlockBum Core RPC Debug Console v1.0.0",
-    "Type 'help', 'getblockchaininfo', 'getpeerinfo', or 'getmempoolinfo' to execute commands.",
+    "BlockBum Core RPC Debug Console [Qt GUI Edition] v1.0.0",
+    "Type 'help', 'getblockchaininfo', 'getpeerinfo', 'getmempoolinfo', or 'getclientmode' to execute.",
     ""
   ]);
-  const [cryptoAuditResult, setCryptoAuditResult] = useState<string | null>(null);
-
-  // Top Menu Dropdown State
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
-
-  // Connected Peers List
   const [peers] = useState([
     { ip: "198.51.100.24:8333", latency: "14ms", height: 124890, version: "/BlockBum:1.0.0/", type: "Outbound" },
     { ip: "203.0.113.88:8333", latency: "22ms", height: 124890, version: "/BlockBum:1.0.0/", type: "Inbound" },
@@ -191,31 +266,34 @@ export const App: React.FC = () => {
     { ip: "198.51.100.102:8333", latency: "16ms", height: 124890, version: "/BlockBum:1.0.0/", type: "Outbound" }
   ]);
 
+  // Top Menu Bar Dropdowns
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  // Toast Notification
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 4000);
+  };
+
   // ==========================================================================
   // Handlers
   // ==========================================================================
 
-  // Switch Client Execution Mode
   const handleSetClientMode = (mode: ClientExecutionMode) => {
     setClientMode(mode);
-    setNodeStatus((prev) => ({
-      ...prev,
-      client_mode: mode
-    }));
-    setSendNotification(`Switched client execution mode to: ${mode === "full_node" ? "Full Node Mode" : mode === "light_client" ? "Lightweight (SPV) Mode" : "Pruned Node Mode"}`);
-    setTimeout(() => setSendNotification(null), 4000);
+    setNodeStatus((prev) => ({ ...prev, client_mode: mode }));
+    showToast(`Execution mode set to: ${mode === "full_node" ? "Full Node Mode" : mode === "light_client" ? "Lightweight (SPV) Mode" : "Pruned Node Mode"}`);
   };
 
-  // Send Transaction
-  const handleSendCoins = (e: React.FormEvent) => {
-    e.preventDefault();
-    const amountNum = parseFloat(sendAmount);
-    if (!sendToAddress.trim() || isNaN(amountNum) || amountNum <= 0) {
-      alert("Please enter a valid recipient address and amount in BUM.");
+  const handleExecuteSend = () => {
+    const amt = parseFloat(sendAmount);
+    if (!sendToAddress.trim() || isNaN(amt) || amt <= 0) {
+      alert("Invalid payment address or amount.");
       return;
     }
-    if (amountNum + sendFeeRate > selectedIdentity.balance_bum) {
-      alert("Insufficient funds for this transaction and network fee.");
+    if (amt + sendFeeRate > selectedIdentity.balance_bum) {
+      alert("Insufficient funds to pay amount and fee.");
       return;
     }
 
@@ -223,53 +301,98 @@ export const App: React.FC = () => {
       tx_id: "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(""),
       type: "send",
       counterparty: sendToAddress.trim(),
-      amount_bum: amountNum,
+      amount_bum: amt,
       fee_bum: sendFeeRate,
       timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
       status: "confirmed",
       block_height: nodeStatus.chain_height + 1
     };
 
-    // Update balances and ledger
     setSelectedIdentity((prev) => ({
       ...prev,
-      balance_bum: parseFloat((prev.balance_bum - (amountNum + sendFeeRate)).toFixed(8))
+      balance_bum: parseFloat((prev.balance_bum - (amt + sendFeeRate)).toFixed(8))
     }));
     setTransactions([newTx, ...transactions]);
-    setSendNotification(`Transaction Broadcast Successfully! Sent ${amountNum.toFixed(4)} BUM to ${sendToAddress.substring(0, 12)}...`);
+    setShowSendConfirmModal(false);
     setSendToAddress("");
     setSendLabel("");
     setSendAmount("");
-    setTimeout(() => setSendNotification(null), 5000);
+    showToast(`Transaction Broadcast: Sent ${amt.toFixed(4)} BUM to ${sendToAddress.substring(0, 12)}...`);
   };
 
-  // Generate Payment URI
-  const handleGenerateUri = (e: React.FormEvent) => {
+  const handleCreatePaymentRequest = (e: React.FormEvent) => {
     e.preventDefault();
-    const uri = `blockbum:${selectedIdentity.address}?amount=${receiveAmount || "0"}&label=${encodeURIComponent(receiveLabel || "BlockBum Payment")}`;
-    setGeneratedUri(uri);
+    const req: PaymentRequest = {
+      id: "req_" + Date.now(),
+      date: new Date().toISOString().replace("T", " ").substring(0, 16),
+      label: receiveLabel.trim() || "Payment Request",
+      message: receiveMessage.trim() || "N/A",
+      amount: parseFloat(receiveAmount || "0").toFixed(8),
+      address: selectedIdentity.address
+    };
+    setPaymentRequests([req, ...paymentRequests]);
+    setActiveQrModal(req);
+    setReceiveLabel("");
+    setReceiveAmount("");
+    setReceiveMessage("");
   };
 
-  // Generate New Receiving Address
-  const handleGenerateNewAddress = () => {
-    const newAddr = "bb1abhiram" + Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-    setReceiveAddresses([newAddr, ...receiveAddresses]);
-    setSelectedIdentity((prev) => ({
-      ...prev,
-      address: newAddr
-    }));
-    setSendNotification(`New Receiving Address Generated: ${newAddr.substring(0, 16)}...`);
-    setTimeout(() => setSendNotification(null), 4000);
+  const handleCreateCommunity = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCommName.trim()) return;
+
+    const channelList = newCommChannels
+      .split(",")
+      .map((ch) => ch.trim().replace(/^#/, ""))
+      .filter((ch) => ch.length > 0);
+
+    const created: Community = {
+      id: "comm_" + Date.now(),
+      name: newCommName.trim(),
+      description: newCommDesc.trim() || "Independent peer community cluster.",
+      isPrivate: newCommIsPrivate,
+      memberCount: 1,
+      myRole: "Owner",
+      channels: channelList.length > 0 ? channelList : ["general"],
+      governanceProposals: [],
+      codingChallenges: [],
+      events: []
+    };
+
+    setCommunities([...communities, created]);
+    setSelectedCommunityId(created.id);
+    setActiveChannel(created.channels[0]);
+    setNewCommName("");
+    setNewCommDesc("");
+    setShowCreateCommunityModal(false);
+    showToast(`Created Community: ${created.name}`);
   };
 
-  // Send Chat Message
+  const handleAddChannel = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanName = newChannelName.trim().replace(/^#/, "").toLowerCase();
+    if (!cleanName) return;
+
+    setCommunities((prev) =>
+      prev.map((c) =>
+        c.id === selectedCommunityId
+          ? { ...c, channels: [...c.channels, cleanName] }
+          : c
+      )
+    );
+    setActiveChannel(cleanName);
+    setNewChannelName("");
+    setShowAddChannelModal(false);
+    showToast(`Channel #${cleanName} added to ${activeCommunity.name}`);
+  };
+
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
 
     const newMsg: MessageItem = {
       id: "msg_" + Date.now(),
-      communityId: "comm_main",
+      communityId: selectedCommunityId,
       channel: activeChannel,
       sender: selectedIdentity.address,
       senderAlias: selectedIdentity.alias,
@@ -279,85 +402,48 @@ export const App: React.FC = () => {
       deliveryAck: true
     };
 
-    setChatMessages([...chatMessages, newMsg]);
+    setMessages([...messages, newMsg]);
     setChatInput("");
   };
 
-  // Execute RPC Debug Console Command
   const handleExecuteRpc = (e: React.FormEvent) => {
     e.preventDefault();
     const cmd = rpcCommand.trim().toLowerCase();
     if (!cmd) return;
 
-    let response = "";
+    let res = "";
     if (cmd === "help") {
-      response = "Available RPC Commands:\n - getblockchaininfo : Returns chain height, consensus, and block tip hash.\n - getpeerinfo       : Returns active IPv4/IPv6 peer telemetry.\n - getmempoolinfo    : Returns pending transactions count and memory usage.\n - getclientmode     : Returns active client mode (full_node, light_client, pruned_node).\n - clear             : Clears terminal history.";
+      res = "Available RPC Commands:\n - getblockchaininfo : Returns chain height, consensus, and block tip hash.\n - getpeerinfo       : Returns active IPv4/IPv6 peer telemetry.\n - getmempoolinfo    : Returns pending transactions count and memory usage.\n - getclientmode     : Returns active client mode (full_node, light_client, pruned_node).\n - clear             : Clears terminal history.";
     } else if (cmd === "getblockchaininfo") {
-      response = JSON.stringify({
+      res = JSON.stringify({
         chain: "main",
         blocks: nodeStatus.chain_height,
         headers: nodeStatus.chain_height,
         bestblockhash: nodeStatus.tip_hash,
         difficulty: "0x1d00ffff",
-        mediantime: Math.floor(Date.now() / 1000),
         verificationprogress: 1.0,
         consensus_engine: "BlockBum Dynamic Difficulty PoW"
       }, null, 2);
     } else if (cmd === "getpeerinfo") {
-      response = JSON.stringify(peers, null, 2);
+      res = JSON.stringify(peers, null, 2);
     } else if (cmd === "getmempoolinfo") {
-      response = JSON.stringify({
-        size: nodeStatus.mempool_tx_count,
-        bytes: nodeStatus.mempool_tx_count * 384,
-        usage: "4.6 KB",
-        maxmempool: "300 MB"
-      }, null, 2);
+      res = JSON.stringify({ size: nodeStatus.mempool_tx_count, bytes: nodeStatus.mempool_tx_count * 384 }, null, 2);
     } else if (cmd === "getclientmode") {
-      response = JSON.stringify({
-        mode: clientMode,
-        sovereign_validation: clientMode === "full_node" || clientMode === "pruned_node",
-        storage_allocated: clientMode === "full_node" ? "14.2 GB" : clientMode === "pruned_node" ? "4.8 GB" : "38 MB",
-        spv_merkle_branch_enabled: true
-      }, null, 2);
+      res = JSON.stringify({ mode: clientMode, full_validation: true, spv_proofs: true }, null, 2);
     } else if (cmd === "clear") {
       setConsoleOutput(["Terminal cleared."]);
       setRpcCommand("");
       return;
     } else {
-      response = `Unknown command: '${cmd}'. Type 'help' for available RPC calls.`;
+      res = `Unknown command: '${cmd}'. Type 'help' for available RPC calls.`;
     }
 
-    setConsoleOutput([...consoleOutput, `> ${rpcCommand}`, response, ""]);
+    setConsoleOutput([...consoleOutput, `> ${rpcCommand}`, res, ""]);
     setRpcCommand("");
   };
 
-  // Run Cryptographic Self-Test
-  const handleRunCryptoAudit = () => {
-    setCryptoAuditResult("Running Ubuntu OpenSSL 3.0 & BlockBum cryptographic self-test...");
-    setTimeout(() => {
-      setCryptoAuditResult(
-        "✓ SHA-256 Merkle Tree Proofs: VERIFIED\n✓ Secp256k1 ECDSA Signatures: VERIFIED\n✓ AES-256-GCM Encrypted Storage: ACTIVE\n✓ Ubuntu Entropy Hardware RNG: ACTIVE\n✓ Consensus Proof-of-Work Verification: PASSED\n\nResult: 100% Cryptographic Integrity Confirmed."
-      );
-    }, 600);
-  };
-
-  // Filtered transactions
-  const filteredTxs = transactions.filter((tx) => {
-    if (txFilter !== "all" && tx.type !== txFilter) return false;
-    if (txSearch.trim()) {
-      const q = txSearch.toLowerCase();
-      return (
-        tx.tx_id.toLowerCase().includes(q) ||
-        tx.counterparty.toLowerCase().includes(q) ||
-        tx.timestamp.includes(q)
-      );
-    }
-    return true;
-  });
-
-  // Simple pure SVG QR Matrix generator (21x21 grid)
-  const renderQrSvg = (text: string) => {
-    // Generate deterministic 21x21 bit matrix based on text hash
+  // Pure SVG QR Generator
+  const renderQrSvg = (text: string, sizePx = 160) => {
     let hash = 0;
     for (let i = 0; i < text.length; i++) {
       hash = (hash << 5) - hash + text.charCodeAt(i);
@@ -366,7 +452,6 @@ export const App: React.FC = () => {
     const size = 21;
     const cells: boolean[][] = Array.from({ length: size }, () => Array(size).fill(false));
 
-    // Corner Finder Patterns (7x7)
     const setFinder = (startX: number, startY: number) => {
       for (let r = 0; r < 7; r++) {
         for (let c = 0; c < 7; c++) {
@@ -380,17 +465,15 @@ export const App: React.FC = () => {
     setFinder(size - 7, 0);
     setFinder(0, size - 7);
 
-    // Data bits
     for (let r = 0; r < size; r++) {
       for (let c = 0; c < size; c++) {
         if ((r < 8 && c < 8) || (r < 8 && c >= size - 8) || (r >= size - 8 && c < 8)) continue;
-        const bit = ((hash * (r + 1) * 31) ^ (c * 17)) % 3 === 0;
-        cells[r][c] = bit;
+        cells[r][c] = ((hash * (r + 1) * 31) ^ (c * 17)) % 3 === 0;
       }
     }
 
     return (
-      <svg width="140" height="140" viewBox={`0 0 ${size} ${size}`} style={{ backgroundColor: "#FFFFFF", padding: "8px", borderRadius: "4px", border: "1px solid #CBD5E1" }}>
+      <svg width={sizePx} height={sizePx} viewBox={`0 0 ${size} ${size}`} style={{ backgroundColor: "#FFFFFF", padding: "8px", borderRadius: "3px", border: "1px solid #CBD5E1" }}>
         {cells.map((row, r) =>
           row.map((val, c) =>
             val ? <rect key={`${r}-${c}`} x={c} y={r} width="1" height="1" fill="#0F172A" /> : null
@@ -399,6 +482,17 @@ export const App: React.FC = () => {
       </svg>
     );
   };
+
+  // Filtered Transactions
+  const filteredTxs = transactions.filter((tx) => {
+    if (txTypeFilter !== "all" && tx.type !== txTypeFilter) return false;
+    if (txMinAmount && tx.amount_bum < parseFloat(txMinAmount)) return false;
+    if (txSearchQuery.trim()) {
+      const q = txSearchQuery.toLowerCase();
+      return tx.tx_id.toLowerCase().includes(q) || tx.counterparty.toLowerCase().includes(q);
+    }
+    return true;
+  });
 
   return (
     <div
@@ -415,159 +509,14 @@ export const App: React.FC = () => {
       onClick={() => setOpenMenu(null)}
     >
       {/* ===================================================================== */}
-      {/* 1. TOP NATIVE WINDOW HEADER BAR                                        */}
-      {/* ===================================================================== */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "6px 14px",
-          backgroundColor: "#FFFFFF",
-          borderBottom: "1px solid #CBD5E1",
-          userSelect: "none"
-        }}
-      >
-        {/* Left: App Logo & Core Title */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <img src={bbCoinImg} alt="BlockBum Coin" style={{ width: "26px", height: "26px", objectFit: "contain" }} />
-          <div>
-            <span style={{ fontWeight: "bold", fontSize: "14px", color: "#0F172A", letterSpacing: "0.2px" }}>
-              BlockBum Core
-            </span>
-            <span
-              style={{
-                marginLeft: "8px",
-                fontSize: "10px",
-                fontWeight: "600",
-                color: "#B8860B",
-                backgroundColor: "#FEF9C3",
-                padding: "2px 6px",
-                borderRadius: "3px",
-                border: "1px solid #FDE047"
-              }}
-            >
-              Mainnet v1.0
-            </span>
-          </div>
-        </div>
-
-        {/* Center: Identity Selector (Founder Abhiram) */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "11px", color: "#64748B", fontWeight: "600" }}>Active Wallet:</span>
-          <select
-            value={selectedIdentity.alias}
-            onChange={(e) => {
-              const id = identities.find((i) => i.alias === e.target.value);
-              if (id) setSelectedIdentity(id);
-            }}
-            style={{
-              padding: "3px 8px",
-              backgroundColor: "#F8FAFC",
-              border: "1px solid #CBD5E1",
-              borderRadius: "4px",
-              fontSize: "12px",
-              fontWeight: "bold",
-              color: "#0F172A",
-              cursor: "pointer"
-            }}
-          >
-            {identities.map((id) => (
-              <option key={id.alias} value={id.alias}>
-                {id.alias}
-              </option>
-            ))}
-          </select>
-          <span
-            style={{
-              fontFamily: "monospace",
-              fontSize: "11px",
-              color: "#475569",
-              backgroundColor: "#F1F5F9",
-              padding: "2px 6px",
-              borderRadius: "3px"
-            }}
-          >
-            {selectedIdentity.address.substring(0, 10)}...{selectedIdentity.address.substring(selectedIdentity.address.length - 4)}
-          </span>
-          <button
-            onClick={() => {
-              navigator.clipboard?.writeText(selectedIdentity.address);
-              alert("Address copied to clipboard:\n" + selectedIdentity.address);
-            }}
-            title="Copy Public Address"
-            style={{
-              background: "none",
-              border: "1px solid #CBD5E1",
-              borderRadius: "3px",
-              padding: "2px 6px",
-              fontSize: "11px",
-              cursor: "pointer",
-              color: "#334155"
-            }}
-          >
-            📋 Copy
-          </button>
-        </div>
-
-        {/* Right: Balance & Mode Toggle */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          {/* Balance Pill */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              backgroundColor: "#FFFBEB",
-              border: "1px solid #FDE68A",
-              borderRadius: "4px",
-              padding: "3px 10px"
-            }}
-          >
-            <span style={{ fontSize: "11px", color: "#B8860B", fontWeight: "bold" }}>Balance:</span>
-            <span style={{ fontSize: "13px", fontWeight: "bold", color: "#0F172A", fontFamily: "monospace" }}>
-              {selectedIdentity.balance_bum.toFixed(4)} BUM
-            </span>
-          </div>
-
-          {/* Client Mode Quick Switcher */}
-          <button
-            onClick={() => {
-              const nextMode: ClientExecutionMode =
-                clientMode === "full_node" ? "light_client" : clientMode === "light_client" ? "pruned_node" : "full_node";
-              handleSetClientMode(nextMode);
-            }}
-            title="Click to toggle client execution mode"
-            style={{
-              padding: "3px 10px",
-              backgroundColor: clientMode === "full_node" ? "#ECFDF5" : clientMode === "light_client" ? "#EFF6FF" : "#FEF3C7",
-              border: `1px solid ${clientMode === "full_node" ? "#6EE7B7" : clientMode === "light_client" ? "#93C5FD" : "#FCD34D"}`,
-              borderRadius: "4px",
-              color: clientMode === "full_node" ? "#065F46" : clientMode === "light_client" ? "#1E40AF" : "#92400E",
-              fontSize: "11px",
-              fontWeight: "bold",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "5px"
-            }}
-          >
-            {clientMode === "full_node" && "🟢 Full Node Mode"}
-            {clientMode === "light_client" && "⚡ SPV Mode"}
-            {clientMode === "pruned_node" && "📦 Pruned Node"}
-          </button>
-        </div>
-      </div>
-
-      {/* ===================================================================== */}
-      {/* 2. CLASSIC DESKTOP MENU BAR (File, Wallet, Send/Receive, Tools, Help) */}
+      {/* BITCOIN CORE QT MENU BAR (File, Settings, Window, Help)               */}
       {/* ===================================================================== */}
       <div
         style={{
           display: "flex",
           backgroundColor: "#F1F5F9",
           borderBottom: "1px solid #CBD5E1",
-          padding: "2px 8px",
+          padding: "2px 6px",
           fontSize: "12px",
           color: "#334155",
           userSelect: "none",
@@ -579,40 +528,33 @@ export const App: React.FC = () => {
             id: "file",
             name: "File",
             items: [
-              { label: "Backup Wallet...", action: () => alert("Wallet backup exported to encrypted vault.") },
-              { label: "Restore Wallet Phrase...", action: () => alert("Seed phrase verification dialog.") },
+              { label: "Backup Wallet...", action: () => showToast("Wallet backed up to local encrypted vault.") },
+              { label: "Sign Message...", action: () => alert("Secp256k1 message signing dialog.") },
+              { label: "Verify Message...", action: () => alert("Signature verification dialog.") },
               { type: "separator" },
               { label: "Exit BlockBum Core", action: () => window.close() }
             ]
           },
           {
-            id: "wallet",
-            name: "Wallet",
+            id: "settings",
+            name: "Settings",
             items: [
-              { label: "Overview", action: () => setActiveTab("overview") },
-              { label: "Send BUM Coins", action: () => setActiveTab("send") },
-              { label: "Receive BUM Coins", action: () => setActiveTab("receive") },
-              { label: "Transaction Ledger", action: () => setActiveTab("transactions") },
+              { label: "Execution Mode: Full Node", action: () => handleSetClientMode("full_node") },
+              { label: "Execution Mode: SPV (Light)", action: () => handleSetClientMode("light_client") },
+              { label: "Execution Mode: Pruned Node", action: () => handleSetClientMode("pruned_node") },
               { type: "separator" },
-              { label: "Generate New Address", action: handleGenerateNewAddress }
+              { label: "Encrypt Wallet...", action: () => alert("Wallet is already encrypted with AES-256-GCM.") },
+              { label: "Change Passphrase...", action: () => alert("Change passphrase dialog.") }
             ]
           },
           {
-            id: "mode",
-            name: "Client Mode",
+            id: "window",
+            name: "Window",
             items: [
-              { label: "Switch to Full Node Mode", action: () => handleSetClientMode("full_node") },
-              { label: "Switch to SPV (Light) Mode", action: () => handleSetClientMode("light_client") },
-              { label: "Switch to Pruned Node Mode", action: () => handleSetClientMode("pruned_node") }
-            ]
-          },
-          {
-            id: "tools",
-            name: "Tools",
-            items: [
-              { label: "Connected P2P Peers Map", action: () => setActiveTab("tools") },
-              { label: "Ubuntu Cryptography Diagnostic", action: handleRunCryptoAudit },
-              { label: "RPC Debug Console", action: () => setActiveTab("tools") }
+              { label: "Minimize", action: () => {} },
+              { label: "Zoom", action: () => {} },
+              { type: "separator" },
+              { label: "Node & Debug Window", action: () => setActiveTab("debug") }
             ]
           },
           {
@@ -620,7 +562,7 @@ export const App: React.FC = () => {
             name: "Help",
             items: [
               { label: "BlockBum Protocol Specification", action: () => alert("BlockBum Protocol v1.0. Dynamic PoW Consensus.") },
-              { label: "About BlockBum Core", action: () => alert("BlockBum Core v1.0.0\nFounder: Abhiram\nLicense: MIT Open Source") }
+              { label: "About BlockBum Core", action: () => alert("BlockBum Core v1.0.0 (Bitcoin Core Qt Inspired Architecture)\nFounder: Abhiram\nDynamic Communities & Cryptography") }
             ]
           }
         ].map((menu) => (
@@ -633,7 +575,7 @@ export const App: React.FC = () => {
               style={{
                 background: openMenu === menu.id ? "#E2E8F0" : "none",
                 border: "none",
-                padding: "3px 10px",
+                padding: "3px 9px",
                 fontSize: "12px",
                 color: "#334155",
                 cursor: "pointer",
@@ -650,8 +592,8 @@ export const App: React.FC = () => {
                   left: 0,
                   backgroundColor: "#FFFFFF",
                   border: "1px solid #CBD5E1",
-                  borderRadius: "4px",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                  borderRadius: "3px",
+                  boxShadow: "0 3px 10px rgba(0,0,0,0.12)",
                   minWidth: "220px",
                   zIndex: 2000,
                   padding: "4px 0"
@@ -668,7 +610,7 @@ export const App: React.FC = () => {
                         item.action?.();
                       }}
                       style={{
-                        padding: "6px 14px",
+                        padding: "5px 14px",
                         fontSize: "12px",
                         color: "#0F172A",
                         cursor: "pointer"
@@ -687,64 +629,79 @@ export const App: React.FC = () => {
       </div>
 
       {/* ===================================================================== */}
-      {/* 3. NATIVE DESKTOP TOP TOOLBAR TABS (NO WEB SIDEBAR!)                   */}
+      {/* BITCOIN CORE QT TOOLBAR (Tabs with Icons across the top)              */}
       {/* ===================================================================== */}
       <div
         style={{
           display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
           backgroundColor: "#FFFFFF",
           borderBottom: "1px solid #CBD5E1",
           padding: "4px 10px 0 10px",
-          gap: "4px",
           userSelect: "none"
         }}
       >
-        {[
-          { id: "overview", label: "Overview", icon: "📊" },
-          { id: "send", label: "Send", icon: "📤" },
-          { id: "receive", label: "Receive", icon: "📥" },
-          { id: "transactions", label: "Transactions", icon: "📜" },
-          { id: "chat", label: "Community Chat", icon: "💬" },
-          { id: "tools", label: "Tools & Client Modes", icon: "⚙️" }
-        ].map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "7px",
-                padding: "8px 16px",
-                backgroundColor: isActive ? "#F4F6F9" : "#FFFFFF",
-                borderTop: isActive ? "2px solid #D4AF37" : "2px solid transparent",
-                borderLeft: isActive ? "1px solid #CBD5E1" : "1px solid transparent",
-                borderRight: isActive ? "1px solid #CBD5E1" : "1px solid transparent",
-                borderBottom: isActive ? "1px solid #F4F6F9" : "1px solid transparent",
-                borderRadius: "5px 5px 0 0",
-                color: isActive ? "#0F172A" : "#64748B",
-                fontWeight: isActive ? "bold" : "600",
-                fontSize: "13px",
-                cursor: "pointer",
-                marginBottom: "-1px"
-              }}
-            >
-              <span>{tab.icon}</span>
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
+        {/* Core Navigation Buttons */}
+        <div style={{ display: "flex", gap: "2px" }}>
+          {[
+            { id: "overview", label: "Overview", icon: "🪙" },
+            { id: "send", label: "Send", icon: "📤" },
+            { id: "receive", label: "Receive", icon: "📥" },
+            { id: "transactions", label: "Transactions", icon: "📋" },
+            { id: "communities", label: "Communities & Chat", icon: "🌐" },
+            { id: "debug", label: "Node & Debug", icon: "⚙️" }
+          ].map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "7px 15px",
+                  backgroundColor: isActive ? "#F4F6F9" : "#FFFFFF",
+                  borderTop: isActive ? "2px solid #D4AF37" : "2px solid transparent",
+                  borderLeft: isActive ? "1px solid #CBD5E1" : "1px solid transparent",
+                  borderRight: isActive ? "1px solid #CBD5E1" : "1px solid transparent",
+                  borderBottom: isActive ? "1px solid #F4F6F9" : "1px solid transparent",
+                  borderRadius: "4px 4px 0 0",
+                  color: isActive ? "#0F172A" : "#64748B",
+                  fontWeight: isActive ? "bold" : "600",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  marginBottom: "-1px"
+                }}
+              >
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right Info: Coin Emblem & Founder Identity */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingBottom: "4px" }}>
+          <img src={bbCoinImg} alt="BB" style={{ width: "22px", height: "22px", objectFit: "contain" }} />
+          <div style={{ fontSize: "11px", textAlign: "right" }}>
+            <span style={{ fontWeight: "bold", color: "#0F172A" }}>{selectedIdentity.alias}</span>
+            <div style={{ fontFamily: "monospace", color: "#B8860B", fontWeight: "bold" }}>
+              {selectedIdentity.balance_bum.toFixed(4)} BUM
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Notification Toast Alert */}
-      {sendNotification && (
+      {/* Toast Notification Banner */}
+      {toastMsg && (
         <div
           style={{
             backgroundColor: "#ECFDF5",
             borderBottom: "1px solid #A7F3D0",
             color: "#065F46",
-            padding: "8px 16px",
+            padding: "6px 16px",
             fontSize: "12px",
             fontWeight: "bold",
             display: "flex",
@@ -752,113 +709,88 @@ export const App: React.FC = () => {
             justifyContent: "space-between"
           }}
         >
-          <span>✓ {sendNotification}</span>
-          <button
-            onClick={() => setSendNotification(null)}
-            style={{ background: "none", border: "none", color: "#065F46", cursor: "pointer", fontWeight: "bold" }}
-          >
+          <span>✓ {toastMsg}</span>
+          <button onClick={() => setToastMsg(null)} style={{ background: "none", border: "none", color: "#065F46", cursor: "pointer", fontWeight: "bold" }}>
             ✕
           </button>
         </div>
       )}
 
       {/* ===================================================================== */}
-      {/* 4. MAIN CLIENT WORKSPACE (FULL DESKTOP CONTENT)                       */}
+      {/* MAIN QT WORKSPACE                                                     */}
       {/* ===================================================================== */}
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
         {/* =================================================================== */}
-        {/* TAB 1: OVERVIEW                                                     */}
+        {/* TAB 1: OVERVIEW (EXACT BITCOIN CORE QT LAYOUT)                      */}
         {/* =================================================================== */}
         {activeTab === "overview" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            {/* Top 2-Column Desktop Grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-              {/* Left Column: Balances Box */}
-              <div
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  border: "1px solid #CBD5E1",
-                  borderRadius: "6px",
-                  padding: "18px",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", borderBottom: "1px solid #F1F5F9", paddingBottom: "8px" }}>
-                  <span style={{ fontSize: "14px", fontWeight: "bold", color: "#0F172A" }}>Balances</span>
-                  <span style={{ fontSize: "11px", color: "#64748B" }}>Wallet: {selectedIdentity.alias}</span>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            {/* Left Box: Balances (Bitcoin Core GroupBox) */}
+            <fieldset
+              style={{
+                backgroundColor: "#FFFFFF",
+                border: "1px solid #CBD5E1",
+                borderRadius: "4px",
+                padding: "16px 20px",
+                margin: 0
+              }}
+            >
+              <legend style={{ fontWeight: "bold", fontSize: "13px", color: "#0F172A", padding: "0 6px" }}>
+                Balances
+              </legend>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "4px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                  <span style={{ fontSize: "12px", color: "#64748B" }}>Available:</span>
+                  <span style={{ fontSize: "18px", fontWeight: "bold", fontFamily: "monospace", color: "#0F172A" }}>
+                    {selectedIdentity.balance_bum.toFixed(8)} <span style={{ color: "#B8860B", fontSize: "13px" }}>BUM</span>
+                  </span>
                 </div>
 
-                <div style={{ marginBottom: "12px" }}>
-                  <div style={{ fontSize: "12px", color: "#64748B", marginBottom: "2px" }}>Available (Spendable):</div>
-                  <div style={{ fontSize: "24px", fontWeight: "bold", color: "#0F172A", fontFamily: "monospace" }}>
-                    {selectedIdentity.balance_bum.toFixed(8)} <span style={{ color: "#B8860B", fontSize: "18px" }}>BUM</span>
-                  </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                  <span style={{ fontSize: "12px", color: "#64748B" }}>Pending:</span>
+                  <span style={{ fontSize: "14px", fontFamily: "monospace", color: "#64748B" }}>
+                    0.00000000 BUM
+                  </span>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px", padding: "10px", backgroundColor: "#F8FAFC", borderRadius: "4px", border: "1px solid #E2E8F0" }}>
-                  <div>
-                    <div style={{ fontSize: "11px", color: "#64748B" }}>Pending (Unconfirmed):</div>
-                    <div style={{ fontSize: "13px", fontWeight: "bold", color: "#D97706", fontFamily: "monospace" }}>0.00000000 BUM</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: "11px", color: "#64748B" }}>Total Net Balance:</div>
-                    <div style={{ fontSize: "13px", fontWeight: "bold", color: "#059669", fontFamily: "monospace" }}>
-                      {selectedIdentity.balance_bum.toFixed(8)} BUM
-                    </div>
-                  </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                  <span style={{ fontSize: "12px", color: "#64748B" }}>Immature (Mining):</span>
+                  <span style={{ fontSize: "14px", fontFamily: "monospace", color: "#64748B" }}>
+                    0.00000000 BUM
+                  </span>
                 </div>
 
-                {/* Primary Address */}
-                <div style={{ marginBottom: "16px" }}>
+                <div style={{ height: "1px", backgroundColor: "#E2E8F0", margin: "6px 0" }} />
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#0F172A" }}>Total:</span>
+                  <span style={{ fontSize: "18px", fontWeight: "bold", fontFamily: "monospace", color: "#059669" }}>
+                    {selectedIdentity.balance_bum.toFixed(8)} BUM
+                  </span>
+                </div>
+
+                {/* Spendable UTXO Address */}
+                <div style={{ marginTop: "12px", backgroundColor: "#F8FAFC", padding: "10px", borderRadius: "4px", border: "1px solid #E2E8F0" }}>
                   <div style={{ fontSize: "11px", color: "#64748B", marginBottom: "4px" }}>Primary Receiving Address:</div>
-                  <div
-                    style={{
-                      fontFamily: "monospace",
-                      fontSize: "12px",
-                      backgroundColor: "#F1F5F9",
-                      padding: "7px 10px",
-                      borderRadius: "4px",
-                      border: "1px solid #E2E8F0",
-                      wordBreak: "break-all",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between"
-                    }}
-                  >
-                    <span>{selectedIdentity.address}</span>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard?.writeText(selectedIdentity.address);
-                        alert("Address copied:\n" + selectedIdentity.address);
-                      }}
-                      style={{
-                        marginLeft: "8px",
-                        padding: "3px 8px",
-                        backgroundColor: "#FFFFFF",
-                        border: "1px solid #CBD5E1",
-                        borderRadius: "3px",
-                        fontSize: "11px",
-                        cursor: "pointer"
-                      }}
-                    >
-                      Copy
-                    </button>
+                  <div style={{ fontFamily: "monospace", fontSize: "11px", wordBreak: "break-all", color: "#0F172A" }}>
+                    {selectedIdentity.address}
                   </div>
                 </div>
 
                 {/* Quick Action Buttons */}
-                <div style={{ display: "flex", gap: "10px" }}>
+                <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
                   <button
                     onClick={() => setActiveTab("send")}
                     style={{
                       flex: 1,
-                      padding: "9px",
-                      background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                      padding: "8px",
+                      backgroundColor: "#FF6B00",
                       border: "1px solid #EA580C",
-                      borderRadius: "4px",
+                      borderRadius: "3px",
                       color: "#FFFFFF",
                       fontWeight: "bold",
-                      fontSize: "13px",
+                      fontSize: "12px",
                       cursor: "pointer"
                     }}
                   >
@@ -868,13 +800,13 @@ export const App: React.FC = () => {
                     onClick={() => setActiveTab("receive")}
                     style={{
                       flex: 1,
-                      padding: "9px",
-                      background: "#FFFFFF",
+                      padding: "8px",
+                      backgroundColor: "#FFFFFF",
                       border: "1px solid #D4AF37",
-                      borderRadius: "4px",
+                      borderRadius: "3px",
                       color: "#B8860B",
                       fontWeight: "bold",
-                      fontSize: "13px",
+                      fontSize: "12px",
                       cursor: "pointer"
                     }}
                   >
@@ -882,751 +814,756 @@ export const App: React.FC = () => {
                   </button>
                 </div>
               </div>
+            </fieldset>
 
-              {/* Right Column: Recent Transactions Box */}
-              <div
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  border: "1px solid #CBD5E1",
-                  borderRadius: "6px",
-                  padding: "18px",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-                  display: "flex",
-                  flexDirection: "column"
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", borderBottom: "1px solid #F1F5F9", paddingBottom: "8px" }}>
-                  <span style={{ fontSize: "14px", fontWeight: "bold", color: "#0F172A" }}>Recent Transactions</span>
-                  <button
-                    onClick={() => setActiveTab("transactions")}
-                    style={{ background: "none", border: "none", color: "#FF6B00", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}
+            {/* Right Box: Recent Transactions (Bitcoin Core GroupBox) */}
+            <fieldset
+              style={{
+                backgroundColor: "#FFFFFF",
+                border: "1px solid #CBD5E1",
+                borderRadius: "4px",
+                padding: "16px 20px",
+                margin: 0,
+                display: "flex",
+                flexDirection: "column"
+              }}
+            >
+              <legend style={{ fontWeight: "bold", fontSize: "13px", color: "#0F172A", padding: "0 6px" }}>
+                Recent Transactions
+              </legend>
+
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px", marginTop: "4px" }}>
+                {transactions.slice(0, 5).map((tx) => (
+                  <div
+                    key={tx.tx_id}
+                    onClick={() => setSelectedTx(tx)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "6px 8px",
+                      backgroundColor: "#F8FAFC",
+                      borderRadius: "3px",
+                      border: "1px solid #E2E8F0",
+                      fontSize: "11px",
+                      cursor: "pointer"
+                    }}
                   >
-                    View All →
-                  </button>
-                </div>
-
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {transactions.slice(0, 4).map((tx) => (
-                    <div
-                      key={tx.tx_id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "8px 10px",
-                        backgroundColor: "#F8FAFC",
-                        borderRadius: "4px",
-                        border: "1px solid #E2E8F0"
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <span style={{ fontSize: "14px" }}>
-                          {tx.type === "receive" ? "🟢" : tx.type === "send" ? "🔴" : "⛏️"}
-                        </span>
-                        <div>
-                          <div style={{ fontSize: "12px", fontWeight: "bold", color: "#0F172A" }}>
-                            {tx.type === "receive" ? "Received BUM" : tx.type === "send" ? "Sent BUM" : "Mined Block Reward"}
-                          </div>
-                          <div style={{ fontSize: "10px", color: "#64748B" }}>{tx.timestamp}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span>{tx.type === "receive" ? "🟢" : tx.type === "send" ? "🔴" : "⛏️"}</span>
+                      <div>
+                        <div style={{ fontWeight: "bold", color: "#0F172A" }}>
+                          {tx.type === "receive" ? "Received with" : tx.type === "send" ? "Payment to" : "Mined Block"}
                         </div>
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div
-                          style={{
-                            fontSize: "12px",
-                            fontWeight: "bold",
-                            fontFamily: "monospace",
-                            color: tx.type === "send" ? "#DC2626" : "#059669"
-                          }}
-                        >
-                          {tx.type === "send" ? "-" : "+"}
-                          {tx.amount_bum.toFixed(4)} BUM
-                        </div>
-                        <div style={{ fontSize: "10px", color: "#64748B" }}>
-                          Block #{tx.block_height}
-                        </div>
+                        <div style={{ color: "#64748B" }}>{tx.timestamp}</div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Strip: Consensus & Node Telemetry */}
-            <div
-              style={{
-                backgroundColor: "#FFFFFF",
-                border: "1px solid #CBD5E1",
-                borderRadius: "6px",
-                padding: "14px 18px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
-              }}
-            >
-              <div style={{ fontSize: "13px", fontWeight: "bold", color: "#0F172A", marginBottom: "10px" }}>
-                Network Consensus & Node Status
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px" }}>
-                <div style={{ padding: "10px", backgroundColor: "#F8FAFC", borderRadius: "4px", border: "1px solid #E2E8F0" }}>
-                  <div style={{ fontSize: "11px", color: "#64748B" }}>Consensus Engine</div>
-                  <div style={{ fontSize: "12px", fontWeight: "bold", color: "#EA580C" }}>
-                    BlockBum PoW
-                  </div>
-                </div>
-                <div style={{ padding: "10px", backgroundColor: "#F8FAFC", borderRadius: "4px", border: "1px solid #E2E8F0" }}>
-                  <div style={{ fontSize: "11px", color: "#64748B" }}>Chain Height</div>
-                  <div style={{ fontSize: "12px", fontWeight: "bold", color: "#B8860B", fontFamily: "monospace" }}>
-                    #{nodeStatus.chain_height.toLocaleString()}
-                  </div>
-                </div>
-                <div style={{ padding: "10px", backgroundColor: "#F8FAFC", borderRadius: "4px", border: "1px solid #E2E8F0" }}>
-                  <div style={{ fontSize: "11px", color: "#64748B" }}>Connected Peers</div>
-                  <div style={{ fontSize: "12px", fontWeight: "bold", color: "#059669" }}>
-                    {peers.length} Nodes (IPv4/IPv6)
-                  </div>
-                </div>
-                <div style={{ padding: "10px", backgroundColor: "#F8FAFC", borderRadius: "4px", border: "1px solid #E2E8F0" }}>
-                  <div style={{ fontSize: "11px", color: "#64748B" }}>Client Execution Mode</div>
-                  <div style={{ fontSize: "12px", fontWeight: "bold", color: "#0284C7" }}>
-                    {clientMode === "full_node" ? "Full Sovereign Node" : clientMode === "light_client" ? "Lightweight SPV" : "Pruned Mode"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* =================================================================== */}
-        {/* TAB 2: SEND                                                         */}
-        {/* =================================================================== */}
-        {activeTab === "send" && (
-          <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-            <div
-              style={{
-                backgroundColor: "#FFFFFF",
-                border: "1px solid #CBD5E1",
-                borderRadius: "6px",
-                padding: "24px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
-              }}
-            >
-              <h2 style={{ margin: "0 0 4px 0", fontSize: "18px", fontWeight: "bold", color: "#0F172A" }}>
-                Send BUM Coins
-              </h2>
-              <p style={{ margin: "0 0 20px 0", fontSize: "12px", color: "#64748B" }}>
-                Broadcast native cryptocurrency transactions across the BlockBum P2P network.
-              </p>
-
-              <form onSubmit={handleSendCoins}>
-                {/* Pay To Address */}
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "#334155", marginBottom: "6px" }}>
-                    Pay To Address:
-                  </label>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <input
-                      type="text"
-                      value={sendToAddress}
-                      onChange={(e) => setSendToAddress(e.target.value)}
-                      placeholder="bb1..."
-                      style={{
-                        flex: 1,
-                        padding: "8px 12px",
-                        backgroundColor: "#F8FAFC",
-                        border: "1px solid #CBD5E1",
-                        borderRadius: "4px",
-                        fontSize: "13px",
-                        fontFamily: "monospace"
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const text = await navigator.clipboard?.readText().catch(() => "");
-                        if (text) setSendToAddress(text);
-                      }}
-                      style={{
-                        padding: "8px 14px",
-                        backgroundColor: "#F1F5F9",
-                        border: "1px solid #CBD5E1",
-                        borderRadius: "4px",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        cursor: "pointer"
-                      }}
-                    >
-                      Paste
-                    </button>
-                  </div>
-                </div>
-
-                {/* Optional Label */}
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "#334155", marginBottom: "6px" }}>
-                    Label / Description (Optional):
-                  </label>
-                  <input
-                    type="text"
-                    value={sendLabel}
-                    onChange={(e) => setSendLabel(e.target.value)}
-                    placeholder="e.g. Node Staking Pool or Peer Payment"
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      backgroundColor: "#F8FAFC",
-                      border: "1px solid #CBD5E1",
-                      borderRadius: "4px",
-                      fontSize: "13px",
-                      boxSizing: "border-box"
-                    }}
-                  />
-                </div>
-
-                {/* Amount */}
-                <div style={{ marginBottom: "16px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-                    <label style={{ fontSize: "12px", fontWeight: "bold", color: "#334155" }}>
-                      Amount in BUM:
-                    </label>
-                    <span style={{ fontSize: "11px", color: "#64748B" }}>
-                      Available: <strong style={{ color: "#0F172A" }}>{selectedIdentity.balance_bum.toFixed(4)} BUM</strong>
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <input
-                      type="number"
-                      step="0.0001"
-                      min="0.0001"
-                      value={sendAmount}
-                      onChange={(e) => setSendAmount(e.target.value)}
-                      placeholder="0.0000"
-                      style={{
-                        flex: 1,
-                        padding: "8px 12px",
-                        backgroundColor: "#F8FAFC",
-                        border: "1px solid #CBD5E1",
-                        borderRadius: "4px",
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        fontFamily: "monospace"
-                      }}
-                    />
-                    {[
-                      { label: "10 BUM", val: 10 },
-                      { label: "50 BUM", val: 50 },
-                      { label: "100 BUM", val: 100 },
-                      { label: "Max", val: Math.max(0, selectedIdentity.balance_bum - sendFeeRate) }
-                    ].map((preset) => (
-                      <button
-                        key={preset.label}
-                        type="button"
-                        onClick={() => setSendAmount(preset.val.toString())}
-                        style={{
-                          padding: "8px 12px",
-                          backgroundColor: "#F8FAFC",
-                          border: "1px solid #CBD5E1",
-                          borderRadius: "4px",
-                          fontSize: "11px",
-                          fontWeight: "bold",
-                          color: "#334155",
-                          cursor: "pointer"
-                        }}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Network Fee Presets */}
-                <div style={{ marginBottom: "24px" }}>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "#334155", marginBottom: "6px" }}>
-                    Transaction Fee:
-                  </label>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
-                    {[
-                      { rate: 0.0001, label: "Economy", desc: "~3-6 blocks" },
-                      { rate: 0.0005, label: "Standard", desc: "~1-2 blocks" },
-                      { rate: 0.001, label: "Priority", desc: "Next block" }
-                    ].map((fee) => (
+                    <div style={{ textAlign: "right" }}>
                       <div
-                        key={fee.label}
-                        onClick={() => setSendFeeRate(fee.rate)}
                         style={{
-                          padding: "10px 14px",
-                          borderRadius: "4px",
-                          border: sendFeeRate === fee.rate ? "2px solid #FF6B00" : "1px solid #CBD5E1",
-                          backgroundColor: sendFeeRate === fee.rate ? "#FFF7ED" : "#F8FAFC",
-                          cursor: "pointer"
+                          fontWeight: "bold",
+                          fontFamily: "monospace",
+                          color: tx.type === "send" ? "#DC2626" : "#059669"
                         }}
                       >
-                        <div style={{ fontSize: "12px", fontWeight: "bold", color: "#0F172A" }}>{fee.label}</div>
-                        <div style={{ fontSize: "11px", color: "#B8860B", fontWeight: "bold", fontFamily: "monospace" }}>
-                          {fee.rate} BUM
-                        </div>
-                        <div style={{ fontSize: "10px", color: "#64748B" }}>{fee.desc}</div>
+                        {tx.type === "send" ? "-" : "+"}
+                        {tx.amount_bum.toFixed(4)} BUM
                       </div>
-                    ))}
+                      <div style={{ color: "#64748B" }}>Block #{tx.block_height}</div>
+                    </div>
                   </div>
-                </div>
-
-                {/* Send & Clear Buttons */}
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button
-                    type="submit"
-                    style={{
-                      flex: 1,
-                      padding: "12px",
-                      background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
-                      border: "1px solid #EA580C",
-                      borderRadius: "4px",
-                      color: "#FFFFFF",
-                      fontWeight: "bold",
-                      fontSize: "14px",
-                      cursor: "pointer"
-                    }}
-                  >
-                    🚀 Broadcast Transaction
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSendToAddress("");
-                      setSendLabel("");
-                      setSendAmount("");
-                    }}
-                    style={{
-                      padding: "12px 24px",
-                      backgroundColor: "#FFFFFF",
-                      border: "1px solid #CBD5E1",
-                      borderRadius: "4px",
-                      color: "#334155",
-                      fontWeight: "bold",
-                      fontSize: "14px",
-                      cursor: "pointer"
-                    }}
-                  >
-                    Clear
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* =================================================================== */}
-        {/* TAB 3: RECEIVE                                                      */}
-        {/* =================================================================== */}
-        {activeTab === "receive" && (
-          <div style={{ maxWidth: "840px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "16px" }}>
-            {/* Top Card: Active Address & QR */}
-            <div
-              style={{
-                backgroundColor: "#FFFFFF",
-                border: "1px solid #CBD5E1",
-                borderRadius: "6px",
-                padding: "24px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
-              }}
-            >
-              <h2 style={{ margin: "0 0 4px 0", fontSize: "18px", fontWeight: "bold", color: "#0F172A" }}>
-                Receive BUM Coins
-              </h2>
-              <p style={{ margin: "0 0 20px 0", fontSize: "12px", color: "#64748B" }}>
-                Provide this address or QR code to the sender. Each generated address is permanently valid.
-              </p>
-
-              <div style={{ display: "flex", gap: "24px", alignItems: "center" }}>
-                {/* Visual QR Matrix */}
-                <div>{renderQrSvg(selectedIdentity.address)}</div>
-
-                {/* Address Details & Actions */}
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "12px", fontWeight: "bold", color: "#334155", marginBottom: "6px" }}>
-                    Your Receiving Address:
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "monospace",
-                      fontSize: "13px",
-                      backgroundColor: "#F8FAFC",
-                      padding: "10px 14px",
-                      borderRadius: "4px",
-                      border: "1px solid #CBD5E1",
-                      wordBreak: "break-all",
-                      marginBottom: "12px",
-                      color: "#0F172A",
-                      fontWeight: "bold"
-                    }}
-                  >
-                    {selectedIdentity.address}
-                  </div>
-
-                  <div style={{ display: "flex", gap: "10px" }}>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard?.writeText(selectedIdentity.address);
-                        alert("Address copied to clipboard:\n" + selectedIdentity.address);
-                      }}
-                      style={{
-                        padding: "8px 16px",
-                        background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
-                        border: "1px solid #EA580C",
-                        borderRadius: "4px",
-                        color: "#FFFFFF",
-                        fontWeight: "bold",
-                        fontSize: "12px",
-                        cursor: "pointer"
-                      }}
-                    >
-                      📋 Copy Address
-                    </button>
-                    <button
-                      onClick={handleGenerateNewAddress}
-                      style={{
-                        padding: "8px 16px",
-                        backgroundColor: "#FFFFFF",
-                        border: "1px solid #D4AF37",
-                        borderRadius: "4px",
-                        color: "#B8860B",
-                        fontWeight: "bold",
-                        fontSize: "12px",
-                        cursor: "pointer"
-                      }}
-                    >
-                      ↻ Generate New Address
-                    </button>
-                  </div>
-                </div>
+                ))}
               </div>
-            </div>
 
-            {/* Bottom Card: Request Payment Invoice */}
-            <div
-              style={{
-                backgroundColor: "#FFFFFF",
-                border: "1px solid #CBD5E1",
-                borderRadius: "6px",
-                padding: "20px 24px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
-              }}
-            >
-              <h3 style={{ margin: "0 0 12px 0", fontSize: "15px", fontWeight: "bold", color: "#0F172A" }}>
-                Create Payment Request (URI)
-              </h3>
-              <form onSubmit={handleGenerateUri} style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "12px", alignItems: "flex-end" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748B", marginBottom: "4px" }}>
-                    Requested Amount (Optional):
-                  </label>
-                  <input
-                    type="number"
-                    step="0.0001"
-                    value={receiveAmount}
-                    onChange={(e) => setReceiveAmount(e.target.value)}
-                    placeholder="0.0000 BUM"
-                    style={{
-                      width: "100%",
-                      padding: "8px 10px",
-                      backgroundColor: "#F8FAFC",
-                      border: "1px solid #CBD5E1",
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      boxSizing: "border-box"
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748B", marginBottom: "4px" }}>
-                    Message / Label:
-                  </label>
-                  <input
-                    type="text"
-                    value={receiveLabel}
-                    onChange={(e) => setReceiveLabel(e.target.value)}
-                    placeholder="e.g. Storage Shard Rent"
-                    style={{
-                      width: "100%",
-                      padding: "8px 10px",
-                      backgroundColor: "#F8FAFC",
-                      border: "1px solid #CBD5E1",
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      boxSizing: "border-box"
-                    }}
-                  />
-                </div>
+              <div style={{ textAlign: "right", marginTop: "10px" }}>
                 <button
-                  type="submit"
+                  onClick={() => setActiveTab("transactions")}
                   style={{
-                    padding: "9px 18px",
-                    backgroundColor: "#0F172A",
+                    background: "none",
                     border: "none",
-                    borderRadius: "4px",
-                    color: "#FFFFFF",
+                    color: "#FF6B00",
                     fontWeight: "bold",
                     fontSize: "12px",
                     cursor: "pointer"
                   }}
                 >
-                  Create Request
+                  View All Transactions →
                 </button>
-              </form>
-
-              {generatedUri && (
-                <div style={{ marginTop: "14px", padding: "10px", backgroundColor: "#F8FAFC", border: "1px solid #CBD5E1", borderRadius: "4px" }}>
-                  <div style={{ fontSize: "11px", color: "#64748B", marginBottom: "4px" }}>Payment URI:</div>
-                  <div style={{ fontFamily: "monospace", fontSize: "12px", wordBreak: "break-all", color: "#0F172A" }}>
-                    {generatedUri}
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
+            </fieldset>
           </div>
         )}
 
         {/* =================================================================== */}
-        {/* TAB 4: TRANSACTIONS                                                 */}
+        {/* TAB 2: SEND (EXACT BITCOIN CORE QT LAYOUT)                          */}
         {/* =================================================================== */}
-        {activeTab === "transactions" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            {/* Filter Bar */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                backgroundColor: "#FFFFFF",
-                border: "1px solid #CBD5E1",
-                borderRadius: "6px",
-                padding: "12px 16px"
+        {activeTab === "send" && (
+          <fieldset
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #CBD5E1",
+              borderRadius: "4px",
+              padding: "20px 24px",
+              margin: "0 auto",
+              maxWidth: "820px"
+            }}
+          >
+            <legend style={{ fontWeight: "bold", fontSize: "14px", color: "#0F172A", padding: "0 6px" }}>
+              Send Coins
+            </legend>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setShowSendConfirmModal(true);
               }}
             >
-              {/* Type Filters */}
-              <div style={{ display: "flex", gap: "6px" }}>
-                {[
-                  { id: "all", label: "All Transactions" },
-                  { id: "receive", label: "Received (+)" },
-                  { id: "send", label: "Sent (-)" },
-                  { id: "reward", label: "Mined Rewards" }
-                ].map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => setTxFilter(f.id as any)}
+              {/* Pay To */}
+              <div style={{ marginBottom: "14px" }}>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "#334155", marginBottom: "4px" }}>
+                  Pay To:
+                </label>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <input
+                    type="text"
+                    value={sendToAddress}
+                    onChange={(e) => setSendToAddress(e.target.value)}
+                    placeholder="Enter a BlockBum address (e.g. bb1...)"
+                    required
                     style={{
-                      padding: "6px 12px",
-                      backgroundColor: txFilter === f.id ? "#0F172A" : "#F8FAFC",
+                      flex: 1,
+                      padding: "7px 10px",
+                      backgroundColor: "#F8FAFC",
                       border: "1px solid #CBD5E1",
-                      borderRadius: "4px",
-                      color: txFilter === f.id ? "#FFFFFF" : "#334155",
+                      borderRadius: "3px",
                       fontSize: "12px",
-                      fontWeight: txFilter === f.id ? "bold" : "normal",
+                      fontFamily: "monospace"
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const text = await navigator.clipboard?.readText().catch(() => "");
+                      if (text) setSendToAddress(text);
+                    }}
+                    style={{
+                      padding: "7px 12px",
+                      backgroundColor: "#F1F5F9",
+                      border: "1px solid #CBD5E1",
+                      borderRadius: "3px",
+                      fontSize: "11px",
                       cursor: "pointer"
                     }}
                   >
-                    {f.label}
+                    Paste
                   </button>
-                ))}
+                </div>
               </div>
 
-              {/* Search Bar */}
-              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              {/* Label */}
+              <div style={{ marginBottom: "14px" }}>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "#334155", marginBottom: "4px" }}>
+                  Label:
+                </label>
                 <input
                   type="text"
-                  value={txSearch}
-                  onChange={(e) => setTxSearch(e.target.value)}
-                  placeholder="Search by address, TxID, date..."
+                  value={sendLabel}
+                  onChange={(e) => setSendLabel(e.target.value)}
+                  placeholder="Enter a label for this address to add it to your address book"
                   style={{
-                    padding: "6px 12px",
+                    width: "100%",
+                    padding: "7px 10px",
                     backgroundColor: "#F8FAFC",
                     border: "1px solid #CBD5E1",
-                    borderRadius: "4px",
+                    borderRadius: "3px",
                     fontSize: "12px",
-                    width: "240px"
+                    boxSizing: "border-box"
                   }}
                 />
+              </div>
+
+              {/* Amount */}
+              <div style={{ marginBottom: "16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                  <label style={{ fontSize: "12px", fontWeight: "bold", color: "#334155" }}>
+                    Amount:
+                  </label>
+                  <span style={{ fontSize: "11px", color: "#64748B" }}>
+                    Balance: <strong style={{ color: "#0F172A" }}>{selectedIdentity.balance_bum.toFixed(8)} BUM</strong>
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    min="0.0001"
+                    value={sendAmount}
+                    onChange={(e) => setSendAmount(e.target.value)}
+                    placeholder="0.00000000"
+                    required
+                    style={{
+                      flex: 1,
+                      padding: "7px 10px",
+                      backgroundColor: "#F8FAFC",
+                      border: "1px solid #CBD5E1",
+                      borderRadius: "3px",
+                      fontSize: "13px",
+                      fontWeight: "bold",
+                      fontFamily: "monospace"
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setSendAmount(Math.max(0, selectedIdentity.balance_bum - sendFeeRate).toFixed(8))}
+                    style={{
+                      padding: "7px 12px",
+                      backgroundColor: "#F1F5F9",
+                      border: "1px solid #CBD5E1",
+                      borderRadius: "3px",
+                      fontSize: "11px",
+                      fontWeight: "bold",
+                      cursor: "pointer"
+                    }}
+                  >
+                    Use Available
+                  </button>
+                </div>
+              </div>
+
+              {/* Transaction Fee (Bitcoin Core Style) */}
+              <fieldset
+                style={{
+                  border: "1px solid #E2E8F0",
+                  borderRadius: "3px",
+                  padding: "12px 16px",
+                  marginBottom: "20px",
+                  backgroundColor: "#F8FAFC"
+                }}
+              >
+                <legend style={{ fontSize: "11px", fontWeight: "bold", color: "#64748B", padding: "0 4px" }}>
+                  Transaction Fee
+                </legend>
+
+                <div style={{ display: "flex", gap: "20px", marginBottom: "10px" }}>
+                  <label style={{ fontSize: "12px", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                    <input
+                      type="radio"
+                      name="feeOption"
+                      checked={feeRateOption === "recommended"}
+                      onChange={() => {
+                        setFeeRateOption("recommended");
+                        setSendFeeRate(0.0005);
+                      }}
+                    />
+                    <span>Recommended (0.0005 BUM)</span>
+                  </label>
+                  <label style={{ fontSize: "12px", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                    <input
+                      type="radio"
+                      name="feeOption"
+                      checked={feeRateOption === "custom"}
+                      onChange={() => {
+                        setFeeRateOption("custom");
+                        setSendFeeRate(0.001);
+                      }}
+                    />
+                    <span>Priority (0.0010 BUM)</span>
+                  </label>
+                </div>
+
+                <div style={{ fontSize: "11px", color: "#64748B" }}>
+                  Estimated confirmation target: <strong>~2 blocks (20 minutes)</strong>
+                </div>
+              </fieldset>
+
+              {/* Buttons */}
+              <div style={{ display: "flex", gap: "10px" }}>
                 <button
-                  onClick={() => alert("Transaction ledger exported as CSV file.")}
+                  type="submit"
                   style={{
-                    padding: "6px 12px",
-                    backgroundColor: "#FFFFFF",
-                    border: "1px solid #CBD5E1",
-                    borderRadius: "4px",
-                    fontSize: "12px",
-                    fontWeight: "600",
+                    flex: 1,
+                    padding: "9px",
+                    background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                    border: "1px solid #EA580C",
+                    borderRadius: "3px",
+                    color: "#FFFFFF",
+                    fontWeight: "bold",
+                    fontSize: "13px",
                     cursor: "pointer"
                   }}
                 >
-                  💾 Export CSV
+                  🚀 Send Coins
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSendToAddress("");
+                    setSendLabel("");
+                    setSendAmount("");
+                  }}
+                  style={{
+                    padding: "9px 20px",
+                    backgroundColor: "#FFFFFF",
+                    border: "1px solid #CBD5E1",
+                    borderRadius: "3px",
+                    color: "#334155",
+                    fontSize: "13px",
+                    cursor: "pointer"
+                  }}
+                >
+                  Clear All
                 </button>
               </div>
-            </div>
-
-            {/* Transactions Table */}
-            <div
-              style={{
-                backgroundColor: "#FFFFFF",
-                border: "1px solid #CBD5E1",
-                borderRadius: "6px",
-                overflow: "hidden",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
-              }}
-            >
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                <thead>
-                  <tr style={{ backgroundColor: "#F8FAFC", borderBottom: "1px solid #CBD5E1", textAlign: "left", color: "#64748B" }}>
-                    <th style={{ padding: "10px 14px" }}>Status</th>
-                    <th style={{ padding: "10px 14px" }}>Date & Time</th>
-                    <th style={{ padding: "10px 14px" }}>Type</th>
-                    <th style={{ padding: "10px 14px" }}>Address / Counterparty</th>
-                    <th style={{ padding: "10px 14px", textAlign: "right" }}>Amount (BUM)</th>
-                    <th style={{ padding: "10px 14px" }}>Height</th>
-                    <th style={{ padding: "10px 14px", textAlign: "center" }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTxs.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} style={{ padding: "30px", textAlign: "center", color: "#64748B" }}>
-                        No transactions found matching your criteria.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredTxs.map((tx) => (
-                      <tr
-                        key={tx.tx_id}
-                        style={{ borderBottom: "1px solid #F1F5F9" }}
-                        onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = "#F8FAFC")}
-                        onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = "transparent")}
-                      >
-                        <td style={{ padding: "10px 14px" }}>
-                          <span
-                            style={{
-                              fontSize: "11px",
-                              fontWeight: "bold",
-                              padding: "2px 6px",
-                              borderRadius: "3px",
-                              backgroundColor: tx.status === "confirmed" ? "#ECFDF5" : "#FEF3C7",
-                              color: tx.status === "confirmed" ? "#065F46" : "#92400E"
-                            }}
-                          >
-                            ✓ Confirmed
-                          </span>
-                        </td>
-                        <td style={{ padding: "10px 14px", color: "#64748B", whiteSpace: "nowrap" }}>
-                          {tx.timestamp}
-                        </td>
-                        <td style={{ padding: "10px 14px", fontWeight: "bold" }}>
-                          {tx.type === "receive" ? (
-                            <span style={{ color: "#059669" }}>Received</span>
-                          ) : tx.type === "send" ? (
-                            <span style={{ color: "#DC2626" }}>Sent</span>
-                          ) : (
-                            <span style={{ color: "#D97706" }}>Coinbase Mined</span>
-                          )}
-                        </td>
-                        <td style={{ padding: "10px 14px", fontFamily: "monospace", color: "#334155" }}>
-                          {tx.counterparty.length > 32
-                            ? `${tx.counterparty.substring(0, 16)}...${tx.counterparty.substring(tx.counterparty.length - 8)}`
-                            : tx.counterparty}
-                        </td>
-                        <td
-                          style={{
-                            padding: "10px 14px",
-                            textAlign: "right",
-                            fontFamily: "monospace",
-                            fontWeight: "bold",
-                            color: tx.type === "send" ? "#DC2626" : "#059669"
-                          }}
-                        >
-                          {tx.type === "send" ? "-" : "+"}
-                          {tx.amount_bum.toFixed(8)}
-                        </td>
-                        <td style={{ padding: "10px 14px", fontFamily: "monospace", color: "#64748B" }}>
-                          #{tx.block_height}
-                        </td>
-                        <td style={{ padding: "10px 14px", textAlign: "center" }}>
-                          <button
-                            onClick={() => setSelectedTx(tx)}
-                            style={{
-                              padding: "3px 8px",
-                              backgroundColor: "#F1F5F9",
-                              border: "1px solid #CBD5E1",
-                              borderRadius: "3px",
-                              fontSize: "11px",
-                              cursor: "pointer"
-                            }}
-                          >
-                            Details
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+            </form>
+          </fieldset>
         )}
 
         {/* =================================================================== */}
-        {/* TAB 5: COMMUNITY CHAT (BLOCKCHAIN PEER COMMUNICATION)               */}
+        {/* TAB 3: RECEIVE (EXACT BITCOIN CORE QT LAYOUT)                       */}
         {/* =================================================================== */}
-        {activeTab === "chat" && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "220px 1fr",
-              height: "calc(100vh - 160px)",
-              backgroundColor: "#FFFFFF",
-              border: "1px solid #CBD5E1",
-              borderRadius: "6px",
-              overflow: "hidden"
-            }}
-          >
-            {/* Left Column: Channels */}
-            <div style={{ backgroundColor: "#F8FAFC", borderRight: "1px solid #CBD5E1", display: "flex", flexDirection: "column" }}>
-              <div style={{ padding: "14px", borderBottom: "1px solid #E2E8F0" }}>
-                <span style={{ fontSize: "13px", fontWeight: "bold", color: "#0F172A" }}>Channels</span>
-              </div>
-              <div style={{ flex: 1, padding: "8px" }}>
-                {[
-                  { id: "general", name: "#general" },
-                  { id: "announcements", name: "#announcements" },
-                  { id: "consensus-security", name: "#consensus-security" },
-                  { id: "mining-and-nodes", name: "#mining-and-nodes" }
-                ].map((ch) => (
-                  <button
-                    key={ch.id}
-                    onClick={() => setActiveChannel(ch.id)}
+        {activeTab === "receive" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "860px", margin: "0 auto" }}>
+            {/* GroupBox: Request Payment */}
+            <fieldset
+              style={{
+                backgroundColor: "#FFFFFF",
+                border: "1px solid #CBD5E1",
+                borderRadius: "4px",
+                padding: "18px 20px",
+                margin: 0
+              }}
+            >
+              <legend style={{ fontWeight: "bold", fontSize: "13px", color: "#0F172A", padding: "0 6px" }}>
+                Request Payment
+              </legend>
+
+              <form onSubmit={handleCreatePaymentRequest}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748B", marginBottom: "3px" }}>
+                      Label:
+                    </label>
+                    <input
+                      type="text"
+                      value={receiveLabel}
+                      onChange={(e) => setReceiveLabel(e.target.value)}
+                      placeholder="e.g. Q4 Grant"
+                      style={{
+                        width: "100%",
+                        padding: "7px 10px",
+                        backgroundColor: "#F8FAFC",
+                        border: "1px solid #CBD5E1",
+                        borderRadius: "3px",
+                        fontSize: "12px",
+                        boxSizing: "border-box"
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748B", marginBottom: "3px" }}>
+                      Amount (BUM):
+                    </label>
+                    <input
+                      type="number"
+                      step="0.0001"
+                      value={receiveAmount}
+                      onChange={(e) => setReceiveAmount(e.target.value)}
+                      placeholder="0.00000000"
+                      style={{
+                        width: "100%",
+                        padding: "7px 10px",
+                        backgroundColor: "#F8FAFC",
+                        border: "1px solid #CBD5E1",
+                        borderRadius: "3px",
+                        fontSize: "12px",
+                        boxSizing: "border-box"
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748B", marginBottom: "3px" }}>
+                    Message:
+                  </label>
+                  <input
+                    type="text"
+                    value={receiveMessage}
+                    onChange={(e) => setReceiveMessage(e.target.value)}
+                    placeholder="Enter an optional payment description"
                     style={{
                       width: "100%",
-                      textAlign: "left",
-                      padding: "8px 12px",
-                      marginBottom: "4px",
-                      backgroundColor: activeChannel === ch.id ? "#FFFFFF" : "transparent",
-                      border: activeChannel === ch.id ? "1px solid #CBD5E1" : "1px solid transparent",
-                      borderRadius: "4px",
-                      color: activeChannel === ch.id ? "#0F172A" : "#64748B",
-                      fontWeight: activeChannel === ch.id ? "bold" : "normal",
+                      padding: "7px 10px",
+                      backgroundColor: "#F8FAFC",
+                      border: "1px solid #CBD5E1",
+                      borderRadius: "3px",
+                      fontSize: "12px",
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button
+                    type="submit"
+                    style={{
+                      padding: "8px 18px",
+                      backgroundColor: "#FF6B00",
+                      border: "1px solid #EA580C",
+                      borderRadius: "3px",
+                      color: "#FFFFFF",
+                      fontWeight: "bold",
                       fontSize: "12px",
                       cursor: "pointer"
                     }}
                   >
-                    {ch.name}
+                    Request Payment
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cleanReq: PaymentRequest = {
+                        id: "req_" + Date.now(),
+                        date: new Date().toISOString().replace("T", " ").substring(0, 16),
+                        label: "General Payment",
+                        message: "Direct transfer",
+                        amount: "0.00000000",
+                        address: selectedIdentity.address
+                      };
+                      setActiveQrModal(cleanReq);
+                    }}
+                    style={{
+                      padding: "8px 18px",
+                      backgroundColor: "#FFFFFF",
+                      border: "1px solid #CBD5E1",
+                      borderRadius: "3px",
+                      color: "#334155",
+                      fontSize: "12px",
+                      cursor: "pointer"
+                    }}
+                  >
+                    Show My Address & QR Code
+                  </button>
+                </div>
+              </form>
+            </fieldset>
+
+            {/* Previously Requested Payments Table */}
+            <fieldset
+              style={{
+                backgroundColor: "#FFFFFF",
+                border: "1px solid #CBD5E1",
+                borderRadius: "4px",
+                padding: "16px 20px",
+                margin: 0
+              }}
+            >
+              <legend style={{ fontWeight: "bold", fontSize: "13px", color: "#0F172A", padding: "0 6px" }}>
+                Requested Payments History
+              </legend>
+
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", marginTop: "6px" }}>
+                <thead>
+                  <tr style={{ backgroundColor: "#F8FAFC", borderBottom: "1px solid #CBD5E1", textAlign: "left", color: "#64748B" }}>
+                    <th style={{ padding: "7px 10px" }}>Date</th>
+                    <th style={{ padding: "7px 10px" }}>Label</th>
+                    <th style={{ padding: "7px 10px" }}>Message</th>
+                    <th style={{ padding: "7px 10px", textAlign: "right" }}>Amount (BUM)</th>
+                    <th style={{ padding: "7px 10px", textAlign: "center" }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paymentRequests.map((req) => (
+                    <tr key={req.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
+                      <td style={{ padding: "7px 10px", color: "#64748B" }}>{req.date}</td>
+                      <td style={{ padding: "7px 10px", fontWeight: "bold" }}>{req.label}</td>
+                      <td style={{ padding: "7px 10px", color: "#475569" }}>{req.message}</td>
+                      <td style={{ padding: "7px 10px", textAlign: "right", fontFamily: "monospace", fontWeight: "bold" }}>
+                        {req.amount}
+                      </td>
+                      <td style={{ padding: "7px 10px", textAlign: "center" }}>
+                        <button
+                          onClick={() => setActiveQrModal(req)}
+                          style={{
+                            padding: "3px 8px",
+                            backgroundColor: "#F1F5F9",
+                            border: "1px solid #CBD5E1",
+                            borderRadius: "3px",
+                            fontSize: "11px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          Show QR
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </fieldset>
+          </div>
+        )}
+
+        {/* =================================================================== */}
+        {/* TAB 4: TRANSACTIONS (EXACT BITCOIN CORE QT LAYOUT)                  */}
+        {/* =================================================================== */}
+        {activeTab === "transactions" && (
+          <fieldset
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #CBD5E1",
+              borderRadius: "4px",
+              padding: "16px 20px",
+              margin: 0
+            }}
+          >
+            <legend style={{ fontWeight: "bold", fontSize: "13px", color: "#0F172A", padding: "0 6px" }}>
+              Transaction History
+            </legend>
+
+            {/* Filter Row */}
+            <div style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "14px", marginTop: "4px" }}>
+              <select
+                value={txDateFilter}
+                onChange={(e) => setTxDateFilter(e.target.value)}
+                style={{ padding: "5px 8px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px" }}
+              >
+                <option value="all">All Dates</option>
+                <option value="today">Today</option>
+                <option value="this_week">This week</option>
+                <option value="this_month">This month</option>
+              </select>
+
+              <select
+                value={txTypeFilter}
+                onChange={(e) => setTxTypeFilter(e.target.value)}
+                style={{ padding: "5px 8px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px" }}
+              >
+                <option value="all">All Types</option>
+                <option value="receive">Received with</option>
+                <option value="send">Sent to</option>
+                <option value="reward">Mined by</option>
+              </select>
+
+              <input
+                type="number"
+                value={txMinAmount}
+                onChange={(e) => setTxMinAmount(e.target.value)}
+                placeholder="Min amount"
+                style={{ padding: "5px 8px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", width: "100px" }}
+              >
+              </input>
+
+              <input
+                type="text"
+                value={txSearchQuery}
+                onChange={(e) => setTxSearchQuery(e.target.value)}
+                placeholder="Enter address or label to search..."
+                style={{ flex: 1, padding: "5px 10px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px" }}
+              />
+
+              <button
+                onClick={() => showToast("Exported transactions.csv to disk.")}
+                style={{
+                  padding: "5px 12px",
+                  backgroundColor: "#F1F5F9",
+                  border: "1px solid #CBD5E1",
+                  borderRadius: "3px",
+                  fontSize: "12px",
+                  cursor: "pointer"
+                }}
+              >
+                Export...
+              </button>
+            </div>
+
+            {/* Data Table */}
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+              <thead>
+                <tr style={{ backgroundColor: "#F8FAFC", borderBottom: "1px solid #CBD5E1", textAlign: "left", color: "#64748B" }}>
+                  <th style={{ padding: "8px 10px" }}>Status</th>
+                  <th style={{ padding: "8px 10px" }}>Date</th>
+                  <th style={{ padding: "8px 10px" }}>Type</th>
+                  <th style={{ padding: "8px 10px" }}>Address / Label</th>
+                  <th style={{ padding: "8px 10px", textAlign: "right" }}>Amount (BUM)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTxs.map((tx) => (
+                  <tr
+                    key={tx.tx_id}
+                    onClick={() => setSelectedTx(tx)}
+                    style={{ borderBottom: "1px solid #F1F5F9", cursor: "pointer" }}
+                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = "#F8FAFC")}
+                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = "transparent")}
+                  >
+                    <td style={{ padding: "8px 10px" }}>
+                      <span style={{ color: "#059669", fontWeight: "bold" }}>✓ Confirmed</span>
+                    </td>
+                    <td style={{ padding: "8px 10px", color: "#64748B" }}>{tx.timestamp}</td>
+                    <td style={{ padding: "8px 10px", fontWeight: "bold" }}>
+                      {tx.type === "receive" ? "Received with" : tx.type === "send" ? "Sent to" : "Mined Block"}
+                    </td>
+                    <td style={{ padding: "8px 10px", fontFamily: "monospace", color: "#334155" }}>
+                      {tx.counterparty.length > 28
+                        ? `${tx.counterparty.substring(0, 14)}...${tx.counterparty.substring(tx.counterparty.length - 6)}`
+                        : tx.counterparty}
+                    </td>
+                    <td
+                      style={{
+                        padding: "8px 10px",
+                        textAlign: "right",
+                        fontFamily: "monospace",
+                        fontWeight: "bold",
+                        color: tx.type === "send" ? "#DC2626" : "#059669"
+                      }}
+                    >
+                      {tx.type === "send" ? "-" : "+"}
+                      {tx.amount_bum.toFixed(8)}
+                    </td>
+                  </tr>
                 ))}
+              </tbody>
+            </table>
+          </fieldset>
+        )}
+
+        {/* =================================================================== */}
+        {/* TAB 5: DYNAMIC COMMUNITIES & CHAT                                   */}
+        {/* =================================================================== */}
+        {activeTab === "communities" && (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "240px 180px 1fr",
+              height: "calc(100vh - 140px)",
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #CBD5E1",
+              borderRadius: "4px",
+              overflow: "hidden"
+            }}
+          >
+            {/* Column 1: Communities List */}
+            <div style={{ backgroundColor: "#F8FAFC", borderRight: "1px solid #CBD5E1", display: "flex", flexDirection: "column" }}>
+              <div
+                style={{
+                  padding: "10px 12px",
+                  borderBottom: "1px solid #E2E8F0",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center"
+                }}
+              >
+                <span style={{ fontSize: "12px", fontWeight: "bold", color: "#0F172A" }}>Communities</span>
+                <button
+                  onClick={() => setShowCreateCommunityModal(true)}
+                  style={{
+                    padding: "3px 8px",
+                    backgroundColor: "#FF6B00",
+                    border: "none",
+                    borderRadius: "3px",
+                    color: "#FFFFFF",
+                    fontSize: "11px",
+                    fontWeight: "bold",
+                    cursor: "pointer"
+                  }}
+                >
+                  + Create
+                </button>
               </div>
-              <div style={{ padding: "12px", borderTop: "1px solid #E2E8F0", fontSize: "11px", color: "#64748B" }}>
-                🔒 E2EE Active (X3DH / AES-256-GCM)
+
+              <div style={{ flex: 1, overflowY: "auto", padding: "6px" }}>
+                {communities.map((comm) => {
+                  const isSel = comm.id === selectedCommunityId;
+                  return (
+                    <div
+                      key={comm.id}
+                      onClick={() => {
+                        setSelectedCommunityId(comm.id);
+                        setActiveChannel(comm.channels[0] || "general");
+                      }}
+                      style={{
+                        padding: "8px 10px",
+                        marginBottom: "4px",
+                        backgroundColor: isSel ? "#FFFFFF" : "transparent",
+                        border: isSel ? "1px solid #CBD5E1" : "1px solid transparent",
+                        borderRadius: "3px",
+                        cursor: "pointer"
+                      }}
+                    >
+                      <div style={{ fontSize: "12px", fontWeight: isSel ? "bold" : "600", color: "#0F172A" }}>
+                        {comm.name}
+                      </div>
+                      <div style={{ fontSize: "10px", color: "#64748B", display: "flex", justifyContent: "space-between", marginTop: "2px" }}>
+                        <span>{comm.memberCount} members</span>
+                        <span>{comm.isPrivate ? "🔒 Private" : "🌐 Public"}</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Right Column: Chat Feed & Input */}
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              {/* Header */}
+            {/* Column 2: Channels in Selected Community */}
+            <div style={{ backgroundColor: "#FFFFFF", borderRight: "1px solid #CBD5E1", display: "flex", flexDirection: "column" }}>
               <div
                 style={{
-                  padding: "12px 18px",
+                  padding: "10px 12px",
+                  borderBottom: "1px solid #E2E8F0",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center"
+                }}
+              >
+                <span style={{ fontSize: "12px", fontWeight: "bold", color: "#0F172A" }}>Channels</span>
+                <button
+                  onClick={() => setShowAddChannelModal(true)}
+                  style={{
+                    padding: "2px 6px",
+                    backgroundColor: "#F1F5F9",
+                    border: "1px solid #CBD5E1",
+                    borderRadius: "3px",
+                    fontSize: "10px",
+                    cursor: "pointer"
+                  }}
+                >
+                  + Add
+                </button>
+              </div>
+
+              <div style={{ flex: 1, overflowY: "auto", padding: "6px" }}>
+                {activeCommunity.channels.map((ch) => {
+                  const isAct = activeChannel === ch;
+                  return (
+                    <div
+                      key={ch}
+                      onClick={() => setActiveChannel(ch)}
+                      style={{
+                        padding: "6px 8px",
+                        marginBottom: "2px",
+                        backgroundColor: isAct ? "#EFF6FF" : "transparent",
+                        border: isAct ? "1px solid #BFDBFE" : "1px solid transparent",
+                        borderRadius: "3px",
+                        fontSize: "12px",
+                        fontWeight: isAct ? "bold" : "normal",
+                        color: isAct ? "#1D4ED8" : "#334155",
+                        cursor: "pointer"
+                      }}
+                    >
+                      #{ch}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Column 3: Chat Feed & Realtime Input */}
+            <div style={{ display: "flex", flexDirection: "column", backgroundColor: "#F8FAFC" }}>
+              {/* Channel Header */}
+              <div
+                style={{
+                  padding: "10px 16px",
+                  backgroundColor: "#FFFFFF",
                   borderBottom: "1px solid #E2E8F0",
                   display: "flex",
                   justifyContent: "space-between",
@@ -1634,48 +1571,53 @@ export const App: React.FC = () => {
                 }}
               >
                 <div>
-                  <span style={{ fontSize: "14px", fontWeight: "bold", color: "#0F172A" }}>#{activeChannel}</span>
-                  <span style={{ marginLeft: "10px", fontSize: "11px", color: "#64748B" }}>Peer-to-Peer Encrypted</span>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#0F172A" }}>
+                    {activeCommunity.name} &gt; #{activeChannel}
+                  </span>
+                  <div style={{ fontSize: "11px", color: "#64748B" }}>{activeCommunity.description}</div>
                 </div>
                 <span
                   style={{
-                    fontSize: "11px",
-                    color: "#059669",
+                    fontSize: "10px",
                     backgroundColor: "#ECFDF5",
-                    padding: "2px 8px",
+                    color: "#065F46",
+                    padding: "2px 6px",
                     borderRadius: "3px",
-                    fontWeight: "bold"
+                    fontWeight: "bold",
+                    border: "1px solid #A7F3D0"
                   }}
                 >
-                  ● Active Broadcast
+                  🔒 E2EE Encrypted
                 </span>
               </div>
 
-              {/* Messages Feed */}
-              <div style={{ flex: 1, padding: "16px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "12px" }}>
-                {chatMessages
-                  .filter((m) => m.channel === activeChannel)
+              {/* Message Feed */}
+              <div style={{ flex: 1, overflowY: "auto", padding: "14px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                {messages
+                  .filter((m) => m.communityId === selectedCommunityId && m.channel === activeChannel)
                   .map((msg) => (
                     <div
                       key={msg.id}
                       style={{
-                        padding: "10px 14px",
-                        backgroundColor: "#F8FAFC",
-                        borderRadius: "6px",
-                        border: "1px solid #E2E8F0"
+                        backgroundColor: "#FFFFFF",
+                        border: "1px solid #E2E8F0",
+                        borderRadius: "4px",
+                        padding: "8px 12px"
                       }}
                     >
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                        <span style={{ fontSize: "12px", fontWeight: "bold", color: "#0F172A" }}>{msg.senderAlias}</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
+                        <span style={{ fontSize: "11px", fontWeight: "bold", color: "#0F172A" }}>
+                          {msg.senderAlias}
+                        </span>
                         <span style={{ fontSize: "10px", color: "#94A3B8" }}>{msg.timestamp}</span>
                       </div>
-                      <div style={{ fontSize: "13px", color: "#334155", lineHeight: "1.4" }}>{msg.content}</div>
+                      <div style={{ fontSize: "12px", color: "#334155", lineHeight: "1.4" }}>{msg.content}</div>
                     </div>
                   ))}
               </div>
 
-              {/* Message Input Box */}
-              <form onSubmit={handleSendMessage} style={{ padding: "12px 16px", borderTop: "1px solid #E2E8F0", display: "flex", gap: "10px" }}>
+              {/* Send Box */}
+              <form onSubmit={handleSendMessage} style={{ padding: "10px 14px", backgroundColor: "#FFFFFF", borderTop: "1px solid #E2E8F0", display: "flex", gap: "8px" }}>
                 <input
                   type="text"
                   value={chatInput}
@@ -1683,20 +1625,20 @@ export const App: React.FC = () => {
                   placeholder={`Send an encrypted message to #${activeChannel}...`}
                   style={{
                     flex: 1,
-                    padding: "9px 12px",
+                    padding: "8px 10px",
                     backgroundColor: "#F8FAFC",
                     border: "1px solid #CBD5E1",
-                    borderRadius: "4px",
-                    fontSize: "13px"
+                    borderRadius: "3px",
+                    fontSize: "12px"
                   }}
                 />
                 <button
                   type="submit"
                   style={{
-                    padding: "9px 18px",
-                    background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
+                    padding: "8px 16px",
+                    backgroundColor: "#FF6B00",
                     border: "1px solid #EA580C",
-                    borderRadius: "4px",
+                    borderRadius: "3px",
                     color: "#FFFFFF",
                     fontWeight: "bold",
                     fontSize: "12px",
@@ -1711,302 +1653,528 @@ export const App: React.FC = () => {
         )}
 
         {/* =================================================================== */}
-        {/* TAB 6: TOOLS & CLIENT EXECUTION MODES                               */}
+        {/* TAB 6: NODE & DEBUG (BITCOIN CORE DEBUG WINDOW)                     */}
         {/* =================================================================== */}
-        {activeTab === "tools" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-            {/* Section 1: Client Execution Modes */}
-            <div
-              style={{
-                backgroundColor: "#FFFFFF",
-                border: "1px solid #CBD5E1",
-                borderRadius: "6px",
-                padding: "20px 24px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
-              }}
-            >
-              <h3 style={{ margin: "0 0 4px 0", fontSize: "16px", fontWeight: "bold", color: "#0F172A" }}>
-                Client Execution Modes
-              </h3>
-              <p style={{ margin: "0 0 16px 0", fontSize: "12px", color: "#64748B" }}>
-                Configure local node verification rules according to your hardware, storage, and network capacity.
-              </p>
+        {activeTab === "debug" && (
+          <fieldset
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #CBD5E1",
+              borderRadius: "4px",
+              padding: "16px 20px",
+              margin: 0
+            }}
+          >
+            <legend style={{ fontWeight: "bold", fontSize: "13px", color: "#0F172A", padding: "0 6px" }}>
+              BlockBum Core Debug Window
+            </legend>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "14px" }}>
-                {[
-                  {
-                    id: "full_node" as ClientExecutionMode,
-                    title: "Full Node Mode",
-                    badge: "100% Sovereign",
-                    desc: "Downloads and verifies all blocks from Genesis. Complete UTXO state validation. Serves SPV proofs.",
-                    storage: "~14.2 GB",
-                    sync: "Comprehensive"
-                  },
-                  {
-                    id: "light_client" as ClientExecutionMode,
-                    title: "Lightweight (SPV) Mode",
-                    badge: "Instant & Battery Saver",
-                    desc: "Downloads only 92-byte block headers. Verifies transactions using cryptographic Merkle inclusion proofs.",
-                    storage: "< 50 MB",
-                    sync: "Instant (< 5s)"
-                  },
-                  {
-                    id: "pruned_node" as ClientExecutionMode,
-                    title: "Pruned Node Mode",
-                    badge: "Full Security, Capped Disk",
-                    desc: "Performs full sovereign block validation, then prunes historical block bodies, keeping the last 2,000 blocks.",
-                    storage: "~4.8 GB",
-                    sync: "Full Validation"
-                  }
-                ].map((mode) => {
-                  const isSelected = clientMode === mode.id;
-                  return (
-                    <div
-                      key={mode.id}
-                      onClick={() => handleSetClientMode(mode.id)}
-                      style={{
-                        padding: "16px",
-                        borderRadius: "6px",
-                        border: isSelected ? "2px solid #D4AF37" : "1px solid #CBD5E1",
-                        backgroundColor: isSelected ? "#FFFDF5" : "#F8FAFC",
-                        cursor: "pointer",
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between"
-                      }}
-                    >
-                      <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                          <span style={{ fontSize: "14px", fontWeight: "bold", color: "#0F172A" }}>{mode.title}</span>
-                          <span
-                            style={{
-                              fontSize: "10px",
-                              fontWeight: "bold",
-                              padding: "2px 6px",
-                              borderRadius: "3px",
-                              backgroundColor: isSelected ? "#FEF3C7" : "#E2E8F0",
-                              color: isSelected ? "#92400E" : "#475569"
-                            }}
-                          >
-                            {mode.badge}
-                          </span>
-                        </div>
-                        <p style={{ fontSize: "12px", color: "#475569", lineHeight: "1.4", margin: "0 0 12px 0" }}>{mode.desc}</p>
-                      </div>
-
-                      <div style={{ paddingTop: "8px", borderTop: "1px solid #E2E8F0", display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#64748B" }}>
-                        <span>Storage: <strong>{mode.storage}</strong></span>
-                        <span>Sync: <strong>{mode.sync}</strong></span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            {/* Sub Tabs */}
+            <div style={{ display: "flex", gap: "6px", borderBottom: "1px solid #CBD5E1", paddingBottom: "6px", marginBottom: "14px" }}>
+              {[
+                { id: "info", label: "Information" },
+                { id: "console", label: "Console" },
+                { id: "network", label: "Peers & Network" },
+                { id: "modes", label: "Client Execution Modes" }
+              ].map((st) => (
+                <button
+                  key={st.id}
+                  onClick={() => setDebugSubTab(st.id as any)}
+                  style={{
+                    padding: "5px 12px",
+                    backgroundColor: debugSubTab === st.id ? "#0F172A" : "#F8FAFC",
+                    border: "1px solid #CBD5E1",
+                    borderRadius: "3px",
+                    color: debugSubTab === st.id ? "#FFFFFF" : "#334155",
+                    fontSize: "12px",
+                    fontWeight: debugSubTab === st.id ? "bold" : "normal",
+                    cursor: "pointer"
+                  }}
+                >
+                  {st.label}
+                </button>
+              ))}
             </div>
 
-            {/* Section 2: Connected P2P Network Peers */}
-            <div
-              style={{
-                backgroundColor: "#FFFFFF",
-                border: "1px solid #CBD5E1",
-                borderRadius: "6px",
-                padding: "20px 24px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
-              }}
-            >
-              <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: "bold", color: "#0F172A" }}>
-                Connected P2P Nodes ({peers.length})
-              </h3>
+            {/* Information Sub-tab */}
+            {debugSubTab === "info" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", fontSize: "12px" }}>
+                <div>
+                  <h4 style={{ margin: "0 0 8px 0", color: "#64748B" }}>General Information</h4>
+                  <div style={{ lineHeight: "1.8" }}>
+                    <div><strong>Client name:</strong> BlockBum Core Desktop Qt Edition</div>
+                    <div><strong>User Agent:</strong> /BlockBum:1.0.0(Windows; x64)/</div>
+                    <div><strong>Consensus Engine:</strong> BlockBum Dynamic Difficulty PoW</div>
+                    <div><strong>Founder & Architect:</strong> Abhiram</div>
+                  </div>
+                </div>
+                <div>
+                  <h4 style={{ margin: "0 0 8px 0", color: "#64748B" }}>Blockchain State</h4>
+                  <div style={{ lineHeight: "1.8" }}>
+                    <div><strong>Current number of blocks:</strong> #{nodeStatus.chain_height.toLocaleString()}</div>
+                    <div><strong>Best block hash:</strong> <code style={{ fontSize: "11px" }}>{nodeStatus.tip_hash.substring(0, 24)}...</code></div>
+                    <div><strong>Mempool transactions:</strong> {nodeStatus.mempool_tx_count} transactions</div>
+                    <div><strong>Verification progress:</strong> 100.00%</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Console Sub-tab */}
+            {debugSubTab === "console" && (
+              <div>
+                <div
+                  style={{
+                    height: "180px",
+                    backgroundColor: "#0F172A",
+                    color: "#34D399",
+                    padding: "10px",
+                    borderRadius: "3px",
+                    fontFamily: "monospace",
+                    fontSize: "12px",
+                    overflowY: "auto",
+                    marginBottom: "8px"
+                  }}
+                >
+                  {consoleOutput.map((l, i) => (
+                    <div key={i} style={{ color: l.startsWith(">") ? "#F59E0B" : "#34D399" }}>{l}</div>
+                  ))}
+                </div>
+                <form onSubmit={handleExecuteRpc} style={{ display: "flex", gap: "6px" }}>
+                  <input
+                    type="text"
+                    value={rpcCommand}
+                    onChange={(e) => setRpcCommand(e.target.value)}
+                    placeholder="Type RPC command (e.g. getblockchaininfo, getpeerinfo, help)..."
+                    style={{ flex: 1, padding: "6px 10px", fontFamily: "monospace", fontSize: "12px", border: "1px solid #CBD5E1", borderRadius: "3px" }}
+                  />
+                  <button
+                    type="submit"
+                    style={{ padding: "6px 14px", backgroundColor: "#0F172A", color: "#FFFFFF", border: "none", borderRadius: "3px", fontSize: "12px", cursor: "pointer" }}
+                  >
+                    Execute
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* Peers Sub-tab */}
+            {debugSubTab === "network" && (
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                 <thead>
                   <tr style={{ backgroundColor: "#F8FAFC", borderBottom: "1px solid #CBD5E1", textAlign: "left", color: "#64748B" }}>
-                    <th style={{ padding: "8px 12px" }}>Node IP & Port</th>
-                    <th style={{ padding: "8px 12px" }}>Direction</th>
-                    <th style={{ padding: "8px 12px" }}>Latency</th>
-                    <th style={{ padding: "8px 12px" }}>Block Height</th>
-                    <th style={{ padding: "8px 12px" }}>Protocol Client</th>
+                    <th style={{ padding: "6px 8px" }}>Peer Address</th>
+                    <th style={{ padding: "6px 8px" }}>Direction</th>
+                    <th style={{ padding: "6px 8px" }}>Ping</th>
+                    <th style={{ padding: "6px 8px" }}>Height</th>
+                    <th style={{ padding: "6px 8px" }}>Version</th>
                   </tr>
                 </thead>
                 <tbody>
                   {peers.map((p, idx) => (
                     <tr key={idx} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                      <td style={{ padding: "8px 12px", fontFamily: "monospace", fontWeight: "bold" }}>{p.ip}</td>
-                      <td style={{ padding: "8px 12px", color: p.type === "Outbound" ? "#0284C7" : "#059669" }}>{p.type}</td>
-                      <td style={{ padding: "8px 12px", color: "#64748B" }}>{p.latency}</td>
-                      <td style={{ padding: "8px 12px", fontFamily: "monospace" }}>#{p.height}</td>
-                      <td style={{ padding: "8px 12px", color: "#64748B" }}>{p.version}</td>
+                      <td style={{ padding: "6px 8px", fontFamily: "monospace", fontWeight: "bold" }}>{p.ip}</td>
+                      <td style={{ padding: "6px 8px" }}>{p.type}</td>
+                      <td style={{ padding: "6px 8px" }}>{p.latency}</td>
+                      <td style={{ padding: "6px 8px", fontFamily: "monospace" }}>#{p.height}</td>
+                      <td style={{ padding: "6px 8px", color: "#64748B" }}>{p.version}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
+            )}
 
-            {/* Section 3: Ubuntu Cryptography Diagnostics */}
-            <div
-              style={{
-                backgroundColor: "#FFFFFF",
-                border: "1px solid #CBD5E1",
-                borderRadius: "6px",
-                padding: "20px 24px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                <div>
-                  <h3 style={{ margin: "0 0 4px 0", fontSize: "16px", fontWeight: "bold", color: "#0F172A" }}>
-                    Ubuntu Cryptography & Security Suite
-                  </h3>
-                  <p style={{ margin: 0, fontSize: "12px", color: "#64748B" }}>
-                    Built-in OpenSSL 3.0 / AES-256-GCM / SHA-256 / Secp256k1 validation.
-                  </p>
-                </div>
-                <button
-                  onClick={handleRunCryptoAudit}
-                  style={{
-                    padding: "8px 16px",
-                    background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
-                    border: "1px solid #EA580C",
-                    borderRadius: "4px",
-                    color: "#FFFFFF",
-                    fontWeight: "bold",
-                    fontSize: "12px",
-                    cursor: "pointer"
-                  }}
-                >
-                  Run Cryptographic Diagnostic
-                </button>
+            {/* Modes Sub-tab */}
+            {debugSubTab === "modes" && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
+                {[
+                  { id: "full_node" as ClientExecutionMode, title: "Full Sovereign Node", desc: "Validates 100% of blocks and state transitions from Genesis. Highest zero-trust security." },
+                  { id: "light_client" as ClientExecutionMode, title: "Lightweight (SPV)", desc: "Downloads 92-byte block headers. Verifies transactions using cryptographic Merkle inclusion proofs." },
+                  { id: "pruned_node" as ClientExecutionMode, title: "Pruned Node", desc: "Full sovereign validation from genesis, but discards historical raw blocks past rolling 2,000 blocks (~5GB cap)." }
+                ].map((m) => {
+                  const isCur = clientMode === m.id;
+                  return (
+                    <div
+                      key={m.id}
+                      onClick={() => handleSetClientMode(m.id)}
+                      style={{
+                        padding: "12px",
+                        borderRadius: "4px",
+                        border: isCur ? "2px solid #D4AF37" : "1px solid #CBD5E1",
+                        backgroundColor: isCur ? "#FFFDF5" : "#F8FAFC",
+                        cursor: "pointer"
+                      }}
+                    >
+                      <div style={{ fontWeight: "bold", fontSize: "13px", color: "#0F172A", marginBottom: "6px" }}>
+                        {m.title} {isCur && "✓ Active"}
+                      </div>
+                      <p style={{ fontSize: "11px", color: "#475569", margin: 0, lineHeight: "1.4" }}>{m.desc}</p>
+                    </div>
+                  );
+                })}
               </div>
-
-              {cryptoAuditResult && (
-                <pre
-                  style={{
-                    backgroundColor: "#0F172A",
-                    color: "#34D399",
-                    padding: "14px",
-                    borderRadius: "4px",
-                    fontSize: "12px",
-                    fontFamily: "monospace",
-                    margin: 0,
-                    whiteSpace: "pre-wrap"
-                  }}
-                >
-                  {cryptoAuditResult}
-                </pre>
-              )}
-            </div>
-
-            {/* Section 4: RPC Debug Console */}
-            <div
-              style={{
-                backgroundColor: "#FFFFFF",
-                border: "1px solid #CBD5E1",
-                borderRadius: "6px",
-                padding: "20px 24px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
-              }}
-            >
-              <h3 style={{ margin: "0 0 10px 0", fontSize: "16px", fontWeight: "bold", color: "#0F172A" }}>
-                RPC Debug Console
-              </h3>
-              <div
-                style={{
-                  height: "160px",
-                  backgroundColor: "#0F172A",
-                  color: "#E2E8F0",
-                  padding: "12px",
-                  borderRadius: "4px",
-                  fontFamily: "monospace",
-                  fontSize: "12px",
-                  overflowY: "auto",
-                  marginBottom: "10px"
-                }}
-              >
-                {consoleOutput.map((line, idx) => (
-                  <div key={idx} style={{ color: line.startsWith(">") ? "#F59E0B" : "#E2E8F0" }}>
-                    {line}
-                  </div>
-                ))}
-              </div>
-              <form onSubmit={handleExecuteRpc} style={{ display: "flex", gap: "8px" }}>
-                <input
-                  type="text"
-                  value={rpcCommand}
-                  onChange={(e) => setRpcCommand(e.target.value)}
-                  placeholder="Enter RPC command (e.g. getblockchaininfo, getpeerinfo, help)..."
-                  style={{
-                    flex: 1,
-                    padding: "8px 12px",
-                    backgroundColor: "#F8FAFC",
-                    border: "1px solid #CBD5E1",
-                    borderRadius: "4px",
-                    fontSize: "13px",
-                    fontFamily: "monospace"
-                  }}
-                />
-                <button
-                  type="submit"
-                  style={{
-                    padding: "8px 16px",
-                    backgroundColor: "#0F172A",
-                    border: "none",
-                    borderRadius: "4px",
-                    color: "#FFFFFF",
-                    fontWeight: "bold",
-                    fontSize: "12px",
-                    cursor: "pointer"
-                  }}
-                >
-                  Execute
-                </button>
-              </form>
-            </div>
-          </div>
+            )}
+          </fieldset>
         )}
       </div>
 
       {/* ===================================================================== */}
-      {/* 5. NATIVE DESKTOP STATUS BAR                                          */}
+      {/* BITCOIN CORE QT STATUS BAR (BOTTOM)                                   */}
       {/* ===================================================================== */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          padding: "4px 14px",
-          backgroundColor: "#E2E8F0",
+          padding: "3px 12px",
+          backgroundColor: "#F1F5F9",
           borderTop: "1px solid #CBD5E1",
           fontSize: "11px",
           color: "#475569",
           userSelect: "none"
         }}
       >
-        {/* Left: Mode & Network */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <span style={{ fontWeight: "bold", color: clientMode === "full_node" ? "#065F46" : "#1E40AF" }}>
-            {clientMode === "full_node" ? "● Full Sovereign Node" : clientMode === "light_client" ? "⚡ SPV Lightweight" : "📦 Pruned Node"}
-          </span>
-          <span>|</span>
-          <span>{nodeStatus.network}</span>
+        {/* Left: Sync Progress */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ color: "#059669", fontWeight: "bold" }}>● Synchronized with network</span>
+          <span style={{ color: "#94A3B8" }}>|</span>
+          <span>Block #{nodeStatus.chain_height.toLocaleString()}</span>
         </div>
 
-        {/* Center: Height & Mempool */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <span>
-            Block: <strong>#{nodeStatus.chain_height.toLocaleString()}</strong>
+        {/* Right: Icons (Connections, Mode, Vault Lock) */}
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <span title="8 active connections to BlockBum network">📶 8 peers</span>
+          <span
+            onClick={() => {
+              const nextMode: ClientExecutionMode =
+                clientMode === "full_node" ? "light_client" : clientMode === "light_client" ? "pruned_node" : "full_node";
+              handleSetClientMode(nextMode);
+            }}
+            style={{ cursor: "pointer", fontWeight: "bold", color: "#B8860B" }}
+            title="Click to toggle execution mode"
+          >
+            🛡️ {clientMode === "full_node" ? "Full Node" : clientMode === "light_client" ? "SPV Mode" : "Pruned"}
           </span>
-          <span>|</span>
-          <span>Mempool: {nodeStatus.mempool_tx_count} txs</span>
-        </div>
-
-        {/* Right: Peers & Sync */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <span>Peers: {peers.length} active</span>
-          <span>|</span>
-          <span style={{ color: "#059669", fontWeight: "bold" }}>● Synchronized (100%)</span>
+          <span title="Wallet is encrypted and currently unlocked">🔒 Unlocked</span>
         </div>
       </div>
 
-      {/* Transaction Details Modal */}
+      {/* ===================================================================== */}
+      {/* MODAL: QR CODE & PAYMENT REQUEST DETAILS                              */}
+      {/* ===================================================================== */}
+      {activeQrModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 3000
+          }}
+          onClick={() => setActiveQrModal(null)}
+        >
+          <div
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #CBD5E1",
+              borderRadius: "4px",
+              padding: "20px 24px",
+              width: "480px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.18)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 12px 0", fontSize: "15px", fontWeight: "bold", color: "#0F172A" }}>
+              Payment Information
+            </h3>
+
+            <div style={{ display: "flex", gap: "18px", alignItems: "center", marginBottom: "14px" }}>
+              <div>{renderQrSvg(activeQrModal.address, 130)}</div>
+              <div style={{ flex: 1, fontSize: "12px", lineHeight: "1.6" }}>
+                <div><strong>URI:</strong> <code style={{ fontSize: "10px", wordBreak: "break-all" }}>blockbum:{activeQrModal.address}</code></div>
+                <div><strong>Address:</strong> <code style={{ fontSize: "10px", wordBreak: "break-all" }}>{activeQrModal.address}</code></div>
+                <div><strong>Amount:</strong> {activeQrModal.amount} BUM</div>
+                <div><strong>Label:</strong> {activeQrModal.label}</div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+              <button
+                onClick={() => {
+                  navigator.clipboard?.writeText(`blockbum:${activeQrModal.address}?amount=${activeQrModal.amount}`);
+                  showToast("URI copied to clipboard.");
+                }}
+                style={{ padding: "6px 12px", backgroundColor: "#F1F5F9", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "11px", cursor: "pointer" }}
+              >
+                Copy URI
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard?.writeText(activeQrModal.address);
+                  showToast("Address copied to clipboard.");
+                }}
+                style={{ padding: "6px 12px", backgroundColor: "#F1F5F9", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "11px", cursor: "pointer" }}
+              >
+                Copy Address
+              </button>
+              <button
+                onClick={() => setActiveQrModal(null)}
+                style={{ padding: "6px 14px", backgroundColor: "#0F172A", border: "none", color: "#FFFFFF", borderRadius: "3px", fontSize: "11px", fontWeight: "bold", cursor: "pointer" }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* MODAL: CREATE COMMUNITY                                               */}
+      {/* ===================================================================== */}
+      {showCreateCommunityModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 3000
+          }}
+          onClick={() => setShowCreateCommunityModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #CBD5E1",
+              borderRadius: "4px",
+              padding: "20px 24px",
+              width: "460px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.18)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 12px 0", fontSize: "15px", fontWeight: "bold", color: "#0F172A" }}>
+              + Create New Community
+            </h3>
+            <form onSubmit={handleCreateCommunity}>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748B", marginBottom: "3px" }}>
+                  Community Name:
+                </label>
+                <input
+                  type="text"
+                  value={newCommName}
+                  onChange={(e) => setNewCommName(e.target.value)}
+                  placeholder="e.g. DeFi Builders Guild"
+                  required
+                  autoFocus
+                  style={{ width: "100%", padding: "7px 10px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", boxSizing: "border-box" }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748B", marginBottom: "3px" }}>
+                  Description:
+                </label>
+                <input
+                  type="text"
+                  value={newCommDesc}
+                  onChange={(e) => setNewCommDesc(e.target.value)}
+                  placeholder="Brief summary of this peer community"
+                  style={{ width: "100%", padding: "7px 10px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", boxSizing: "border-box" }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748B", marginBottom: "3px" }}>
+                  Initial Channels (comma separated):
+                </label>
+                <input
+                  type="text"
+                  value={newCommChannels}
+                  onChange={(e) => setNewCommChannels(e.target.value)}
+                  placeholder="general, announcements, trading"
+                  style={{ width: "100%", padding: "7px 10px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", boxSizing: "border-box" }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "18px" }}>
+                <label style={{ fontSize: "12px", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={newCommIsPrivate}
+                    onChange={(e) => setNewCommIsPrivate(e.target.checked)}
+                  />
+                  <span>Private Community (invite only / encrypted membership)</span>
+                </label>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateCommunityModal(false)}
+                  style={{ padding: "7px 14px", backgroundColor: "#FFFFFF", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{ padding: "7px 18px", backgroundColor: "#FF6B00", border: "1px solid #EA580C", color: "#FFFFFF", borderRadius: "3px", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}
+                >
+                  Create Community
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* MODAL: ADD CHANNEL                                                    */}
+      {/* ===================================================================== */}
+      {showAddChannelModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 3000
+          }}
+          onClick={() => setShowAddChannelModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #CBD5E1",
+              borderRadius: "4px",
+              padding: "20px 24px",
+              width: "380px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.18)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 12px 0", fontSize: "15px", fontWeight: "bold", color: "#0F172A" }}>
+              + Add Channel to {activeCommunity.name}
+            </h3>
+            <form onSubmit={handleAddChannel}>
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748B", marginBottom: "3px" }}>
+                  Channel Name:
+                </label>
+                <input
+                  type="text"
+                  value={newChannelName}
+                  onChange={(e) => setNewChannelName(e.target.value)}
+                  placeholder="e.g. trading or miners"
+                  required
+                  autoFocus
+                  style={{ width: "100%", padding: "7px 10px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", boxSizing: "border-box" }}
+                />
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddChannelModal(false)}
+                  style={{ padding: "6px 12px", backgroundColor: "#FFFFFF", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{ padding: "6px 16px", backgroundColor: "#FF6B00", border: "1px solid #EA580C", color: "#FFFFFF", borderRadius: "3px", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}
+                >
+                  Add Channel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* MODAL: SEND CONFIRMATION DIALOG (BITCOIN CORE STYLE)                  */}
+      {/* ===================================================================== */}
+      {showSendConfirmModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 3000
+          }}
+          onClick={() => setShowSendConfirmModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #CBD5E1",
+              borderRadius: "4px",
+              padding: "20px 24px",
+              width: "480px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.18)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 10px 0", fontSize: "15px", fontWeight: "bold", color: "#0F172A" }}>
+              Confirm Transaction
+            </h3>
+            <p style={{ margin: "0 0 14px 0", fontSize: "12px", color: "#475569" }}>
+              Are you sure you want to broadcast this transaction to the BlockBum network?
+            </p>
+
+            <div style={{ backgroundColor: "#F8FAFC", border: "1px solid #E2E8F0", padding: "12px", borderRadius: "3px", fontSize: "12px", lineHeight: "1.6", marginBottom: "16px" }}>
+              <div><strong>Amount:</strong> <span style={{ color: "#DC2626", fontWeight: "bold" }}>{parseFloat(sendAmount || "0").toFixed(8)} BUM</span></div>
+              <div><strong>Network Fee:</strong> {sendFeeRate.toFixed(8)} BUM</div>
+              <div><strong>Recipient:</strong> <code style={{ fontSize: "11px", wordBreak: "break-all" }}>{sendToAddress}</code></div>
+              {sendLabel && <div><strong>Label:</strong> {sendLabel}</div>}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+              <button
+                type="button"
+                onClick={() => setShowSendConfirmModal(false)}
+                style={{ padding: "7px 14px", backgroundColor: "#FFFFFF", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", cursor: "pointer" }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteSend}
+                style={{ padding: "7px 18px", backgroundColor: "#FF6B00", border: "1px solid #EA580C", color: "#FFFFFF", borderRadius: "3px", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}
+              >
+                Yes, Broadcast Transaction
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* MODAL: TRANSACTION DETAILS                                            */}
+      {/* ===================================================================== */}
       {selectedTx && (
         <div
           style={{
@@ -2027,24 +2195,25 @@ export const App: React.FC = () => {
             style={{
               backgroundColor: "#FFFFFF",
               border: "1px solid #CBD5E1",
-              borderRadius: "8px",
-              padding: "24px",
-              width: "560px",
-              boxShadow: "0 12px 32px rgba(0,0,0,0.18)"
+              borderRadius: "4px",
+              padding: "20px 24px",
+              width: "520px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.18)"
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ margin: "0 0 14px 0", fontSize: "16px", fontWeight: "bold", color: "#0F172A" }}>
+            <h3 style={{ margin: "0 0 12px 0", fontSize: "15px", fontWeight: "bold", color: "#0F172A" }}>
               Transaction Details
             </h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "12px" }}>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "12px" }}>
               <div>
-                <strong style={{ color: "#64748B" }}>Transaction ID:</strong>
+                <strong style={{ color: "#64748B" }}>TxID:</strong>
                 <div style={{ fontFamily: "monospace", wordBreak: "break-all", backgroundColor: "#F8FAFC", padding: "6px", borderRadius: "3px", marginTop: "2px" }}>
                   {selectedTx.tx_id}
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                 <div>
                   <strong style={{ color: "#64748B" }}>Amount:</strong>
                   <div style={{ fontSize: "14px", fontWeight: "bold", color: selectedTx.type === "send" ? "#DC2626" : "#059669" }}>
@@ -2053,11 +2222,11 @@ export const App: React.FC = () => {
                 </div>
                 <div>
                   <strong style={{ color: "#64748B" }}>Network Fee:</strong>
-                  <div style={{ fontFamily: "monospace" }}>{selectedTx.fee_bum.toFixed(8)} BUM</div>
+                  <div>{selectedTx.fee_bum.toFixed(8)} BUM</div>
                 </div>
                 <div>
                   <strong style={{ color: "#64748B" }}>Block Height:</strong>
-                  <div style={{ fontFamily: "monospace" }}>#{selectedTx.block_height}</div>
+                  <div>#{selectedTx.block_height}</div>
                 </div>
                 <div>
                   <strong style={{ color: "#64748B" }}>Confirmations:</strong>
@@ -2065,18 +2234,11 @@ export const App: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div style={{ marginTop: "20px", textAlign: "right" }}>
+
+            <div style={{ marginTop: "16px", textAlign: "right" }}>
               <button
                 onClick={() => setSelectedTx(null)}
-                style={{
-                  padding: "8px 18px",
-                  backgroundColor: "#0F172A",
-                  border: "none",
-                  borderRadius: "4px",
-                  color: "#FFFFFF",
-                  fontWeight: "bold",
-                  cursor: "pointer"
-                }}
+                style={{ padding: "6px 16px", backgroundColor: "#0F172A", border: "none", color: "#FFFFFF", borderRadius: "3px", fontSize: "12px", cursor: "pointer" }}
               >
                 Close
               </button>

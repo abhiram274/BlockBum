@@ -119,7 +119,7 @@ void MainWindow::showSendDialog() {
 }
 
 void MainWindow::showReceiveDialog() {
-    ReceiveCoinsDialog dlg("bb1a729e8c40b82194017de8bf019abcdef0123456", this);
+    ReceiveCoinsDialog dlg("bb1abhiram729e8c40b82194017de8bf019abcdef0123", this);
     dlg.exec();
 }
 
@@ -147,8 +147,9 @@ void MainWindow::showAboutDialog() {
         this,
         "About BlockBum Core",
         "<h2>BlockBum Core Desktop</h2>"
-        "<p><b>Version:</b> 0.2.0 (Release Candidate)</p>"
-        "<p><b>Design:</b> Orange, White, Imperial Gold & Obsidian Theme</p>"
+        "<p><b>Version:</b> 1.0.0 (Release Edition)</p>"
+        "<p><b>Founder & Core Architect:</b> Abhiram</p>"
+        "<p><b>Consensus Engine:</b> BlockBum Dynamic Difficulty PoW</p>"
         "<p>A decentralized digital association, cryptocurrency, and private communication platform.</p>"
         "<p>Built with native C++20 and Qt.</p>"
     );
