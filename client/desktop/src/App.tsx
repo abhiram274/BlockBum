@@ -9,6 +9,116 @@ import {
 } from "./types";
 import bbCoinImg from "./assets/bb_coin.png";
 
+// ============================================================================
+// CLEAN MONOCHROME VECTOR ICONS (BLACK & WHITE / HIGH-CONTRAST BOLD STROKES)
+// ============================================================================
+
+const IconOverview = ({ size = 20, color = "currentColor" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 12V8H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h12v4" />
+    <path d="M4 6v12a2 2 0 0 0 2 2h14v-4" />
+    <path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z" />
+  </svg>
+);
+
+const IconSend = ({ size = 20, color = "currentColor" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="22" y1="2" x2="11" y2="13" />
+    <polygon points="22 2 15 22 11 13 2 9 22 2" fill="currentColor" fillOpacity="0.15" />
+  </svg>
+);
+
+const IconReceive = ({ size = 20, color = "currentColor" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 15v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+
+const IconTransactions = ({ size = 20, color = "currentColor" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="8" y1="6" x2="21" y2="6" />
+    <line x1="8" y1="12" x2="21" y2="12" />
+    <line x1="8" y1="18" x2="21" y2="18" />
+    <line x1="3" y1="6" x2="3.01" y2="6" />
+    <line x1="3" y1="12" x2="3.01" y2="12" />
+    <line x1="3" y1="18" x2="3.01" y2="18" />
+  </svg>
+);
+
+const IconCommunities = ({ size = 20, color = "currentColor" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+);
+
+const IconDebug = ({ size = 20, color = "currentColor" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="4 17 10 11 4 5" />
+    <line x1="12" y1="19" x2="20" y2="19" />
+  </svg>
+);
+
+const IconLock = ({ size = 16, color = "currentColor" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
+const IconSignal = ({ size = 16, color = "currentColor" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 20h20" />
+    <path d="M5 20v-4" />
+    <path d="M9 20v-8" />
+    <path d="M13 20V8" />
+    <path d="M17 20V4" />
+  </svg>
+);
+
+const IconShield = ({ size = 16, color = "currentColor" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
+
+const IconCheck = ({ size = 15, color = "currentColor" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+const IconCopy = ({ size = 14, color = "currentColor" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </svg>
+);
+
+const IconTxIn = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <polyline points="19 12 12 19 5 12" />
+  </svg>
+);
+
+const IconTxOut = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="19" x2="12" y2="5" />
+    <polyline points="5 12 12 5 19 12" />
+  </svg>
+);
+
+const IconTxMined = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14.5 9.5 21 3m0 0h-6m6 0v6M3 21l6.5-6.5m0 0 3-3-4-4-3 3 4 4z" />
+  </svg>
+);
+
 export const App: React.FC = () => {
   // Navigation Tabs (Bitcoin Core Qt style: Overview, Send, Receive, Transactions, Communities, Node & Debug)
   const [activeTab, setActiveTab] = useState<
@@ -44,7 +154,7 @@ export const App: React.FC = () => {
       created_at: "2026-11-01"
     },
     {
-      alias: "BlockBum Mining Pool",
+      alias: "BlockBum Mining Rig",
       address: "bb1mining4892c0194819aa018290bc019abcdef4567",
       public_key: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
       balance_bum: 1450.8,
@@ -99,7 +209,7 @@ export const App: React.FC = () => {
     }
   ]);
 
-  // Send Form State (Bitcoin Core exact layout)
+  // Send Form State
   const [sendToAddress, setSendToAddress] = useState("");
   const [sendLabel, setSendLabel] = useState("");
   const [sendAmount, setSendAmount] = useState("");
@@ -107,7 +217,7 @@ export const App: React.FC = () => {
   const [sendFeeRate, setSendFeeRate] = useState<number>(0.0005);
   const [showSendConfirmModal, setShowSendConfirmModal] = useState(false);
 
-  // Receive Form & Payment Requests (Bitcoin Core exact layout)
+  // Receive Form & Payment Requests
   const [receiveLabel, setReceiveLabel] = useState("");
   const [receiveAmount, setReceiveAmount] = useState("");
   const [receiveMessage, setReceiveMessage] = useState("");
@@ -254,7 +364,7 @@ export const App: React.FC = () => {
   const [debugSubTab, setDebugSubTab] = useState<"info" | "console" | "network" | "modes">("info");
   const [rpcCommand, setRpcCommand] = useState("");
   const [consoleOutput, setConsoleOutput] = useState<string[]>([
-    "BlockBum Core RPC Debug Console [Qt GUI Edition] v1.0.0",
+    "BlockBum Core RPC Debug Console [Qt Architecture] v1.0.0",
     "Type 'help', 'getblockchaininfo', 'getpeerinfo', 'getmempoolinfo', or 'getclientmode' to execute.",
     ""
   ]);
@@ -443,7 +553,7 @@ export const App: React.FC = () => {
   };
 
   // Pure SVG QR Generator
-  const renderQrSvg = (text: string, sizePx = 160) => {
+  const renderQrSvg = (text: string, sizePx = 180) => {
     let hash = 0;
     for (let i = 0; i < text.length; i++) {
       hash = (hash << 5) - hash + text.charCodeAt(i);
@@ -473,7 +583,7 @@ export const App: React.FC = () => {
     }
 
     return (
-      <svg width={sizePx} height={sizePx} viewBox={`0 0 ${size} ${size}`} style={{ backgroundColor: "#FFFFFF", padding: "8px", borderRadius: "3px", border: "1px solid #CBD5E1" }}>
+      <svg width={sizePx} height={sizePx} viewBox={`0 0 ${size} ${size}`} style={{ backgroundColor: "#FFFFFF", padding: "10px", borderRadius: "3px", border: "1px solid #CBD5E1" }}>
         {cells.map((row, r) =>
           row.map((val, c) =>
             val ? <rect key={`${r}-${c}`} x={c} y={r} width="1" height="1" fill="#0F172A" /> : null
@@ -516,8 +626,8 @@ export const App: React.FC = () => {
           display: "flex",
           backgroundColor: "#F1F5F9",
           borderBottom: "1px solid #CBD5E1",
-          padding: "2px 6px",
-          fontSize: "12px",
+          padding: "3px 8px",
+          fontSize: "13px",
           color: "#334155",
           userSelect: "none",
           position: "relative"
@@ -562,7 +672,7 @@ export const App: React.FC = () => {
             name: "Help",
             items: [
               { label: "BlockBum Protocol Specification", action: () => alert("BlockBum Protocol v1.0. Dynamic PoW Consensus.") },
-              { label: "About BlockBum Core", action: () => alert("BlockBum Core v1.0.0 (Bitcoin Core Qt Inspired Architecture)\nFounder: Abhiram\nDynamic Communities & Cryptography") }
+              { label: "About BlockBum Core", action: () => alert("BlockBum Core v1.0.0\nFounder: Abhiram\nDynamic Communities & Cryptography") }
             ]
           }
         ].map((menu) => (
@@ -575,8 +685,8 @@ export const App: React.FC = () => {
               style={{
                 background: openMenu === menu.id ? "#E2E8F0" : "none",
                 border: "none",
-                padding: "3px 9px",
-                fontSize: "12px",
+                padding: "4px 10px",
+                fontSize: "13px",
                 color: "#334155",
                 cursor: "pointer",
                 borderRadius: "3px"
@@ -594,7 +704,7 @@ export const App: React.FC = () => {
                   border: "1px solid #CBD5E1",
                   borderRadius: "3px",
                   boxShadow: "0 3px 10px rgba(0,0,0,0.12)",
-                  minWidth: "220px",
+                  minWidth: "240px",
                   zIndex: 2000,
                   padding: "4px 0"
                 }}
@@ -610,8 +720,8 @@ export const App: React.FC = () => {
                         item.action?.();
                       }}
                       style={{
-                        padding: "5px 14px",
-                        fontSize: "12px",
+                        padding: "7px 16px",
+                        fontSize: "13px",
                         color: "#0F172A",
                         cursor: "pointer"
                       }}
@@ -629,7 +739,7 @@ export const App: React.FC = () => {
       </div>
 
       {/* ===================================================================== */}
-      {/* BITCOIN CORE QT TOOLBAR (Tabs with Icons across the top)              */}
+      {/* BITCOIN CORE QT TOOLBAR (With Clean Monochrome Black & White Icons)  */}
       {/* ===================================================================== */}
       <div
         style={{
@@ -638,19 +748,19 @@ export const App: React.FC = () => {
           justifyContent: "space-between",
           backgroundColor: "#FFFFFF",
           borderBottom: "1px solid #CBD5E1",
-          padding: "4px 10px 0 10px",
+          padding: "5px 12px 0 12px",
           userSelect: "none"
         }}
       >
-        {/* Core Navigation Buttons */}
-        <div style={{ display: "flex", gap: "2px" }}>
+        {/* Core Navigation Buttons with Big Legible Icons & Text */}
+        <div style={{ display: "flex", gap: "4px" }}>
           {[
-            { id: "overview", label: "Overview", icon: "🪙" },
-            { id: "send", label: "Send", icon: "📤" },
-            { id: "receive", label: "Receive", icon: "📥" },
-            { id: "transactions", label: "Transactions", icon: "📋" },
-            { id: "communities", label: "Communities & Chat", icon: "🌐" },
-            { id: "debug", label: "Node & Debug", icon: "⚙️" }
+            { id: "overview", label: "Overview", icon: <IconOverview size={21} /> },
+            { id: "send", label: "Send", icon: <IconSend size={21} /> },
+            { id: "receive", label: "Receive", icon: <IconReceive size={21} /> },
+            { id: "transactions", label: "Transactions", icon: <IconTransactions size={21} /> },
+            { id: "communities", label: "Communities & Chat", icon: <IconCommunities size={21} /> },
+            { id: "debug", label: "Node & Debug", icon: <IconDebug size={21} /> }
           ].map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -660,22 +770,24 @@ export const App: React.FC = () => {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "6px",
-                  padding: "7px 15px",
+                  gap: "9px",
+                  padding: "9px 18px",
                   backgroundColor: isActive ? "#F4F6F9" : "#FFFFFF",
-                  borderTop: isActive ? "2px solid #D4AF37" : "2px solid transparent",
+                  borderTop: isActive ? "3px solid #D4AF37" : "3px solid transparent",
                   borderLeft: isActive ? "1px solid #CBD5E1" : "1px solid transparent",
                   borderRight: isActive ? "1px solid #CBD5E1" : "1px solid transparent",
                   borderBottom: isActive ? "1px solid #F4F6F9" : "1px solid transparent",
                   borderRadius: "4px 4px 0 0",
                   color: isActive ? "#0F172A" : "#64748B",
                   fontWeight: isActive ? "bold" : "600",
-                  fontSize: "12px",
+                  fontSize: "14px",
                   cursor: "pointer",
                   marginBottom: "-1px"
                 }}
               >
-                <span>{tab.icon}</span>
+                <span style={{ display: "flex", alignItems: "center", color: isActive ? "#0F172A" : "#475569" }}>
+                  {tab.icon}
+                </span>
                 <span>{tab.label}</span>
               </button>
             );
@@ -683,11 +795,11 @@ export const App: React.FC = () => {
         </div>
 
         {/* Right Info: Coin Emblem & Founder Identity */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingBottom: "4px" }}>
-          <img src={bbCoinImg} alt="BB" style={{ width: "22px", height: "22px", objectFit: "contain" }} />
-          <div style={{ fontSize: "11px", textAlign: "right" }}>
-            <span style={{ fontWeight: "bold", color: "#0F172A" }}>{selectedIdentity.alias}</span>
-            <div style={{ fontFamily: "monospace", color: "#B8860B", fontWeight: "bold" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", paddingBottom: "5px" }}>
+          <img src={bbCoinImg} alt="BB" style={{ width: "26px", height: "26px", objectFit: "contain" }} />
+          <div style={{ fontSize: "12px", textAlign: "right" }}>
+            <span style={{ fontWeight: "bold", color: "#0F172A", fontSize: "13px" }}>{selectedIdentity.alias}</span>
+            <div style={{ fontFamily: "monospace", color: "#B8860B", fontWeight: "bold", fontSize: "13px" }}>
               {selectedIdentity.balance_bum.toFixed(4)} BUM
             </div>
           </div>
@@ -701,16 +813,18 @@ export const App: React.FC = () => {
             backgroundColor: "#ECFDF5",
             borderBottom: "1px solid #A7F3D0",
             color: "#065F46",
-            padding: "6px 16px",
-            fontSize: "12px",
+            padding: "8px 18px",
+            fontSize: "13px",
             fontWeight: "bold",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between"
           }}
         >
-          <span>✓ {toastMsg}</span>
-          <button onClick={() => setToastMsg(null)} style={{ background: "none", border: "none", color: "#065F46", cursor: "pointer", fontWeight: "bold" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <IconCheck size={16} color="#059669" /> {toastMsg}
+          </span>
+          <button onClick={() => setToastMsg(null)} style={{ background: "none", border: "none", color: "#065F46", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}>
             ✕
           </button>
         </div>
@@ -719,98 +833,110 @@ export const App: React.FC = () => {
       {/* ===================================================================== */}
       {/* MAIN QT WORKSPACE                                                     */}
       {/* ===================================================================== */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "18px 22px" }}>
         {/* =================================================================== */}
         {/* TAB 1: OVERVIEW (EXACT BITCOIN CORE QT LAYOUT)                      */}
         {/* =================================================================== */}
         {activeTab === "overview" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
             {/* Left Box: Balances (Bitcoin Core GroupBox) */}
             <fieldset
               style={{
                 backgroundColor: "#FFFFFF",
                 border: "1px solid #CBD5E1",
                 borderRadius: "4px",
-                padding: "16px 20px",
+                padding: "20px 24px",
                 margin: 0
               }}
             >
-              <legend style={{ fontWeight: "bold", fontSize: "13px", color: "#0F172A", padding: "0 6px" }}>
+              <legend style={{ fontWeight: "bold", fontSize: "15px", color: "#0F172A", padding: "0 8px" }}>
                 Balances
               </legend>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "4px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginTop: "6px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                  <span style={{ fontSize: "12px", color: "#64748B" }}>Available:</span>
-                  <span style={{ fontSize: "18px", fontWeight: "bold", fontFamily: "monospace", color: "#0F172A" }}>
-                    {selectedIdentity.balance_bum.toFixed(8)} <span style={{ color: "#B8860B", fontSize: "13px" }}>BUM</span>
+                  <span style={{ fontSize: "14px", color: "#64748B", fontWeight: "600" }}>Available:</span>
+                  <span style={{ fontSize: "26px", fontWeight: "bold", fontFamily: "monospace", color: "#0F172A" }}>
+                    {selectedIdentity.balance_bum.toFixed(8)} <span style={{ color: "#B8860B", fontSize: "16px" }}>BUM</span>
                   </span>
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                  <span style={{ fontSize: "12px", color: "#64748B" }}>Pending:</span>
-                  <span style={{ fontSize: "14px", fontFamily: "monospace", color: "#64748B" }}>
+                  <span style={{ fontSize: "14px", color: "#64748B" }}>Pending:</span>
+                  <span style={{ fontSize: "16px", fontFamily: "monospace", color: "#64748B" }}>
                     0.00000000 BUM
                   </span>
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                  <span style={{ fontSize: "12px", color: "#64748B" }}>Immature (Mining):</span>
-                  <span style={{ fontSize: "14px", fontFamily: "monospace", color: "#64748B" }}>
+                  <span style={{ fontSize: "14px", color: "#64748B" }}>Immature (Mining):</span>
+                  <span style={{ fontSize: "16px", fontFamily: "monospace", color: "#64748B" }}>
                     0.00000000 BUM
                   </span>
                 </div>
 
-                <div style={{ height: "1px", backgroundColor: "#E2E8F0", margin: "6px 0" }} />
+                <div style={{ height: "1px", backgroundColor: "#E2E8F0", margin: "8px 0" }} />
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#0F172A" }}>Total:</span>
-                  <span style={{ fontSize: "18px", fontWeight: "bold", fontFamily: "monospace", color: "#059669" }}>
+                  <span style={{ fontSize: "15px", fontWeight: "bold", color: "#0F172A" }}>Total Balance:</span>
+                  <span style={{ fontSize: "22px", fontWeight: "bold", fontFamily: "monospace", color: "#059669" }}>
                     {selectedIdentity.balance_bum.toFixed(8)} BUM
                   </span>
                 </div>
 
-                {/* Spendable UTXO Address */}
-                <div style={{ marginTop: "12px", backgroundColor: "#F8FAFC", padding: "10px", borderRadius: "4px", border: "1px solid #E2E8F0" }}>
-                  <div style={{ fontSize: "11px", color: "#64748B", marginBottom: "4px" }}>Primary Receiving Address:</div>
-                  <div style={{ fontFamily: "monospace", fontSize: "11px", wordBreak: "break-all", color: "#0F172A" }}>
+                {/* Primary Address Box */}
+                <div style={{ marginTop: "12px", backgroundColor: "#F8FAFC", padding: "12px", borderRadius: "4px", border: "1px solid #E2E8F0" }}>
+                  <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "bold", marginBottom: "4px" }}>
+                    Primary Receiving Address:
+                  </div>
+                  <div style={{ fontFamily: "monospace", fontSize: "13px", wordBreak: "break-all", color: "#0F172A", fontWeight: "bold" }}>
                     {selectedIdentity.address}
                   </div>
                 </div>
 
-                {/* Quick Action Buttons */}
-                <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+                {/* Action Buttons */}
+                <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
                   <button
                     onClick={() => setActiveTab("send")}
                     style={{
                       flex: 1,
-                      padding: "8px",
+                      padding: "10px",
                       backgroundColor: "#FF6B00",
                       border: "1px solid #EA580C",
                       borderRadius: "3px",
                       color: "#FFFFFF",
                       fontWeight: "bold",
-                      fontSize: "12px",
-                      cursor: "pointer"
+                      fontSize: "14px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px"
                     }}
                   >
-                    📤 Send Coins
+                    <IconSend size={18} color="#FFFFFF" />
+                    <span>Send Coins</span>
                   </button>
                   <button
                     onClick={() => setActiveTab("receive")}
                     style={{
                       flex: 1,
-                      padding: "8px",
+                      padding: "10px",
                       backgroundColor: "#FFFFFF",
                       border: "1px solid #D4AF37",
                       borderRadius: "3px",
                       color: "#B8860B",
                       fontWeight: "bold",
-                      fontSize: "12px",
-                      cursor: "pointer"
+                      fontSize: "14px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px"
                     }}
                   >
-                    📥 Receive Coins
+                    <IconReceive size={18} color="#B8860B" />
+                    <span>Receive Coins</span>
                   </button>
                 </div>
               </div>
@@ -822,17 +948,17 @@ export const App: React.FC = () => {
                 backgroundColor: "#FFFFFF",
                 border: "1px solid #CBD5E1",
                 borderRadius: "4px",
-                padding: "16px 20px",
+                padding: "20px 24px",
                 margin: 0,
                 display: "flex",
                 flexDirection: "column"
               }}
             >
-              <legend style={{ fontWeight: "bold", fontSize: "13px", color: "#0F172A", padding: "0 6px" }}>
+              <legend style={{ fontWeight: "bold", fontSize: "15px", color: "#0F172A", padding: "0 8px" }}>
                 Recent Transactions
               </legend>
 
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px", marginTop: "4px" }}>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", marginTop: "6px" }}>
                 {transactions.slice(0, 5).map((tx) => (
                   <div
                     key={tx.tx_id}
@@ -841,21 +967,23 @@ export const App: React.FC = () => {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      padding: "6px 8px",
+                      padding: "8px 12px",
                       backgroundColor: "#F8FAFC",
                       borderRadius: "3px",
                       border: "1px solid #E2E8F0",
-                      fontSize: "11px",
+                      fontSize: "13px",
                       cursor: "pointer"
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <span>{tx.type === "receive" ? "🟢" : tx.type === "send" ? "🔴" : "⛏️"}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span>
+                        {tx.type === "receive" ? <IconTxIn /> : tx.type === "send" ? <IconTxOut /> : <IconTxMined />}
+                      </span>
                       <div>
                         <div style={{ fontWeight: "bold", color: "#0F172A" }}>
                           {tx.type === "receive" ? "Received with" : tx.type === "send" ? "Payment to" : "Mined Block"}
                         </div>
-                        <div style={{ color: "#64748B" }}>{tx.timestamp}</div>
+                        <div style={{ color: "#64748B", fontSize: "12px" }}>{tx.timestamp}</div>
                       </div>
                     </div>
                     <div style={{ textAlign: "right" }}>
@@ -863,19 +991,20 @@ export const App: React.FC = () => {
                         style={{
                           fontWeight: "bold",
                           fontFamily: "monospace",
+                          fontSize: "14px",
                           color: tx.type === "send" ? "#DC2626" : "#059669"
                         }}
                       >
                         {tx.type === "send" ? "-" : "+"}
                         {tx.amount_bum.toFixed(4)} BUM
                       </div>
-                      <div style={{ color: "#64748B" }}>Block #{tx.block_height}</div>
+                      <div style={{ color: "#64748B", fontSize: "11px" }}>Block #{tx.block_height}</div>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div style={{ textAlign: "right", marginTop: "10px" }}>
+              <div style={{ textAlign: "right", marginTop: "14px" }}>
                 <button
                   onClick={() => setActiveTab("transactions")}
                   style={{
@@ -883,7 +1012,7 @@ export const App: React.FC = () => {
                     border: "none",
                     color: "#FF6B00",
                     fontWeight: "bold",
-                    fontSize: "12px",
+                    fontSize: "13px",
                     cursor: "pointer"
                   }}
                 >
@@ -903,12 +1032,12 @@ export const App: React.FC = () => {
               backgroundColor: "#FFFFFF",
               border: "1px solid #CBD5E1",
               borderRadius: "4px",
-              padding: "20px 24px",
+              padding: "24px 28px",
               margin: "0 auto",
-              maxWidth: "820px"
+              maxWidth: "860px"
             }}
           >
-            <legend style={{ fontWeight: "bold", fontSize: "14px", color: "#0F172A", padding: "0 6px" }}>
+            <legend style={{ fontWeight: "bold", fontSize: "16px", color: "#0F172A", padding: "0 8px" }}>
               Send Coins
             </legend>
 
@@ -919,11 +1048,11 @@ export const App: React.FC = () => {
               }}
             >
               {/* Pay To */}
-              <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "#334155", marginBottom: "4px" }}>
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "bold", color: "#334155", marginBottom: "6px" }}>
                   Pay To:
                 </label>
-                <div style={{ display: "flex", gap: "6px" }}>
+                <div style={{ display: "flex", gap: "8px" }}>
                   <input
                     type="text"
                     value={sendToAddress}
@@ -932,11 +1061,11 @@ export const App: React.FC = () => {
                     required
                     style={{
                       flex: 1,
-                      padding: "7px 10px",
+                      padding: "9px 12px",
                       backgroundColor: "#F8FAFC",
                       border: "1px solid #CBD5E1",
                       borderRadius: "3px",
-                      fontSize: "12px",
+                      fontSize: "14px",
                       fontFamily: "monospace"
                     }}
                   />
@@ -947,22 +1076,26 @@ export const App: React.FC = () => {
                       if (text) setSendToAddress(text);
                     }}
                     style={{
-                      padding: "7px 12px",
+                      padding: "9px 14px",
                       backgroundColor: "#F1F5F9",
                       border: "1px solid #CBD5E1",
                       borderRadius: "3px",
-                      fontSize: "11px",
-                      cursor: "pointer"
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px"
                     }}
                   >
-                    Paste
+                    <IconCopy size={15} color="#334155" /> Paste
                   </button>
                 </div>
               </div>
 
               {/* Label */}
-              <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "#334155", marginBottom: "4px" }}>
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "bold", color: "#334155", marginBottom: "6px" }}>
                   Label:
                 </label>
                 <input
@@ -972,27 +1105,27 @@ export const App: React.FC = () => {
                   placeholder="Enter a label for this address to add it to your address book"
                   style={{
                     width: "100%",
-                    padding: "7px 10px",
+                    padding: "9px 12px",
                     backgroundColor: "#F8FAFC",
                     border: "1px solid #CBD5E1",
                     borderRadius: "3px",
-                    fontSize: "12px",
+                    fontSize: "14px",
                     boxSizing: "border-box"
                   }}
                 />
               </div>
 
               {/* Amount */}
-              <div style={{ marginBottom: "16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                  <label style={{ fontSize: "12px", fontWeight: "bold", color: "#334155" }}>
+              <div style={{ marginBottom: "20px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                  <label style={{ fontSize: "13px", fontWeight: "bold", color: "#334155" }}>
                     Amount:
                   </label>
-                  <span style={{ fontSize: "11px", color: "#64748B" }}>
+                  <span style={{ fontSize: "13px", color: "#64748B" }}>
                     Balance: <strong style={{ color: "#0F172A" }}>{selectedIdentity.balance_bum.toFixed(8)} BUM</strong>
                   </span>
                 </div>
-                <div style={{ display: "flex", gap: "6px" }}>
+                <div style={{ display: "flex", gap: "8px" }}>
                   <input
                     type="number"
                     step="0.0001"
@@ -1003,11 +1136,11 @@ export const App: React.FC = () => {
                     required
                     style={{
                       flex: 1,
-                      padding: "7px 10px",
+                      padding: "9px 12px",
                       backgroundColor: "#F8FAFC",
                       border: "1px solid #CBD5E1",
                       borderRadius: "3px",
-                      fontSize: "13px",
+                      fontSize: "15px",
                       fontWeight: "bold",
                       fontFamily: "monospace"
                     }}
@@ -1016,11 +1149,11 @@ export const App: React.FC = () => {
                     type="button"
                     onClick={() => setSendAmount(Math.max(0, selectedIdentity.balance_bum - sendFeeRate).toFixed(8))}
                     style={{
-                      padding: "7px 12px",
+                      padding: "9px 16px",
                       backgroundColor: "#F1F5F9",
                       border: "1px solid #CBD5E1",
                       borderRadius: "3px",
-                      fontSize: "11px",
+                      fontSize: "13px",
                       fontWeight: "bold",
                       cursor: "pointer"
                     }}
@@ -1030,22 +1163,22 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Transaction Fee (Bitcoin Core Style) */}
+              {/* Transaction Fee */}
               <fieldset
                 style={{
                   border: "1px solid #E2E8F0",
                   borderRadius: "3px",
-                  padding: "12px 16px",
-                  marginBottom: "20px",
+                  padding: "14px 18px",
+                  marginBottom: "24px",
                   backgroundColor: "#F8FAFC"
                 }}
               >
-                <legend style={{ fontSize: "11px", fontWeight: "bold", color: "#64748B", padding: "0 4px" }}>
+                <legend style={{ fontSize: "12px", fontWeight: "bold", color: "#64748B", padding: "0 6px" }}>
                   Transaction Fee
                 </legend>
 
-                <div style={{ display: "flex", gap: "20px", marginBottom: "10px" }}>
-                  <label style={{ fontSize: "12px", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                <div style={{ display: "flex", gap: "24px", marginBottom: "8px" }}>
+                  <label style={{ fontSize: "13px", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                     <input
                       type="radio"
                       name="feeOption"
@@ -1057,7 +1190,7 @@ export const App: React.FC = () => {
                     />
                     <span>Recommended (0.0005 BUM)</span>
                   </label>
-                  <label style={{ fontSize: "12px", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                  <label style={{ fontSize: "13px", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                     <input
                       type="radio"
                       name="feeOption"
@@ -1071,28 +1204,33 @@ export const App: React.FC = () => {
                   </label>
                 </div>
 
-                <div style={{ fontSize: "11px", color: "#64748B" }}>
+                <div style={{ fontSize: "12px", color: "#64748B" }}>
                   Estimated confirmation target: <strong>~2 blocks (20 minutes)</strong>
                 </div>
               </fieldset>
 
               {/* Buttons */}
-              <div style={{ display: "flex", gap: "10px" }}>
+              <div style={{ display: "flex", gap: "12px" }}>
                 <button
                   type="submit"
                   style={{
                     flex: 1,
-                    padding: "9px",
+                    padding: "11px",
                     background: "linear-gradient(135deg, #FF6B00 0%, #FF8800 100%)",
                     border: "1px solid #EA580C",
                     borderRadius: "3px",
                     color: "#FFFFFF",
                     fontWeight: "bold",
-                    fontSize: "13px",
-                    cursor: "pointer"
+                    fontSize: "14px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px"
                   }}
                 >
-                  🚀 Send Coins
+                  <IconSend size={18} color="#FFFFFF" />
+                  <span>Send Coins</span>
                 </button>
                 <button
                   type="button"
@@ -1102,12 +1240,12 @@ export const App: React.FC = () => {
                     setSendAmount("");
                   }}
                   style={{
-                    padding: "9px 20px",
+                    padding: "11px 24px",
                     backgroundColor: "#FFFFFF",
                     border: "1px solid #CBD5E1",
                     borderRadius: "3px",
                     color: "#334155",
-                    fontSize: "13px",
+                    fontSize: "14px",
                     cursor: "pointer"
                   }}
                 >
@@ -1122,45 +1260,45 @@ export const App: React.FC = () => {
         {/* TAB 3: RECEIVE (EXACT BITCOIN CORE QT LAYOUT)                       */}
         {/* =================================================================== */}
         {activeTab === "receive" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "860px", margin: "0 auto" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "18px", maxWidth: "900px", margin: "0 auto" }}>
             {/* GroupBox: Request Payment */}
             <fieldset
               style={{
                 backgroundColor: "#FFFFFF",
                 border: "1px solid #CBD5E1",
                 borderRadius: "4px",
-                padding: "18px 20px",
+                padding: "20px 24px",
                 margin: 0
               }}
             >
-              <legend style={{ fontWeight: "bold", fontSize: "13px", color: "#0F172A", padding: "0 6px" }}>
+              <legend style={{ fontWeight: "bold", fontSize: "15px", color: "#0F172A", padding: "0 8px" }}>
                 Request Payment
               </legend>
 
               <form onSubmit={handleCreatePaymentRequest}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "14px" }}>
                   <div>
-                    <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748B", marginBottom: "3px" }}>
+                    <label style={{ display: "block", fontSize: "13px", fontWeight: "bold", color: "#64748B", marginBottom: "4px" }}>
                       Label:
                     </label>
                     <input
                       type="text"
                       value={receiveLabel}
                       onChange={(e) => setReceiveLabel(e.target.value)}
-                      placeholder="e.g. Q4 Grant"
+                      placeholder="e.g. Q4 Dev Grant"
                       style={{
                         width: "100%",
-                        padding: "7px 10px",
+                        padding: "8px 12px",
                         backgroundColor: "#F8FAFC",
                         border: "1px solid #CBD5E1",
                         borderRadius: "3px",
-                        fontSize: "12px",
+                        fontSize: "14px",
                         boxSizing: "border-box"
                       }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748B", marginBottom: "3px" }}>
+                    <label style={{ display: "block", fontSize: "13px", fontWeight: "bold", color: "#64748B", marginBottom: "4px" }}>
                       Amount (BUM):
                     </label>
                     <input
@@ -1171,19 +1309,19 @@ export const App: React.FC = () => {
                       placeholder="0.00000000"
                       style={{
                         width: "100%",
-                        padding: "7px 10px",
+                        padding: "8px 12px",
                         backgroundColor: "#F8FAFC",
                         border: "1px solid #CBD5E1",
                         borderRadius: "3px",
-                        fontSize: "12px",
+                        fontSize: "14px",
                         boxSizing: "border-box"
                       }}
                     />
                   </div>
                 </div>
 
-                <div style={{ marginBottom: "14px" }}>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748B", marginBottom: "3px" }}>
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ display: "block", fontSize: "13px", fontWeight: "bold", color: "#64748B", marginBottom: "4px" }}>
                     Message:
                   </label>
                   <input
@@ -1193,27 +1331,27 @@ export const App: React.FC = () => {
                     placeholder="Enter an optional payment description"
                     style={{
                       width: "100%",
-                      padding: "7px 10px",
+                      padding: "8px 12px",
                       backgroundColor: "#F8FAFC",
                       border: "1px solid #CBD5E1",
                       borderRadius: "3px",
-                      fontSize: "12px",
+                      fontSize: "14px",
                       boxSizing: "border-box"
                     }}
                   />
                 </div>
 
-                <div style={{ display: "flex", gap: "10px" }}>
+                <div style={{ display: "flex", gap: "12px" }}>
                   <button
                     type="submit"
                     style={{
-                      padding: "8px 18px",
+                      padding: "9px 20px",
                       backgroundColor: "#FF6B00",
                       border: "1px solid #EA580C",
                       borderRadius: "3px",
                       color: "#FFFFFF",
                       fontWeight: "bold",
-                      fontSize: "12px",
+                      fontSize: "13px",
                       cursor: "pointer"
                     }}
                   >
@@ -1233,12 +1371,12 @@ export const App: React.FC = () => {
                       setActiveQrModal(cleanReq);
                     }}
                     style={{
-                      padding: "8px 18px",
+                      padding: "9px 20px",
                       backgroundColor: "#FFFFFF",
                       border: "1px solid #CBD5E1",
                       borderRadius: "3px",
                       color: "#334155",
-                      fontSize: "12px",
+                      fontSize: "13px",
                       cursor: "pointer"
                     }}
                   >
@@ -1254,42 +1392,42 @@ export const App: React.FC = () => {
                 backgroundColor: "#FFFFFF",
                 border: "1px solid #CBD5E1",
                 borderRadius: "4px",
-                padding: "16px 20px",
+                padding: "18px 22px",
                 margin: 0
               }}
             >
-              <legend style={{ fontWeight: "bold", fontSize: "13px", color: "#0F172A", padding: "0 6px" }}>
+              <legend style={{ fontWeight: "bold", fontSize: "15px", color: "#0F172A", padding: "0 8px" }}>
                 Requested Payments History
               </legend>
 
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", marginTop: "6px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", marginTop: "8px" }}>
                 <thead>
                   <tr style={{ backgroundColor: "#F8FAFC", borderBottom: "1px solid #CBD5E1", textAlign: "left", color: "#64748B" }}>
-                    <th style={{ padding: "7px 10px" }}>Date</th>
-                    <th style={{ padding: "7px 10px" }}>Label</th>
-                    <th style={{ padding: "7px 10px" }}>Message</th>
-                    <th style={{ padding: "7px 10px", textAlign: "right" }}>Amount (BUM)</th>
-                    <th style={{ padding: "7px 10px", textAlign: "center" }}>Action</th>
+                    <th style={{ padding: "8px 12px" }}>Date</th>
+                    <th style={{ padding: "8px 12px" }}>Label</th>
+                    <th style={{ padding: "8px 12px" }}>Message</th>
+                    <th style={{ padding: "8px 12px", textAlign: "right" }}>Amount (BUM)</th>
+                    <th style={{ padding: "8px 12px", textAlign: "center" }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paymentRequests.map((req) => (
                     <tr key={req.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                      <td style={{ padding: "7px 10px", color: "#64748B" }}>{req.date}</td>
-                      <td style={{ padding: "7px 10px", fontWeight: "bold" }}>{req.label}</td>
-                      <td style={{ padding: "7px 10px", color: "#475569" }}>{req.message}</td>
-                      <td style={{ padding: "7px 10px", textAlign: "right", fontFamily: "monospace", fontWeight: "bold" }}>
+                      <td style={{ padding: "8px 12px", color: "#64748B" }}>{req.date}</td>
+                      <td style={{ padding: "8px 12px", fontWeight: "bold" }}>{req.label}</td>
+                      <td style={{ padding: "8px 12px", color: "#475569" }}>{req.message}</td>
+                      <td style={{ padding: "8px 12px", textAlign: "right", fontFamily: "monospace", fontWeight: "bold" }}>
                         {req.amount}
                       </td>
-                      <td style={{ padding: "7px 10px", textAlign: "center" }}>
+                      <td style={{ padding: "8px 12px", textAlign: "center" }}>
                         <button
                           onClick={() => setActiveQrModal(req)}
                           style={{
-                            padding: "3px 8px",
+                            padding: "4px 10px",
                             backgroundColor: "#F1F5F9",
                             border: "1px solid #CBD5E1",
                             borderRadius: "3px",
-                            fontSize: "11px",
+                            fontSize: "12px",
                             cursor: "pointer"
                           }}
                         >
@@ -1313,20 +1451,20 @@ export const App: React.FC = () => {
               backgroundColor: "#FFFFFF",
               border: "1px solid #CBD5E1",
               borderRadius: "4px",
-              padding: "16px 20px",
+              padding: "18px 22px",
               margin: 0
             }}
           >
-            <legend style={{ fontWeight: "bold", fontSize: "13px", color: "#0F172A", padding: "0 6px" }}>
+            <legend style={{ fontWeight: "bold", fontSize: "15px", color: "#0F172A", padding: "0 8px" }}>
               Transaction History
             </legend>
 
             {/* Filter Row */}
-            <div style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "14px", marginTop: "4px" }}>
+            <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "16px", marginTop: "6px" }}>
               <select
                 value={txDateFilter}
                 onChange={(e) => setTxDateFilter(e.target.value)}
-                style={{ padding: "5px 8px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px" }}
+                style={{ padding: "6px 10px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "13px" }}
               >
                 <option value="all">All Dates</option>
                 <option value="today">Today</option>
@@ -1337,7 +1475,7 @@ export const App: React.FC = () => {
               <select
                 value={txTypeFilter}
                 onChange={(e) => setTxTypeFilter(e.target.value)}
-                style={{ padding: "5px 8px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px" }}
+                style={{ padding: "6px 10px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "13px" }}
               >
                 <option value="all">All Types</option>
                 <option value="receive">Received with</option>
@@ -1350,26 +1488,25 @@ export const App: React.FC = () => {
                 value={txMinAmount}
                 onChange={(e) => setTxMinAmount(e.target.value)}
                 placeholder="Min amount"
-                style={{ padding: "5px 8px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", width: "100px" }}
-              >
-              </input>
+                style={{ padding: "6px 10px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "13px", width: "110px" }}
+              />
 
               <input
                 type="text"
                 value={txSearchQuery}
                 onChange={(e) => setTxSearchQuery(e.target.value)}
                 placeholder="Enter address or label to search..."
-                style={{ flex: 1, padding: "5px 10px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px" }}
+                style={{ flex: 1, padding: "6px 12px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "13px" }}
               />
 
               <button
                 onClick={() => showToast("Exported transactions.csv to disk.")}
                 style={{
-                  padding: "5px 12px",
+                  padding: "6px 14px",
                   backgroundColor: "#F1F5F9",
                   border: "1px solid #CBD5E1",
                   borderRadius: "3px",
-                  fontSize: "12px",
+                  fontSize: "13px",
                   cursor: "pointer"
                 }}
               >
@@ -1378,14 +1515,14 @@ export const App: React.FC = () => {
             </div>
 
             {/* Data Table */}
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
               <thead>
                 <tr style={{ backgroundColor: "#F8FAFC", borderBottom: "1px solid #CBD5E1", textAlign: "left", color: "#64748B" }}>
-                  <th style={{ padding: "8px 10px" }}>Status</th>
-                  <th style={{ padding: "8px 10px" }}>Date</th>
-                  <th style={{ padding: "8px 10px" }}>Type</th>
-                  <th style={{ padding: "8px 10px" }}>Address / Label</th>
-                  <th style={{ padding: "8px 10px", textAlign: "right" }}>Amount (BUM)</th>
+                  <th style={{ padding: "10px 12px" }}>Status</th>
+                  <th style={{ padding: "10px 12px" }}>Date</th>
+                  <th style={{ padding: "10px 12px" }}>Type</th>
+                  <th style={{ padding: "10px 12px" }}>Address / Label</th>
+                  <th style={{ padding: "10px 12px", textAlign: "right" }}>Amount (BUM)</th>
                 </tr>
               </thead>
               <tbody>
@@ -1397,24 +1534,30 @@ export const App: React.FC = () => {
                     onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = "#F8FAFC")}
                     onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = "transparent")}
                   >
-                    <td style={{ padding: "8px 10px" }}>
-                      <span style={{ color: "#059669", fontWeight: "bold" }}>✓ Confirmed</span>
+                    <td style={{ padding: "10px 12px" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: "6px", color: "#059669", fontWeight: "bold" }}>
+                        <IconCheck size={14} color="#059669" /> Confirmed
+                      </span>
                     </td>
-                    <td style={{ padding: "8px 10px", color: "#64748B" }}>{tx.timestamp}</td>
-                    <td style={{ padding: "8px 10px", fontWeight: "bold" }}>
-                      {tx.type === "receive" ? "Received with" : tx.type === "send" ? "Sent to" : "Mined Block"}
+                    <td style={{ padding: "10px 12px", color: "#64748B" }}>{tx.timestamp}</td>
+                    <td style={{ padding: "10px 12px", fontWeight: "bold" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        {tx.type === "receive" ? <IconTxIn /> : tx.type === "send" ? <IconTxOut /> : <IconTxMined />}
+                        <span>{tx.type === "receive" ? "Received with" : tx.type === "send" ? "Sent to" : "Mined Block"}</span>
+                      </div>
                     </td>
-                    <td style={{ padding: "8px 10px", fontFamily: "monospace", color: "#334155" }}>
+                    <td style={{ padding: "10px 12px", fontFamily: "monospace", color: "#334155" }}>
                       {tx.counterparty.length > 28
                         ? `${tx.counterparty.substring(0, 14)}...${tx.counterparty.substring(tx.counterparty.length - 6)}`
                         : tx.counterparty}
                     </td>
                     <td
                       style={{
-                        padding: "8px 10px",
+                        padding: "10px 12px",
                         textAlign: "right",
                         fontFamily: "monospace",
                         fontWeight: "bold",
+                        fontSize: "14px",
                         color: tx.type === "send" ? "#DC2626" : "#059669"
                       }}
                     >
@@ -1435,8 +1578,8 @@ export const App: React.FC = () => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "240px 180px 1fr",
-              height: "calc(100vh - 140px)",
+              gridTemplateColumns: "260px 200px 1fr",
+              height: "calc(100vh - 145px)",
               backgroundColor: "#FFFFFF",
               border: "1px solid #CBD5E1",
               borderRadius: "4px",
@@ -1447,23 +1590,23 @@ export const App: React.FC = () => {
             <div style={{ backgroundColor: "#F8FAFC", borderRight: "1px solid #CBD5E1", display: "flex", flexDirection: "column" }}>
               <div
                 style={{
-                  padding: "10px 12px",
+                  padding: "12px 14px",
                   borderBottom: "1px solid #E2E8F0",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center"
                 }}
               >
-                <span style={{ fontSize: "12px", fontWeight: "bold", color: "#0F172A" }}>Communities</span>
+                <span style={{ fontSize: "14px", fontWeight: "bold", color: "#0F172A" }}>Communities</span>
                 <button
                   onClick={() => setShowCreateCommunityModal(true)}
                   style={{
-                    padding: "3px 8px",
+                    padding: "4px 10px",
                     backgroundColor: "#FF6B00",
                     border: "none",
                     borderRadius: "3px",
                     color: "#FFFFFF",
-                    fontSize: "11px",
+                    fontSize: "12px",
                     fontWeight: "bold",
                     cursor: "pointer"
                   }}
@@ -1472,7 +1615,7 @@ export const App: React.FC = () => {
                 </button>
               </div>
 
-              <div style={{ flex: 1, overflowY: "auto", padding: "6px" }}>
+              <div style={{ flex: 1, overflowY: "auto", padding: "8px" }}>
                 {communities.map((comm) => {
                   const isSel = comm.id === selectedCommunityId;
                   return (
@@ -1483,18 +1626,18 @@ export const App: React.FC = () => {
                         setActiveChannel(comm.channels[0] || "general");
                       }}
                       style={{
-                        padding: "8px 10px",
-                        marginBottom: "4px",
+                        padding: "10px 12px",
+                        marginBottom: "5px",
                         backgroundColor: isSel ? "#FFFFFF" : "transparent",
                         border: isSel ? "1px solid #CBD5E1" : "1px solid transparent",
                         borderRadius: "3px",
                         cursor: "pointer"
                       }}
                     >
-                      <div style={{ fontSize: "12px", fontWeight: isSel ? "bold" : "600", color: "#0F172A" }}>
+                      <div style={{ fontSize: "13px", fontWeight: isSel ? "bold" : "600", color: "#0F172A" }}>
                         {comm.name}
                       </div>
-                      <div style={{ fontSize: "10px", color: "#64748B", display: "flex", justifyContent: "space-between", marginTop: "2px" }}>
+                      <div style={{ fontSize: "11px", color: "#64748B", display: "flex", justifyContent: "space-between", marginTop: "3px" }}>
                         <span>{comm.memberCount} members</span>
                         <span>{comm.isPrivate ? "🔒 Private" : "🌐 Public"}</span>
                       </div>
@@ -1508,22 +1651,22 @@ export const App: React.FC = () => {
             <div style={{ backgroundColor: "#FFFFFF", borderRight: "1px solid #CBD5E1", display: "flex", flexDirection: "column" }}>
               <div
                 style={{
-                  padding: "10px 12px",
+                  padding: "12px 14px",
                   borderBottom: "1px solid #E2E8F0",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center"
                 }}
               >
-                <span style={{ fontSize: "12px", fontWeight: "bold", color: "#0F172A" }}>Channels</span>
+                <span style={{ fontSize: "14px", fontWeight: "bold", color: "#0F172A" }}>Channels</span>
                 <button
                   onClick={() => setShowAddChannelModal(true)}
                   style={{
-                    padding: "2px 6px",
+                    padding: "3px 8px",
                     backgroundColor: "#F1F5F9",
                     border: "1px solid #CBD5E1",
                     borderRadius: "3px",
-                    fontSize: "10px",
+                    fontSize: "11px",
                     cursor: "pointer"
                   }}
                 >
@@ -1531,7 +1674,7 @@ export const App: React.FC = () => {
                 </button>
               </div>
 
-              <div style={{ flex: 1, overflowY: "auto", padding: "6px" }}>
+              <div style={{ flex: 1, overflowY: "auto", padding: "8px" }}>
                 {activeCommunity.channels.map((ch) => {
                   const isAct = activeChannel === ch;
                   return (
@@ -1539,12 +1682,12 @@ export const App: React.FC = () => {
                       key={ch}
                       onClick={() => setActiveChannel(ch)}
                       style={{
-                        padding: "6px 8px",
-                        marginBottom: "2px",
+                        padding: "7px 10px",
+                        marginBottom: "3px",
                         backgroundColor: isAct ? "#EFF6FF" : "transparent",
                         border: isAct ? "1px solid #BFDBFE" : "1px solid transparent",
                         borderRadius: "3px",
-                        fontSize: "12px",
+                        fontSize: "13px",
                         fontWeight: isAct ? "bold" : "normal",
                         color: isAct ? "#1D4ED8" : "#334155",
                         cursor: "pointer"
@@ -1562,7 +1705,7 @@ export const App: React.FC = () => {
               {/* Channel Header */}
               <div
                 style={{
-                  padding: "10px 16px",
+                  padding: "12px 18px",
                   backgroundColor: "#FFFFFF",
                   borderBottom: "1px solid #E2E8F0",
                   display: "flex",
@@ -1571,17 +1714,17 @@ export const App: React.FC = () => {
                 }}
               >
                 <div>
-                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#0F172A" }}>
+                  <span style={{ fontSize: "14px", fontWeight: "bold", color: "#0F172A" }}>
                     {activeCommunity.name} &gt; #{activeChannel}
                   </span>
-                  <div style={{ fontSize: "11px", color: "#64748B" }}>{activeCommunity.description}</div>
+                  <div style={{ fontSize: "12px", color: "#64748B", marginTop: "2px" }}>{activeCommunity.description}</div>
                 </div>
                 <span
                   style={{
-                    fontSize: "10px",
+                    fontSize: "11px",
                     backgroundColor: "#ECFDF5",
                     color: "#065F46",
-                    padding: "2px 6px",
+                    padding: "3px 8px",
                     borderRadius: "3px",
                     fontWeight: "bold",
                     border: "1px solid #A7F3D0"
@@ -1592,7 +1735,7 @@ export const App: React.FC = () => {
               </div>
 
               {/* Message Feed */}
-              <div style={{ flex: 1, overflowY: "auto", padding: "14px", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
                 {messages
                   .filter((m) => m.communityId === selectedCommunityId && m.channel === activeChannel)
                   .map((msg) => (
@@ -1602,22 +1745,22 @@ export const App: React.FC = () => {
                         backgroundColor: "#FFFFFF",
                         border: "1px solid #E2E8F0",
                         borderRadius: "4px",
-                        padding: "8px 12px"
+                        padding: "10px 14px"
                       }}
                     >
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
-                        <span style={{ fontSize: "11px", fontWeight: "bold", color: "#0F172A" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                        <span style={{ fontSize: "12px", fontWeight: "bold", color: "#0F172A" }}>
                           {msg.senderAlias}
                         </span>
-                        <span style={{ fontSize: "10px", color: "#94A3B8" }}>{msg.timestamp}</span>
+                        <span style={{ fontSize: "11px", color: "#94A3B8" }}>{msg.timestamp}</span>
                       </div>
-                      <div style={{ fontSize: "12px", color: "#334155", lineHeight: "1.4" }}>{msg.content}</div>
+                      <div style={{ fontSize: "14px", color: "#334155", lineHeight: "1.5" }}>{msg.content}</div>
                     </div>
                   ))}
               </div>
 
               {/* Send Box */}
-              <form onSubmit={handleSendMessage} style={{ padding: "10px 14px", backgroundColor: "#FFFFFF", borderTop: "1px solid #E2E8F0", display: "flex", gap: "8px" }}>
+              <form onSubmit={handleSendMessage} style={{ padding: "12px 16px", backgroundColor: "#FFFFFF", borderTop: "1px solid #E2E8F0", display: "flex", gap: "10px" }}>
                 <input
                   type="text"
                   value={chatInput}
@@ -1625,23 +1768,23 @@ export const App: React.FC = () => {
                   placeholder={`Send an encrypted message to #${activeChannel}...`}
                   style={{
                     flex: 1,
-                    padding: "8px 10px",
+                    padding: "9px 12px",
                     backgroundColor: "#F8FAFC",
                     border: "1px solid #CBD5E1",
                     borderRadius: "3px",
-                    fontSize: "12px"
+                    fontSize: "13px"
                   }}
                 />
                 <button
                   type="submit"
                   style={{
-                    padding: "8px 16px",
+                    padding: "9px 20px",
                     backgroundColor: "#FF6B00",
                     border: "1px solid #EA580C",
                     borderRadius: "3px",
                     color: "#FFFFFF",
                     fontWeight: "bold",
-                    fontSize: "12px",
+                    fontSize: "13px",
                     cursor: "pointer"
                   }}
                 >
@@ -1661,16 +1804,16 @@ export const App: React.FC = () => {
               backgroundColor: "#FFFFFF",
               border: "1px solid #CBD5E1",
               borderRadius: "4px",
-              padding: "16px 20px",
+              padding: "18px 22px",
               margin: 0
             }}
           >
-            <legend style={{ fontWeight: "bold", fontSize: "13px", color: "#0F172A", padding: "0 6px" }}>
+            <legend style={{ fontWeight: "bold", fontSize: "15px", color: "#0F172A", padding: "0 8px" }}>
               BlockBum Core Debug Window
             </legend>
 
             {/* Sub Tabs */}
-            <div style={{ display: "flex", gap: "6px", borderBottom: "1px solid #CBD5E1", paddingBottom: "6px", marginBottom: "14px" }}>
+            <div style={{ display: "flex", gap: "8px", borderBottom: "1px solid #CBD5E1", paddingBottom: "8px", marginBottom: "16px" }}>
               {[
                 { id: "info", label: "Information" },
                 { id: "console", label: "Console" },
@@ -1681,12 +1824,12 @@ export const App: React.FC = () => {
                   key={st.id}
                   onClick={() => setDebugSubTab(st.id as any)}
                   style={{
-                    padding: "5px 12px",
+                    padding: "6px 14px",
                     backgroundColor: debugSubTab === st.id ? "#0F172A" : "#F8FAFC",
                     border: "1px solid #CBD5E1",
                     borderRadius: "3px",
                     color: debugSubTab === st.id ? "#FFFFFF" : "#334155",
-                    fontSize: "12px",
+                    fontSize: "13px",
                     fontWeight: debugSubTab === st.id ? "bold" : "normal",
                     cursor: "pointer"
                   }}
@@ -1698,10 +1841,10 @@ export const App: React.FC = () => {
 
             {/* Information Sub-tab */}
             {debugSubTab === "info" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", fontSize: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", fontSize: "13px" }}>
                 <div>
-                  <h4 style={{ margin: "0 0 8px 0", color: "#64748B" }}>General Information</h4>
-                  <div style={{ lineHeight: "1.8" }}>
+                  <h4 style={{ margin: "0 0 10px 0", color: "#64748B", fontSize: "14px" }}>General Information</h4>
+                  <div style={{ lineHeight: "1.9" }}>
                     <div><strong>Client name:</strong> BlockBum Core Desktop Qt Edition</div>
                     <div><strong>User Agent:</strong> /BlockBum:1.0.0(Windows; x64)/</div>
                     <div><strong>Consensus Engine:</strong> BlockBum Dynamic Difficulty PoW</div>
@@ -1709,10 +1852,10 @@ export const App: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <h4 style={{ margin: "0 0 8px 0", color: "#64748B" }}>Blockchain State</h4>
-                  <div style={{ lineHeight: "1.8" }}>
+                  <h4 style={{ margin: "0 0 10px 0", color: "#64748B", fontSize: "14px" }}>Blockchain State</h4>
+                  <div style={{ lineHeight: "1.9" }}>
                     <div><strong>Current number of blocks:</strong> #{nodeStatus.chain_height.toLocaleString()}</div>
-                    <div><strong>Best block hash:</strong> <code style={{ fontSize: "11px" }}>{nodeStatus.tip_hash.substring(0, 24)}...</code></div>
+                    <div><strong>Best block hash:</strong> <code style={{ fontSize: "12px" }}>{nodeStatus.tip_hash.substring(0, 24)}...</code></div>
                     <div><strong>Mempool transactions:</strong> {nodeStatus.mempool_tx_count} transactions</div>
                     <div><strong>Verification progress:</strong> 100.00%</div>
                   </div>
@@ -1725,32 +1868,32 @@ export const App: React.FC = () => {
               <div>
                 <div
                   style={{
-                    height: "180px",
+                    height: "190px",
                     backgroundColor: "#0F172A",
                     color: "#34D399",
-                    padding: "10px",
+                    padding: "12px",
                     borderRadius: "3px",
                     fontFamily: "monospace",
-                    fontSize: "12px",
+                    fontSize: "13px",
                     overflowY: "auto",
-                    marginBottom: "8px"
+                    marginBottom: "10px"
                   }}
                 >
                   {consoleOutput.map((l, i) => (
                     <div key={i} style={{ color: l.startsWith(">") ? "#F59E0B" : "#34D399" }}>{l}</div>
                   ))}
                 </div>
-                <form onSubmit={handleExecuteRpc} style={{ display: "flex", gap: "6px" }}>
+                <form onSubmit={handleExecuteRpc} style={{ display: "flex", gap: "8px" }}>
                   <input
                     type="text"
                     value={rpcCommand}
                     onChange={(e) => setRpcCommand(e.target.value)}
                     placeholder="Type RPC command (e.g. getblockchaininfo, getpeerinfo, help)..."
-                    style={{ flex: 1, padding: "6px 10px", fontFamily: "monospace", fontSize: "12px", border: "1px solid #CBD5E1", borderRadius: "3px" }}
+                    style={{ flex: 1, padding: "7px 12px", fontFamily: "monospace", fontSize: "13px", border: "1px solid #CBD5E1", borderRadius: "3px" }}
                   />
                   <button
                     type="submit"
-                    style={{ padding: "6px 14px", backgroundColor: "#0F172A", color: "#FFFFFF", border: "none", borderRadius: "3px", fontSize: "12px", cursor: "pointer" }}
+                    style={{ padding: "7px 16px", backgroundColor: "#0F172A", color: "#FFFFFF", border: "none", borderRadius: "3px", fontSize: "13px", cursor: "pointer" }}
                   >
                     Execute
                   </button>
@@ -1760,24 +1903,24 @@ export const App: React.FC = () => {
 
             {/* Peers Sub-tab */}
             {debugSubTab === "network" && (
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
                 <thead>
                   <tr style={{ backgroundColor: "#F8FAFC", borderBottom: "1px solid #CBD5E1", textAlign: "left", color: "#64748B" }}>
-                    <th style={{ padding: "6px 8px" }}>Peer Address</th>
-                    <th style={{ padding: "6px 8px" }}>Direction</th>
-                    <th style={{ padding: "6px 8px" }}>Ping</th>
-                    <th style={{ padding: "6px 8px" }}>Height</th>
-                    <th style={{ padding: "6px 8px" }}>Version</th>
+                    <th style={{ padding: "8px 10px" }}>Peer Address</th>
+                    <th style={{ padding: "8px 10px" }}>Direction</th>
+                    <th style={{ padding: "8px 10px" }}>Ping</th>
+                    <th style={{ padding: "8px 10px" }}>Height</th>
+                    <th style={{ padding: "8px 10px" }}>Version</th>
                   </tr>
                 </thead>
                 <tbody>
                   {peers.map((p, idx) => (
                     <tr key={idx} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                      <td style={{ padding: "6px 8px", fontFamily: "monospace", fontWeight: "bold" }}>{p.ip}</td>
-                      <td style={{ padding: "6px 8px" }}>{p.type}</td>
-                      <td style={{ padding: "6px 8px" }}>{p.latency}</td>
-                      <td style={{ padding: "6px 8px", fontFamily: "monospace" }}>#{p.height}</td>
-                      <td style={{ padding: "6px 8px", color: "#64748B" }}>{p.version}</td>
+                      <td style={{ padding: "8px 10px", fontFamily: "monospace", fontWeight: "bold" }}>{p.ip}</td>
+                      <td style={{ padding: "8px 10px" }}>{p.type}</td>
+                      <td style={{ padding: "8px 10px" }}>{p.latency}</td>
+                      <td style={{ padding: "8px 10px", fontFamily: "monospace" }}>#{p.height}</td>
+                      <td style={{ padding: "8px 10px", color: "#64748B" }}>{p.version}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1786,7 +1929,7 @@ export const App: React.FC = () => {
 
             {/* Modes Sub-tab */}
             {debugSubTab === "modes" && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "14px" }}>
                 {[
                   { id: "full_node" as ClientExecutionMode, title: "Full Sovereign Node", desc: "Validates 100% of blocks and state transitions from Genesis. Highest zero-trust security." },
                   { id: "light_client" as ClientExecutionMode, title: "Lightweight (SPV)", desc: "Downloads 92-byte block headers. Verifies transactions using cryptographic Merkle inclusion proofs." },
@@ -1798,17 +1941,17 @@ export const App: React.FC = () => {
                       key={m.id}
                       onClick={() => handleSetClientMode(m.id)}
                       style={{
-                        padding: "12px",
+                        padding: "14px",
                         borderRadius: "4px",
                         border: isCur ? "2px solid #D4AF37" : "1px solid #CBD5E1",
                         backgroundColor: isCur ? "#FFFDF5" : "#F8FAFC",
                         cursor: "pointer"
                       }}
                     >
-                      <div style={{ fontWeight: "bold", fontSize: "13px", color: "#0F172A", marginBottom: "6px" }}>
+                      <div style={{ fontWeight: "bold", fontSize: "14px", color: "#0F172A", marginBottom: "6px" }}>
                         {m.title} {isCur && "✓ Active"}
                       </div>
-                      <p style={{ fontSize: "11px", color: "#475569", margin: 0, lineHeight: "1.4" }}>{m.desc}</p>
+                      <p style={{ fontSize: "12px", color: "#475569", margin: 0, lineHeight: "1.4" }}>{m.desc}</p>
                     </div>
                   );
                 })}
@@ -1826,36 +1969,42 @@ export const App: React.FC = () => {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          padding: "3px 12px",
+          padding: "5px 14px",
           backgroundColor: "#F1F5F9",
           borderTop: "1px solid #CBD5E1",
-          fontSize: "11px",
+          fontSize: "12px",
           color: "#475569",
           userSelect: "none"
         }}
       >
         {/* Left: Sync Progress */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ color: "#059669", fontWeight: "bold" }}>● Synchronized with network</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: "6px", color: "#059669", fontWeight: "bold" }}>
+            <IconCheck size={14} color="#059669" /> Synchronized with network
+          </span>
           <span style={{ color: "#94A3B8" }}>|</span>
           <span>Block #{nodeStatus.chain_height.toLocaleString()}</span>
         </div>
 
         {/* Right: Icons (Connections, Mode, Vault Lock) */}
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          <span title="8 active connections to BlockBum network">📶 8 peers</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: "6px" }} title="8 active connections to BlockBum network">
+            <IconSignal size={15} color="#475569" /> 8 peers
+          </span>
           <span
             onClick={() => {
               const nextMode: ClientExecutionMode =
                 clientMode === "full_node" ? "light_client" : clientMode === "light_client" ? "pruned_node" : "full_node";
               handleSetClientMode(nextMode);
             }}
-            style={{ cursor: "pointer", fontWeight: "bold", color: "#B8860B" }}
+            style={{ cursor: "pointer", fontWeight: "bold", color: "#B8860B", display: "flex", alignItems: "center", gap: "6px" }}
             title="Click to toggle execution mode"
           >
-            🛡️ {clientMode === "full_node" ? "Full Node" : clientMode === "light_client" ? "SPV Mode" : "Pruned"}
+            <IconShield size={15} color="#B8860B" /> {clientMode === "full_node" ? "Full Node" : clientMode === "light_client" ? "SPV Mode" : "Pruned"}
           </span>
-          <span title="Wallet is encrypted and currently unlocked">🔒 Unlocked</span>
+          <span style={{ display: "flex", alignItems: "center", gap: "5px" }} title="Wallet is encrypted and currently unlocked">
+            <IconLock size={15} color="#059669" /> Unlocked
+          </span>
         </div>
       </div>
 
@@ -1883,33 +2032,33 @@ export const App: React.FC = () => {
               backgroundColor: "#FFFFFF",
               border: "1px solid #CBD5E1",
               borderRadius: "4px",
-              padding: "20px 24px",
-              width: "480px",
+              padding: "24px 28px",
+              width: "520px",
               boxShadow: "0 8px 24px rgba(0,0,0,0.18)"
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ margin: "0 0 12px 0", fontSize: "15px", fontWeight: "bold", color: "#0F172A" }}>
+            <h3 style={{ margin: "0 0 14px 0", fontSize: "16px", fontWeight: "bold", color: "#0F172A" }}>
               Payment Information
             </h3>
 
-            <div style={{ display: "flex", gap: "18px", alignItems: "center", marginBottom: "14px" }}>
-              <div>{renderQrSvg(activeQrModal.address, 130)}</div>
-              <div style={{ flex: 1, fontSize: "12px", lineHeight: "1.6" }}>
-                <div><strong>URI:</strong> <code style={{ fontSize: "10px", wordBreak: "break-all" }}>blockbum:{activeQrModal.address}</code></div>
-                <div><strong>Address:</strong> <code style={{ fontSize: "10px", wordBreak: "break-all" }}>{activeQrModal.address}</code></div>
+            <div style={{ display: "flex", gap: "20px", alignItems: "center", marginBottom: "16px" }}>
+              <div>{renderQrSvg(activeQrModal.address, 150)}</div>
+              <div style={{ flex: 1, fontSize: "13px", lineHeight: "1.7" }}>
+                <div><strong>URI:</strong> <code style={{ fontSize: "11px", wordBreak: "break-all" }}>blockbum:{activeQrModal.address}</code></div>
+                <div><strong>Address:</strong> <code style={{ fontSize: "11px", wordBreak: "break-all" }}>{activeQrModal.address}</code></div>
                 <div><strong>Amount:</strong> {activeQrModal.amount} BUM</div>
                 <div><strong>Label:</strong> {activeQrModal.label}</div>
               </div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
               <button
                 onClick={() => {
                   navigator.clipboard?.writeText(`blockbum:${activeQrModal.address}?amount=${activeQrModal.amount}`);
                   showToast("URI copied to clipboard.");
                 }}
-                style={{ padding: "6px 12px", backgroundColor: "#F1F5F9", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "11px", cursor: "pointer" }}
+                style={{ padding: "7px 14px", backgroundColor: "#F1F5F9", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", cursor: "pointer" }}
               >
                 Copy URI
               </button>
@@ -1918,13 +2067,13 @@ export const App: React.FC = () => {
                   navigator.clipboard?.writeText(activeQrModal.address);
                   showToast("Address copied to clipboard.");
                 }}
-                style={{ padding: "6px 12px", backgroundColor: "#F1F5F9", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "11px", cursor: "pointer" }}
+                style={{ padding: "7px 14px", backgroundColor: "#F1F5F9", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", cursor: "pointer" }}
               >
                 Copy Address
               </button>
               <button
                 onClick={() => setActiveQrModal(null)}
-                style={{ padding: "6px 14px", backgroundColor: "#0F172A", border: "none", color: "#FFFFFF", borderRadius: "3px", fontSize: "11px", fontWeight: "bold", cursor: "pointer" }}
+                style={{ padding: "7px 16px", backgroundColor: "#0F172A", border: "none", color: "#FFFFFF", borderRadius: "3px", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}
               >
                 Close
               </button>
@@ -1957,18 +2106,18 @@ export const App: React.FC = () => {
               backgroundColor: "#FFFFFF",
               border: "1px solid #CBD5E1",
               borderRadius: "4px",
-              padding: "20px 24px",
-              width: "460px",
+              padding: "24px 28px",
+              width: "480px",
               boxShadow: "0 8px 24px rgba(0,0,0,0.18)"
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ margin: "0 0 12px 0", fontSize: "15px", fontWeight: "bold", color: "#0F172A" }}>
+            <h3 style={{ margin: "0 0 14px 0", fontSize: "16px", fontWeight: "bold", color: "#0F172A" }}>
               + Create New Community
             </h3>
             <form onSubmit={handleCreateCommunity}>
-              <div style={{ marginBottom: "12px" }}>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748B", marginBottom: "3px" }}>
+              <div style={{ marginBottom: "14px" }}>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "#64748B", marginBottom: "4px" }}>
                   Community Name:
                 </label>
                 <input
@@ -1978,12 +2127,12 @@ export const App: React.FC = () => {
                   placeholder="e.g. DeFi Builders Guild"
                   required
                   autoFocus
-                  style={{ width: "100%", padding: "7px 10px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "13px", boxSizing: "border-box" }}
                 />
               </div>
 
-              <div style={{ marginBottom: "12px" }}>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748B", marginBottom: "3px" }}>
+              <div style={{ marginBottom: "14px" }}>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "#64748B", marginBottom: "4px" }}>
                   Description:
                 </label>
                 <input
@@ -1991,12 +2140,12 @@ export const App: React.FC = () => {
                   value={newCommDesc}
                   onChange={(e) => setNewCommDesc(e.target.value)}
                   placeholder="Brief summary of this peer community"
-                  style={{ width: "100%", padding: "7px 10px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "13px", boxSizing: "border-box" }}
                 />
               </div>
 
-              <div style={{ marginBottom: "12px" }}>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748B", marginBottom: "3px" }}>
+              <div style={{ marginBottom: "14px" }}>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "#64748B", marginBottom: "4px" }}>
                   Initial Channels (comma separated):
                 </label>
                 <input
@@ -2004,12 +2153,12 @@ export const App: React.FC = () => {
                   value={newCommChannels}
                   onChange={(e) => setNewCommChannels(e.target.value)}
                   placeholder="general, announcements, trading"
-                  style={{ width: "100%", padding: "7px 10px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "13px", boxSizing: "border-box" }}
                 />
               </div>
 
-              <div style={{ marginBottom: "18px" }}>
-                <label style={{ fontSize: "12px", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+              <div style={{ marginBottom: "20px" }}>
+                <label style={{ fontSize: "13px", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                   <input
                     type="checkbox"
                     checked={newCommIsPrivate}
@@ -2019,17 +2168,17 @@ export const App: React.FC = () => {
                 </label>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
                 <button
                   type="button"
                   onClick={() => setShowCreateCommunityModal(false)}
-                  style={{ padding: "7px 14px", backgroundColor: "#FFFFFF", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", cursor: "pointer" }}
+                  style={{ padding: "8px 16px", backgroundColor: "#FFFFFF", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "13px", cursor: "pointer" }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  style={{ padding: "7px 18px", backgroundColor: "#FF6B00", border: "1px solid #EA580C", color: "#FFFFFF", borderRadius: "3px", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}
+                  style={{ padding: "8px 20px", backgroundColor: "#FF6B00", border: "1px solid #EA580C", color: "#FFFFFF", borderRadius: "3px", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}
                 >
                   Create Community
                 </button>
@@ -2063,18 +2212,18 @@ export const App: React.FC = () => {
               backgroundColor: "#FFFFFF",
               border: "1px solid #CBD5E1",
               borderRadius: "4px",
-              padding: "20px 24px",
-              width: "380px",
+              padding: "24px 28px",
+              width: "400px",
               boxShadow: "0 8px 24px rgba(0,0,0,0.18)"
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ margin: "0 0 12px 0", fontSize: "15px", fontWeight: "bold", color: "#0F172A" }}>
+            <h3 style={{ margin: "0 0 14px 0", fontSize: "16px", fontWeight: "bold", color: "#0F172A" }}>
               + Add Channel to {activeCommunity.name}
             </h3>
             <form onSubmit={handleAddChannel}>
-              <div style={{ marginBottom: "16px" }}>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748B", marginBottom: "3px" }}>
+              <div style={{ marginBottom: "18px" }}>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", color: "#64748B", marginBottom: "4px" }}>
                   Channel Name:
                 </label>
                 <input
@@ -2084,21 +2233,21 @@ export const App: React.FC = () => {
                   placeholder="e.g. trading or miners"
                   required
                   autoFocus
-                  style={{ width: "100%", padding: "7px 10px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "13px", boxSizing: "border-box" }}
                 />
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
                 <button
                   type="button"
                   onClick={() => setShowAddChannelModal(false)}
-                  style={{ padding: "6px 12px", backgroundColor: "#FFFFFF", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", cursor: "pointer" }}
+                  style={{ padding: "7px 14px", backgroundColor: "#FFFFFF", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "13px", cursor: "pointer" }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  style={{ padding: "6px 16px", backgroundColor: "#FF6B00", border: "1px solid #EA580C", color: "#FFFFFF", borderRadius: "3px", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}
+                  style={{ padding: "7px 18px", backgroundColor: "#FF6B00", border: "1px solid #EA580C", color: "#FFFFFF", borderRadius: "3px", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}
                 >
                   Add Channel
                 </button>
@@ -2132,38 +2281,38 @@ export const App: React.FC = () => {
               backgroundColor: "#FFFFFF",
               border: "1px solid #CBD5E1",
               borderRadius: "4px",
-              padding: "20px 24px",
-              width: "480px",
+              padding: "24px 28px",
+              width: "500px",
               boxShadow: "0 8px 24px rgba(0,0,0,0.18)"
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ margin: "0 0 10px 0", fontSize: "15px", fontWeight: "bold", color: "#0F172A" }}>
+            <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: "bold", color: "#0F172A" }}>
               Confirm Transaction
             </h3>
-            <p style={{ margin: "0 0 14px 0", fontSize: "12px", color: "#475569" }}>
+            <p style={{ margin: "0 0 16px 0", fontSize: "13px", color: "#475569" }}>
               Are you sure you want to broadcast this transaction to the BlockBum network?
             </p>
 
-            <div style={{ backgroundColor: "#F8FAFC", border: "1px solid #E2E8F0", padding: "12px", borderRadius: "3px", fontSize: "12px", lineHeight: "1.6", marginBottom: "16px" }}>
+            <div style={{ backgroundColor: "#F8FAFC", border: "1px solid #E2E8F0", padding: "14px", borderRadius: "3px", fontSize: "13px", lineHeight: "1.7", marginBottom: "18px" }}>
               <div><strong>Amount:</strong> <span style={{ color: "#DC2626", fontWeight: "bold" }}>{parseFloat(sendAmount || "0").toFixed(8)} BUM</span></div>
               <div><strong>Network Fee:</strong> {sendFeeRate.toFixed(8)} BUM</div>
-              <div><strong>Recipient:</strong> <code style={{ fontSize: "11px", wordBreak: "break-all" }}>{sendToAddress}</code></div>
+              <div><strong>Recipient:</strong> <code style={{ fontSize: "12px", wordBreak: "break-all" }}>{sendToAddress}</code></div>
               {sendLabel && <div><strong>Label:</strong> {sendLabel}</div>}
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
               <button
                 type="button"
                 onClick={() => setShowSendConfirmModal(false)}
-                style={{ padding: "7px 14px", backgroundColor: "#FFFFFF", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "12px", cursor: "pointer" }}
+                style={{ padding: "8px 16px", backgroundColor: "#FFFFFF", border: "1px solid #CBD5E1", borderRadius: "3px", fontSize: "13px", cursor: "pointer" }}
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleExecuteSend}
-                style={{ padding: "7px 18px", backgroundColor: "#FF6B00", border: "1px solid #EA580C", color: "#FFFFFF", borderRadius: "3px", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}
+                style={{ padding: "8px 20px", backgroundColor: "#FF6B00", border: "1px solid #EA580C", color: "#FFFFFF", borderRadius: "3px", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}
               >
                 Yes, Broadcast Transaction
               </button>
@@ -2196,27 +2345,27 @@ export const App: React.FC = () => {
               backgroundColor: "#FFFFFF",
               border: "1px solid #CBD5E1",
               borderRadius: "4px",
-              padding: "20px 24px",
-              width: "520px",
+              padding: "24px 28px",
+              width: "540px",
               boxShadow: "0 8px 24px rgba(0,0,0,0.18)"
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ margin: "0 0 12px 0", fontSize: "15px", fontWeight: "bold", color: "#0F172A" }}>
+            <h3 style={{ margin: "0 0 14px 0", fontSize: "16px", fontWeight: "bold", color: "#0F172A" }}>
               Transaction Details
             </h3>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "12px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px" }}>
               <div>
                 <strong style={{ color: "#64748B" }}>TxID:</strong>
-                <div style={{ fontFamily: "monospace", wordBreak: "break-all", backgroundColor: "#F8FAFC", padding: "6px", borderRadius: "3px", marginTop: "2px" }}>
+                <div style={{ fontFamily: "monospace", wordBreak: "break-all", backgroundColor: "#F8FAFC", padding: "8px", borderRadius: "3px", marginTop: "4px" }}>
                   {selectedTx.tx_id}
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                 <div>
                   <strong style={{ color: "#64748B" }}>Amount:</strong>
-                  <div style={{ fontSize: "14px", fontWeight: "bold", color: selectedTx.type === "send" ? "#DC2626" : "#059669" }}>
+                  <div style={{ fontSize: "15px", fontWeight: "bold", color: selectedTx.type === "send" ? "#DC2626" : "#059669" }}>
                     {selectedTx.amount_bum.toFixed(8)} BUM
                   </div>
                 </div>
@@ -2235,10 +2384,10 @@ export const App: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ marginTop: "16px", textAlign: "right" }}>
+            <div style={{ marginTop: "18px", textAlign: "right" }}>
               <button
                 onClick={() => setSelectedTx(null)}
-                style={{ padding: "6px 16px", backgroundColor: "#0F172A", border: "none", color: "#FFFFFF", borderRadius: "3px", fontSize: "12px", cursor: "pointer" }}
+                style={{ padding: "7px 18px", backgroundColor: "#0F172A", border: "none", color: "#FFFFFF", borderRadius: "3px", fontSize: "13px", cursor: "pointer" }}
               >
                 Close
               </button>
