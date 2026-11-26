@@ -8,7 +8,7 @@ export interface NodeStatus {
   mempool_tx_count: number;
   consensus_mode: string;
   avg_latency_ms: number;
-  client_mode: "full_node" | "light_client";
+  client_mode: "full_node" | "light_client" | "pruned_node";
 }
 
 export interface WalletIdentity {
@@ -99,7 +99,7 @@ export interface SharedFileItem {
 // Phase 20: Global Application Ecosystem Types
 // ============================================================================
 
-export type ClientExecutionMode = "full_node" | "light_client";
+export type ClientExecutionMode = "full_node" | "light_client" | "pruned_node";
 
 export interface DeviceSession {
   device_id: string;
